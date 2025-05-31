@@ -50,7 +50,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
         std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
         std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
-        std::make_unique<juce::AudioParameterFloat>("drywet", "Dry/Wet Mix", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("drywet", "Dry/Wet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.5f),
         // audio trigger params
         std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray { "Simple", "Drums" }, 0),
         std::make_unique<juce::AudioParameterFloat>("threshold", "Audio Threshold", NormalisableRange<float>(0.0f, 1.0f), 0.5f),
@@ -164,6 +164,18 @@ void REVERAudioProcessor::parameterGestureChanged (int parameterIndex, bool gest
     (void)gestureIsStarting;
 }
 
+void REVERAudioProcessor::loadImpulse(String path)
+{
+    MessageManager::callAsync([this, path] {
+        impulse->load(path);
+        if (!impulse->path.empty()) {
+            irFile = path;
+            saveSettings();
+            sendChangeMessage();
+        }
+    });
+}
+
 void REVERAudioProcessor::loadSettings ()
 {
     settings.closeFiles(); // FIX files changed by other plugin instances not loading
@@ -171,8 +183,8 @@ void REVERAudioProcessor::loadSettings ()
         scale = (float)file->getDoubleValue("scale", 1.0f);
         plugWidth = file->getIntValue("width", PLUG_WIDTH);
         plugHeight = file->getIntValue("height", PLUG_HEIGHT);
-        if (!file->getValue("irpath", "").isEmpty()) {
-            irPath = file->getValue("irpath");
+        if (!file->getValue("irdir", "").isEmpty()) {
+            irDir = file->getValue("irdir");
         }
         else {
             File settingsFile = file->getFile();
@@ -180,12 +192,13 @@ void REVERAudioProcessor::loadSettings ()
             File impulsesDir = settingsFolder.getChildFile("impulses");
             if (!impulsesDir.exists()) {
                 if (impulsesDir.createDirectory()) {
-                    irPath = impulsesDir.getFullPathName();
+                    irDir = impulsesDir.getFullPathName();
                 }
             } else {
-                irPath = impulsesDir.getFullPathName();
+                irDir = impulsesDir.getFullPathName();
             }
         }
+        irFile = file->getValue("irfile", "");
         auto tensionparam = (double)params.getRawParameterValue("tension")->load();
         auto tensionatk = (double)params.getRawParameterValue("tensionatk")->load();
         auto tensionrel = (double)params.getRawParameterValue("tensionrel")->load();
@@ -215,7 +228,8 @@ void REVERAudioProcessor::saveSettings ()
         file->setValue("scale", scale);
         file->setValue("width", plugWidth);
         file->setValue("height", plugHeight);
-        file->setValue("irpath", irPath);
+        file->setValue("irdir", irDir);
+        file->setValue("irfile", irFile);
         for (int i = 0; i < PAINT_PATS; ++i) {
             std::ostringstream oss;
             auto points = paintPatterns[i]->points;
@@ -526,7 +540,7 @@ void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         impulse->trimLeft = params.getRawParameterValue("irtrimleft")->load();
         impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
         impulse->stretch = params.getRawParameterValue("irstretch")->load();
-        impulse->loadDefault();
+        impulse->load(irFile);
     }
 
     convolver->loadImpulse(*impulse);

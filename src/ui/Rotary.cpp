@@ -152,6 +152,9 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
         }
         else if (format == exp2Range) {
             text = std::to_string((int)(std::pow(2, slider_val) * 100)) + " %";
+        } 
+        else if (format == dryWet) {
+            text = std::to_string((int)std::round((1-slider_val) * 100)) + ":" + std::to_string((int)std::round(slider_val * 100));
         }
     }
 

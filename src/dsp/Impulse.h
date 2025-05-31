@@ -10,7 +10,7 @@ public:
 	Impulse() {}
 	~Impulse() {}
 
-	void loadDefault();
+	void load(String path);
 	void recalcImpulse();
 
 	std::vector<float> bufferL = {};

@@ -32,7 +32,7 @@ private:
     std::unique_ptr<TimeSliceThread> timeSliceThread;
     std::unique_ptr<FileFilter> fileFilter;
     std::unique_ptr<DirectoryContentsList> dirContents;
-    std::unique_ptr<FileBrowserComponent> dirBrowser;
+    std::unique_ptr<FileChooser> dirPicker;
     TextButton closeButton;
     TextButton changedirButton;
 

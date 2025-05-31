@@ -275,7 +275,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     predelay->setBounds(col,row,80,65);
     col += 75;
 
-    drywet = std::make_unique<Rotary>(p, "drywet", "Dry/Wet", RotaryLabel::percx100, true);
+    drywet = std::make_unique<Rotary>(p, "drywet", "Dry/Wet", RotaryLabel::dryWet, true);
     addAndMakeVisible(*drywet);
     drywet->setBounds(col,row,80,65);
     col += 75;
@@ -299,23 +299,15 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     row += 75;
     col = PLUG_PADDING;
 
-    addAndMakeVisible(prevFile);
-    prevFile.setBounds(col, row + 35, 15, 25);
-    prevFile.setAlpha(0.f);
-
-    col = PLUG_PADDING + 75*2+10;
-    addAndMakeVisible(nextFile);
-    nextFile.setBounds(col-15, row + 35, 15, 25);
-    nextFile.setAlpha(0.f);
-
     addAndMakeVisible(currentFile);
-    auto r = prevFile.getBounds();
-    currentFile.setBounds(r.getRight(), r.getY(), nextFile.getBounds().getX() - r.getRight(), 25);
+    currentFile.setBounds(col, row + 35, 75*2+10, 25);
     currentFile.setAlpha(0.f);
     currentFile.onClick = [this] {
         audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
         toggleUIComponents();
     };
+
+    col = PLUG_PADDING + 75*2+10;
 
     send = std::make_unique<Rotary>(p, "send", "Send", RotaryLabel::percx100, false, COLOR_ACTIVE, ResKnob);
     addAndMakeVisible(*send);
@@ -709,7 +701,7 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 
     fileSelector->setVisible(audioProcessor.showFileSelector);
 
-    //repaint();
+    repaint();
 }
 
 //==============================================================================
@@ -838,28 +830,14 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
         }
     }
 
-    g.setColour(Colour(COLOR_ACTIVE));
-    bounds = prevFile.getBounds().expanded(-4,-4).toFloat();
-    Path pp;
-    pp.startNewSubPath(bounds.getBottomRight());
-    pp.lineTo(bounds.getX(), bounds.getCentreY());
-    pp.lineTo(bounds.getTopRight());
-    g.strokePath(pp, PathStrokeType(2.f));
-
-    bounds = nextFile.getBounds().expanded(-4,-4).toFloat();
-    Path np;
-    np.startNewSubPath(bounds.getBottomLeft());
-    np.lineTo(bounds.getRight(), bounds.getCentreY());
-    np.lineTo(bounds.getTopLeft());
-    g.strokePath(np, PathStrokeType(2.f));
-
     bounds = currentFile.getBounds().toFloat();
     if (audioProcessor.showFileSelector) {
+        g.setColour(Colour(COLOR_ACTIVE));
         g.fillRect(bounds.expanded(-2.f, 0.f));
     }
     g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
     g.setFont(FontOptions(18.f));
-    g.drawText(audioProcessor.impulse->name, bounds, Justification::centred, true);
+    g.drawFittedText(audioProcessor.impulse->name, bounds.toNearestInt(), Justification::centred, 2, 1.f);
 }
 
 void REVERAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)

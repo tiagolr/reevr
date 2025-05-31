@@ -53,41 +53,67 @@ private:
     int position;
 };
 
-void Impulse::loadDefault()
+void Impulse::load(String filepath)
 {
     AudioFormatManager manager;
     manager.registerBasicFormats();
-    std::unique_ptr<juce::InputStream> inputStream = std::make_unique<juce::MemoryInputStream>(
-        BinaryData::Hall_Stereo_wav, 
-        BinaryData::Hall_Stereo_wavSize, 
-        false
-    );
+    std::unique_ptr<juce::InputStream> inputStream;
+    bool isDefault = filepath.isEmpty();
+    
+    if (isDefault) {
+        inputStream = std::make_unique<juce::MemoryInputStream>(
+            BinaryData::Hall_Stereo_wav, 
+            BinaryData::Hall_Stereo_wavSize, 
+            false
+        );
+        name = "Default";
+        path = "";
+    }
+    else {
+        File audioFile(filepath);
+        if (!audioFile.existsAsFile()) {
+            return load("");
+        }
+        name = audioFile.getFileNameWithoutExtension().toStdString();
+        path = filepath.toStdString();
+        inputStream = audioFile.createInputStream();
+    }
+
     std::unique_ptr<juce::AudioFormatReader> reader(manager.createReaderFor(std::move(inputStream)));
     if (reader == nullptr) {
-        return;
+        if (isDefault) 
+            throw std::runtime_error("Failed to load default IR");
+        else 
+            return load("");
     }
-    name = "Default Hall";
-    path = "";
 
-    AudioBuffer<float> buf ((int)(reader->numChannels), (int)(reader->lengthInSamples));
-    reader->read (buf.getArrayOfWritePointers(), buf.getNumChannels(), 0, buf.getNumSamples());
-    srate = reader->sampleRate;
-    bool isStereo = buf.getNumChannels() > 1;
-    int nsamps = buf.getNumSamples();
+    try {
+        AudioBuffer<float> buf ((int)(reader->numChannels), (int)(reader->lengthInSamples));
+        reader->read (buf.getArrayOfWritePointers(), buf.getNumChannels(), 0, buf.getNumSamples());
+        srate = reader->sampleRate;
+        bool isStereo = buf.getNumChannels() > 1;
+        int nsamps = buf.getNumSamples();
 
-    // trim IR tail silence
-    int tailStart = std::max(
-        getTailStart(buf.getReadPointer(0), nsamps), 
-        getTailStart(buf.getReadPointer(isStereo ? 1 : 0), nsamps)
-    );
+        // trim IR tail silence
+        int tailStart = std::max(
+            getTailStart(buf.getReadPointer(0), nsamps), 
+            getTailStart(buf.getReadPointer(isStereo ? 1 : 0), nsamps)
+        );
 
-    const float* data = buf.getReadPointer(0);
-    rawBufferL.assign(data, data + tailStart);
+        const float* data = buf.getReadPointer(0);
+        rawBufferL.assign(data, data + tailStart);
 
-    data = buf.getReadPointer(isStereo ? 1 : 0);
-    rawBufferR.assign(data, data + tailStart);
+        data = buf.getReadPointer(isStereo ? 1 : 0);
+        rawBufferR.assign(data, data + tailStart);
 
-    recalcImpulse();
+        recalcImpulse();
+    }
+    catch (...) {
+        if (isDefault)
+            throw std::runtime_error("Failed to load default IR");
+        else 
+            return load("");
+    }
 }
 
 void Impulse::recalcImpulse()

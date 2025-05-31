@@ -117,7 +117,8 @@ public:
     float scale = 1.0f; // UI scale factor
     int plugWidth = PLUG_WIDTH;
     int plugHeight = PLUG_HEIGHT;
-    String irPath = "";
+    String irDir = "";
+    String irFile = "";
 
     // Instance Settings
     int currentProgram = -1;
@@ -251,6 +252,7 @@ public:
     ~REVERAudioProcessor() override;
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
+    void loadImpulse(String path);
     void loadSettings();
     void saveSettings();
     void setScale(float value);

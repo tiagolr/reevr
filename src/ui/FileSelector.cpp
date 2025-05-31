@@ -22,6 +22,18 @@ FileSelector::FileSelector(REVERAudioProcessor& p)
     changedirButton.setComponentID("button");
     changedirButton.setBounds(col, row, 90, 25);
     changedirButton.setToggleState(true, dontSendNotification);
+    changedirButton.onClick = [this] {
+        dirPicker = std::make_unique<juce::FileChooser>("Select a directory", File(audioProcessor.irDir), "*", true);
+        dirPicker->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+            [this](const juce::FileChooser& chooser) {
+                juce::File selected = chooser.getResult();
+                if (selected.isDirectory()) {
+                    audioProcessor.irDir = selected.getFullPathName();
+                    audioProcessor.saveSettings();
+                    readDir();
+                }
+            });
+    };
 
     if (!timeSliceThread) {
         timeSliceThread.reset(new juce::TimeSliceThread("IRBrowserThread"));
@@ -47,7 +59,7 @@ FileSelector::~FileSelector()
 
 void FileSelector::readDir() 
 {
-    dirContents->setDirectory(audioProcessor.irPath.isEmpty() ? File() : File(audioProcessor.irPath), true, true);
+    dirContents->setDirectory(audioProcessor.irDir.isEmpty() ? File() : File(audioProcessor.irDir), true, true);
 }
 
 void FileSelector::selectionChanged()
@@ -55,8 +67,8 @@ void FileSelector::selectionChanged()
 }
 void FileSelector::fileClicked(const juce::File &file, const juce::MouseEvent &e)
 {
-    (void)file;
     (void)e;
+    audioProcessor.loadImpulse(file.getFullPathName());
 }
 void FileSelector::fileDoubleClicked(const juce::File &file)
 {
@@ -77,7 +89,7 @@ void FileSelector::paint(juce::Graphics& g) {
 
     Rectangle<int> dirbounds = changedirButton.getBounds();
     dirbounds = dirbounds.withLeft(dirbounds.getRight() + 10).withRight(bounds.getRight());
-    g.drawFittedText(audioProcessor.irPath, dirbounds, Justification::centredLeft, 2, 1.0f);
+    g.drawFittedText(audioProcessor.irDir, dirbounds, Justification::centredLeft, 2, 1.0f);
 
     bounds.removeFromTop(35);
 }
