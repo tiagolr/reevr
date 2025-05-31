@@ -103,6 +103,7 @@ public:
     static bool comparePoints(const std::vector<PPoint>& a, const std::vector<PPoint>& b);
 
 private:
+    double clearY = 0.5; // the y value when the pattern is clear
     std::vector<PPoint> rawpoints; 
     static inline uint64_t versionIDCounter = 1; // static global ID counter
     static inline uint64_t pointsIDCounter = 1; // static global ID counter

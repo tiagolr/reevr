@@ -200,6 +200,7 @@ void Pattern::rotateUnsafe(double x) {
 void Pattern::clear()
 {
     std::lock_guard<std::mutex> lock(pointsmtx);
+    clearY = 1.0 - getavgY();
     clearTransform();
     points.clear();
     incrementVersion();
@@ -218,8 +219,8 @@ void Pattern::buildSegments()
     // add ghost points outside the 0..1 boundary
     // allows the pattern to repeat itself and rotate seamlessly
     if (pts.size() == 0) {
-        pts.push_back({0, -1.0, 0.5, 0.0, 1});
-        pts.push_back({0, 2.0, 0.5, 0.0, 1});
+        pts.push_back({0, -1.0, clearY, 0.0, 1});
+        pts.push_back({0, 2.0, clearY, 0.0, 1});
     }
     else if (pts.size() == 1) {
         pts.insert(pts.begin(), {0, -1.0, pts[0].y, 0.0, 1});
@@ -295,8 +296,12 @@ void Pattern::transform(double midy)
 {
     std::lock_guard<std::mutex> lock(pointsmtx);
     midy = 1.0 - midy; // y coordinates are inverted
+    clearY = midy;
     if (rawpoints.empty()) rawpoints = points;
-    if (!rawpoints.size()) return;
+    if (!rawpoints.size()) {
+        buildSegments();
+        return;
+    }
 
     double avg = 0.0;
     for (auto& p : rawpoints) {
@@ -331,7 +336,7 @@ double Pattern::getavgY()
 {
     double avg = 0.0;
     auto pts = points;
-    if (!pts.size()) return avg;
+    if (!pts.size()) return 1.0 - clearY;
     for (auto& p : pts) {
         avg += 1.0 - p.y;
     }
