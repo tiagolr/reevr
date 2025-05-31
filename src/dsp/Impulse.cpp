@@ -66,6 +66,8 @@ void Impulse::loadDefault()
     if (reader == nullptr) {
         return;
     }
+    name = "Default Hall";
+    path = "";
 
     AudioBuffer<float> buf ((int)(reader->numChannels), (int)(reader->lengthInSamples));
     reader->read (buf.getArrayOfWritePointers(), buf.getNumChannels(), 0, buf.getNumSamples());

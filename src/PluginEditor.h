@@ -23,6 +23,7 @@
 #include "ui/EnvelopeWidget.h"
 #include "ui/AudioWidget.h"
 #include "ui/IRDisplay.h"
+#include "ui/FileSelector.h"
 
 using namespace globals;
 
@@ -48,6 +49,10 @@ private:
     CustomLookAndFeel* customLookAndFeel = nullptr;
     std::unique_ptr<About> about;
     std::unique_ptr<IRDisplay> irDisplay;
+    std::unique_ptr<FileSelector> fileSelector;
+    TextButton prevFile;
+    TextButton nextFile;
+    TextButton currentFile;
 
     std::vector<std::unique_ptr<TextButton>> patterns;
 

@@ -17,6 +17,9 @@ public:
 	std::vector<float> bufferR = {};
 	std::vector<float> rawBufferL = {};
 	std::vector<float> rawBufferR = {};
+	
+	std::string name = "";
+	std::string path = "";
 
 	float peak = 0.0f; // used for drawing the impulse
 	int trimLeftSamples = 0; // used for drawing

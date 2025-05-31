@@ -243,6 +243,7 @@ public:
     bool showSequencer = false;
     bool sendEditMode = false;
     bool showEnvelopeKnobs = false;
+    bool showFileSelector = false;
 
     //==============================================================================
     REVERAudioProcessor();

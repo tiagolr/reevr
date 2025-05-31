@@ -297,7 +297,26 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
 
     // KNOBS 2ND ROW
     row += 75;
+    col = PLUG_PADDING;
+
+    addAndMakeVisible(prevFile);
+    prevFile.setBounds(col, row + 35, 15, 25);
+    prevFile.setAlpha(0.f);
+
     col = PLUG_PADDING + 75*2+10;
+    addAndMakeVisible(nextFile);
+    nextFile.setBounds(col-15, row + 35, 15, 25);
+    nextFile.setAlpha(0.f);
+
+    addAndMakeVisible(currentFile);
+    auto r = prevFile.getBounds();
+    currentFile.setBounds(r.getRight(), r.getY(), nextFile.getBounds().getX() - r.getRight(), 25);
+    currentFile.setAlpha(0.f);
+    currentFile.onClick = [this] {
+        audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
+        toggleUIComponents();
+    };
+
     send = std::make_unique<Rotary>(p, "send", "Send", RotaryLabel::percx100, false, COLOR_ACTIVE, ResKnob);
     addAndMakeVisible(*send);
     send->setBounds(col,row,80,65);
@@ -531,6 +550,9 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*view);
     view->setBounds(col,row,getWidth(), getHeight() - row);
 
+    fileSelector = std::make_unique<FileSelector>(p);
+    addAndMakeVisible(*fileSelector);
+    fileSelector->setBounds(view->getBounds().withTrimmedTop(PLUG_PADDING));
 
     addAndMakeVisible(latencyWarning);
     latencyWarning.setText("Plugin latency has changed, restart playback", dontSendNotification);
@@ -665,6 +687,7 @@ void REVERAudioProcessorEditor::toggleUIComponents()
     else {
         view->setBounds(view->getBounds().withTop(paintWidget->getBounds().getY() - 10));
     }
+    fileSelector->setBounds(view->getBounds().withTrimmedTop(PLUG_PADDING));
 
     auto uimode = audioProcessor.uimode;
     paintButton.setToggleState(uimode == UIMode::Paint || (uimode == UIMode::PaintEdit && audioProcessor.luimode == UIMode::Paint), dontSendNotification);
@@ -683,6 +706,8 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 
     revenv->layoutComponents();
     sendenv->layoutComponents();
+
+    fileSelector->setVisible(audioProcessor.showFileSelector);
 
     repaint();
 }
@@ -812,6 +837,29 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
             drawPowerButton(g, bounds, Colour(COLOR_NEUTRAL));
         }
     }
+
+    g.setColour(Colour(COLOR_ACTIVE));
+    bounds = prevFile.getBounds().expanded(-4,-4).toFloat();
+    Path pp;
+    pp.startNewSubPath(bounds.getBottomRight());
+    pp.lineTo(bounds.getX(), bounds.getCentreY());
+    pp.lineTo(bounds.getTopRight());
+    g.strokePath(pp, PathStrokeType(2.f));
+
+    bounds = nextFile.getBounds().expanded(-4,-4).toFloat();
+    Path np;
+    np.startNewSubPath(bounds.getBottomLeft());
+    np.lineTo(bounds.getRight(), bounds.getCentreY());
+    np.lineTo(bounds.getTopLeft());
+    g.strokePath(np, PathStrokeType(2.f));
+
+    bounds = currentFile.getBounds().toFloat();
+    if (audioProcessor.showFileSelector) {
+        g.fillRect(bounds.expanded(-2.f, 0.f));
+    }
+    g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
+    g.setFont(FontOptions(18.f));
+    g.drawText(audioProcessor.impulse->name, bounds, Justification::centred, true);
 }
 
 void REVERAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)
@@ -926,6 +974,8 @@ void REVERAudioProcessorEditor::resized()
     // view
     bounds = view->getBounds();
     view->setBounds(bounds.withWidth(getWidth()).withHeight(getHeight() - bounds.getY()));
+
+    fileSelector->setBounds(view->getBounds().withTrimmedTop(PLUG_PADDING));
 
     bounds = seqWidget->getBounds();
     seqWidget->setBounds(bounds.withWidth(getWidth() - PLUG_PADDING * 2));
