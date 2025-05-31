@@ -117,6 +117,7 @@ public:
     float scale = 1.0f; // UI scale factor
     int plugWidth = PLUG_WIDTH;
     int plugHeight = PLUG_HEIGHT;
+    String irPath = "";
 
     // Instance Settings
     int currentProgram = -1;
@@ -243,7 +244,7 @@ public:
     bool showSequencer = false;
     bool sendEditMode = false;
     bool showEnvelopeKnobs = false;
-    bool showFileSelector = false;
+    bool showFileSelector = true;
 
     //==============================================================================
     REVERAudioProcessor();

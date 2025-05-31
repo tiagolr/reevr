@@ -28,6 +28,9 @@ public:
         return box.getComponentID() == "small" ? FontOptions(12.0f) : FontOptions(16.0f);
     }
 
+    void drawTreeviewPlusMinusBox(Graphics& g, const Rectangle<float>& area,
+        juce::Colour backgroundColour, bool isOpen, bool isMouseOver) override;
+
 private:
     juce::Typeface::Ptr typeface;
 };

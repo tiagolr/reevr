@@ -709,7 +709,7 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 
     fileSelector->setVisible(audioProcessor.showFileSelector);
 
-    repaint();
+    //repaint();
 }
 
 //==============================================================================

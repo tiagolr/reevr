@@ -3,17 +3,91 @@
 
 FileSelector::FileSelector(REVERAudioProcessor& p)
     : audioProcessor(p)
+    , timeSliceThread()
+    , fileFilter()
+    , dirContents()
+    , fileTree()
 {
+    auto bounds = getLocalBounds().expanded(-PLUG_PADDING, - PLUG_PADDING);
+    auto col = bounds.getX();
+    auto row = bounds.getY();
+    addAndMakeVisible(closeButton);
+    closeButton.setButtonText("Close");
+    closeButton.setComponentID("button");
+    closeButton.setBounds(col, row, 60, 25);
+    col += 70;
+
+    addAndMakeVisible(changedirButton);
+    changedirButton.setButtonText("Change Dir");
+    changedirButton.setComponentID("button");
+    changedirButton.setBounds(col, row, 90, 25);
+    changedirButton.setToggleState(true, dontSendNotification);
+
+    if (!timeSliceThread) {
+        timeSliceThread.reset(new juce::TimeSliceThread("IRBrowserThread"));
+        timeSliceThread->startThread();
+    }
+
+    AudioFormatManager formatManager;
+    formatManager.registerBasicFormats();
+    fileFilter.reset(new juce::WildcardFileFilter(formatManager.getWildcardForAllFormats(), "*", "Audio Files"));
+    dirContents.reset(new juce::DirectoryContentsList(fileFilter.get(), *timeSliceThread));
+
+    fileTree.reset(new juce::FileTreeComponent(*dirContents));
+    fileTree->addListener(this);
+    fileTree->setColour(FileTreeComponent::highlightColourId, Colour(COLOR_ACTIVE).darker(0.5f));
+    addAndMakeVisible(*fileTree);
+
+    readDir();
 }
 
 FileSelector::~FileSelector()
 {
 }
 
+void FileSelector::readDir() 
+{
+    dirContents->setDirectory(audioProcessor.irPath.isEmpty() ? File() : File(audioProcessor.irPath), true, true);
+}
+
+void FileSelector::selectionChanged()
+{
+}
+void FileSelector::fileClicked(const juce::File &file, const juce::MouseEvent &e)
+{
+    (void)file;
+    (void)e;
+}
+void FileSelector::fileDoubleClicked(const juce::File &file)
+{
+    (void)file;
+}
+void FileSelector::browserRootChanged(const juce::File &newRoot)
+{
+    (void)newRoot;
+}
+
 void FileSelector::paint(juce::Graphics& g) {
     g.setColour(Colour(COLOR_BG));
     g.fillAll();
+    g.setColour(Colours::white);
+    g.setFont(FontOptions(16.f));
+
+    auto bounds = getLocalBounds().expanded(-PLUG_PADDING, -PLUG_PADDING);
+
+    Rectangle<int> dirbounds = changedirButton.getBounds();
+    dirbounds = dirbounds.withLeft(dirbounds.getRight() + 10).withRight(bounds.getRight());
+    g.drawFittedText(audioProcessor.irPath, dirbounds, Justification::centredLeft, 2, 1.0f);
+
+    bounds.removeFromTop(35);
 }
+
+void FileSelector::resized()
+{
+    auto bounds = getLocalBounds().expanded(-PLUG_PADDING, -PLUG_PADDING);
+    fileTree->setBounds(bounds.withTrimmedTop(35));
+}
+
 
 void FileSelector::mouseDown(const juce::MouseEvent& e)
 {

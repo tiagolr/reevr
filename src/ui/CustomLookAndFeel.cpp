@@ -15,6 +15,8 @@ CustomLookAndFeel::CustomLookAndFeel()
   setColour(TextButton::textColourOffId, Colour(COLOR_ACTIVE));
   setColour(BubbleComponent::ColourIds::backgroundColourId, Colour(COLOR_ACTIVE).darker(0.75f));
   setColour(BubbleComponent::ColourIds::outlineColourId, Colours::transparentWhite);
+  setColour(ScrollBar::thumbColourId, Colour(COLOR_ACTIVE));
+  setColour(ScrollBar::trackColourId, juce::Colours::transparentBlack);
 
   typeface = juce::Typeface::createSystemTypefaceFor(BinaryData::UbuntuMedium_ttf, BinaryData::UbuntuMedium_ttfSize);
   setDefaultSansSerifTypeface(typeface);
@@ -136,4 +138,24 @@ void CustomLookAndFeel::positionComboBoxText (ComboBox& box, Label& label)
         box.getHeight() - 2);
 
     label.setFont (getComboBoxFont (box));
+}
+
+void CustomLookAndFeel::drawTreeviewPlusMinusBox(Graphics& g, const Rectangle<float>& area,
+    juce::Colour backgroundColour, bool isOpen, bool isMouseOver)
+{
+    (void)backgroundColour;
+    (void)isMouseOver;
+    Path p;
+    g.setColour(Colour(COLOR_ACTIVE)); 
+    auto c = area.getCentre();
+    auto r = 5.f;
+
+    if (isOpen) {
+        p.addTriangle(c.x - r, c.y - r, c.x, c.y+r, c.x+r, c.y-r);
+    }
+    else {
+        p.addTriangle(c.x -r, c.y -r, c.x + r, c.y, c.x-r, c.y+r);
+    }
+
+    g.fillPath(p);
 }

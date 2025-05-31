@@ -171,6 +171,21 @@ void REVERAudioProcessor::loadSettings ()
         scale = (float)file->getDoubleValue("scale", 1.0f);
         plugWidth = file->getIntValue("width", PLUG_WIDTH);
         plugHeight = file->getIntValue("height", PLUG_HEIGHT);
+        if (!file->getValue("irpath", "").isEmpty()) {
+            irPath = file->getValue("irpath");
+        }
+        else {
+            File settingsFile = file->getFile();
+            File settingsFolder = settingsFile.getParentDirectory();
+            File impulsesDir = settingsFolder.getChildFile("impulses");
+            if (!impulsesDir.exists()) {
+                if (impulsesDir.createDirectory()) {
+                    irPath = impulsesDir.getFullPathName();
+                }
+            } else {
+                irPath = impulsesDir.getFullPathName();
+            }
+        }
         auto tensionparam = (double)params.getRawParameterValue("tension")->load();
         auto tensionatk = (double)params.getRawParameterValue("tensionatk")->load();
         auto tensionrel = (double)params.getRawParameterValue("tensionrel")->load();
@@ -200,6 +215,7 @@ void REVERAudioProcessor::saveSettings ()
         file->setValue("scale", scale);
         file->setValue("width", plugWidth);
         file->setValue("height", plugHeight);
+        file->setValue("irpath", irPath);
         for (int i = 0; i < PAINT_PATS; ++i) {
             std::ostringstream oss;
             auto points = paintPatterns[i]->points;
