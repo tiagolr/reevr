@@ -241,7 +241,7 @@ public:
     Pattern* getPaintPatern(int index);
     void setViewPattern(int index);
     void restorePaintPatterns();
-    void setSendEditMode(bool isResonance);
+    void setSendEditMode(bool isSend);
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;

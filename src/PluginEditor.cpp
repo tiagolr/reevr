@@ -17,8 +17,8 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     audioProcessor.addChangeListener(this);
     audioProcessor.params.addParameterListener("sync", this);
     audioProcessor.params.addParameterListener("trigger", this);
-    audioProcessor.params.addParameterListener("cutenvon", this);
-    audioProcessor.params.addParameterListener("resenvon", this);
+    audioProcessor.params.addParameterListener("revenvon", this);
+    audioProcessor.params.addParameterListener("sendenvon", this);
 
     auto col = PLUG_PADDING;
     auto row = PLUG_PADDING;
@@ -218,8 +218,8 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     revEnvOnButton.setAlpha(0.f);
     revEnvOnButton.onClick = [this]() {
         MessageManager::callAsync([this] {
-            bool on = (bool)audioProcessor.params.getRawParameterValue("cutenvon")->load();
-            audioProcessor.params.getParameter("cutenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
+            bool on = (bool)audioProcessor.params.getRawParameterValue("revenvon")->load();
+            audioProcessor.params.getParameter("revenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
             toggleUIComponents();
             });
     };
@@ -229,8 +229,8 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     sendEnvOnButton.setAlpha(0.f);
     sendEnvOnButton.onClick = [this]() {
         MessageManager::callAsync([this] {
-            bool on = (bool)audioProcessor.params.getRawParameterValue("resenvon")->load();
-            audioProcessor.params.getParameter("resenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
+            bool on = (bool)audioProcessor.params.getRawParameterValue("sendenvon")->load();
+            audioProcessor.params.getParameter("sendenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
             toggleUIComponents();
             });
     };
@@ -521,8 +521,8 @@ REVERAudioProcessorEditor::~REVERAudioProcessorEditor()
     delete customLookAndFeel;
     audioProcessor.params.removeParameterListener("sync", this);
     audioProcessor.params.removeParameterListener("trigger", this);
-    audioProcessor.params.removeParameterListener("cutenvon", this);
-    audioProcessor.params.removeParameterListener("resenvon", this);
+    audioProcessor.params.removeParameterListener("revenvon", this);
+    audioProcessor.params.removeParameterListener("sendenvon", this);
     audioProcessor.removeChangeListener(this);
 }
 
@@ -543,13 +543,12 @@ void REVERAudioProcessorEditor::parameterChanged (const juce::String& parameterI
 void REVERAudioProcessorEditor::toggleUIComponents()
 {
     patterns[audioProcessor.pattern->index].get()->setToggleState(true, dontSendNotification);
-    bool isResMode = audioProcessor.sendEditMode;
+    bool isSendMode = audioProcessor.sendEditMode;
     for (int i = 0; i < 12; ++i) {
-        patterns[i]->setVisible(!isResMode);
-        sendpatterns[i]->setVisible(isResMode);
+        patterns[i]->setVisible(!isSendMode);
     }
-    revoffset->setVisible(!isResMode);
-    sendoffset->setVisible(isResMode);
+    revoffset->setVisible(!isSendMode);
+    sendoffset->setVisible(isSendMode);
 
     auto ftype = (int)audioProcessor.params.getRawParameterValue("ftype")->load();
     auto trigger = (int)audioProcessor.params.getRawParameterValue("trigger")->load();
@@ -633,15 +632,15 @@ void REVERAudioProcessorEditor::toggleUIComponents()
     sequencerButton.setToggleState(audioProcessor.sequencer->isOpen, dontSendNotification);
     paintWidget->toggleUIComponents();
 
-    revEnvButton.setVisible(!isResMode);
+    revEnvButton.setVisible(!isSendMode);
     revEnvButton.setToggleState(audioProcessor.showEnvelopeKnobs, dontSendNotification);
-    revEnvOnButton.setVisible(!isResMode);
-    sendEnvButton.setVisible(isResMode);
+    revEnvOnButton.setVisible(!isSendMode);
+    sendEnvButton.setVisible(isSendMode);
     sendEnvButton.setToggleState(audioProcessor.showEnvelopeKnobs, dontSendNotification);
-    sendEnvOnButton.setVisible(isResMode);
+    sendEnvOnButton.setVisible(isSendMode);
 
-    revenv->setVisible(!isResMode && audioProcessor.showEnvelopeKnobs);
-    sendenv->setVisible(isResMode && audioProcessor.showEnvelopeKnobs);
+    revenv->setVisible(!isSendMode && audioProcessor.showEnvelopeKnobs);
+    sendenv->setVisible(isSendMode && audioProcessor.showEnvelopeKnobs);
 
     revenv->layoutComponents();
     sendenv->layoutComponents();

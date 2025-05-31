@@ -34,5 +34,6 @@ void About::paint(Graphics& g)
 	g.drawText("- Alt click to insert new points.", bounds.removeFromTop(25), Justification::centredLeft);
 	g.drawText("- Alt + drag selection handles skews selected points.", bounds.removeFromTop(25), Justification::centredLeft);
 	g.drawText("- Right click + drag in paint mode changes paint tool tension", bounds.removeFromTop(25), Justification::centredLeft);
+	g.drawText("- Shit + wheel to change sequencer step size.", bounds.removeFromTop(25), Justification::centredLeft);
 };
 

@@ -261,14 +261,14 @@ void REVERAudioProcessor::createUndoPointFromSnapshot(std::vector<PPoint> snapsh
     }
 }
 
-void REVERAudioProcessor::setSendEditMode(bool isResonance)
+void REVERAudioProcessor::setSendEditMode(bool isSend)
 {
-    MessageManager::callAsync([this, isResonance] {
-        if (sendEditMode == isResonance) return;
+    MessageManager::callAsync([this, isSend] {
+        if (sendEditMode == isSend) return;
         auto seqopen = sequencer->isOpen;
         if (seqopen) sequencer->close();
 
-        sendEditMode = isResonance;
+        sendEditMode = isSend;
         if (uimode != UIMode::PaintEdit) {
             viewPattern = sendEditMode ? sendpattern : pattern;
             viewSubPattern = sendEditMode ? pattern : sendpattern;

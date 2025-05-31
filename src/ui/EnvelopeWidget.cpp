@@ -1,34 +1,34 @@
 #include "EnvelopeWidget.h"
 #include "../PluginProcessor.h"
 
-EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width) : audioProcessor(p), isResenv(isResenv) 
+EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width) : audioProcessor(p), isSendenv(isSendenv) 
 {
-    audioProcessor.params.addParameterListener(isResenv ? "resenvon" : "cutenvon", this);
-    audioProcessor.params.addParameterListener(isResenv ? "resenvamt" : "cutenvamt", this);
-    audioProcessor.params.addParameterListener(isResenv ? "resenvlowcut" : "cutenvlowcut", this);
-    audioProcessor.params.addParameterListener(isResenv ? "resenvhighcut" : "cutenvhighcut", this);
+    audioProcessor.params.addParameterListener(isSendenv ? "sendenvon" : "revenvon", this);
+    audioProcessor.params.addParameterListener(isSendenv ? "sendenvamt" : "revenvamt", this);
+    audioProcessor.params.addParameterListener(isSendenv ? "sendenvlowcut" : "revenvlowcut", this);
+    audioProcessor.params.addParameterListener(isSendenv ? "sendenvhighcut" : "revenvhighcut", this);
     
-    isOn = (bool)audioProcessor.params.getRawParameterValue(isResenv ? "resenvon" : "cutenvon")->load();
+    isOn = (bool)audioProcessor.params.getRawParameterValue(isSendenv ? "sendenvon" : "revenvon")->load();
 
     int col = 0;
     int row = 5;
 
-    thresh = std::make_unique<Rotary>(p, isResenv ? "resenvthresh" : "cutenvthresh", "Thresh", RotaryLabel::gainTodB1f, false);
+    thresh = std::make_unique<Rotary>(p, isSendenv ? "sendenvthresh" : "revenvthresh", "Thresh", RotaryLabel::gainTodB1f, false);
     addAndMakeVisible(*thresh);
     thresh->setBounds(col,row,80,65);
     col += 75;
 
-    amount = std::make_unique<Rotary>(p, isResenv ? "resenvamt" : "cutenvamt", "Amount", RotaryLabel::percx100, true);
+    amount = std::make_unique<Rotary>(p, isSendenv ? "sendenvamt" : "revenvamt", "Amount", RotaryLabel::percx100, true);
     addAndMakeVisible(*amount);
     amount->setBounds(col,row,80,65);
     col += 75;
 
-    attack = std::make_unique<Rotary>(p, isResenv ? "resenvatk" : "cutenvatk", "Attack", RotaryLabel::envatk);
+    attack = std::make_unique<Rotary>(p, isSendenv ? "sendenvatk" : "revenvatk", "Attack", RotaryLabel::envatk);
     addAndMakeVisible(*attack);
     attack->setBounds(col,row,80,65);
     col += 75;
 
-    release = std::make_unique<Rotary>(p, isResenv ? "resenvrel" : "cutenvrel", "Release", RotaryLabel::envrel);
+    release = std::make_unique<Rotary>(p, isSendenv ? "sendenvrel" : "revenvrel", "Release", RotaryLabel::envrel);
     addAndMakeVisible(*release);
     release->setBounds(col,row,80,65);
     col += 75;
@@ -39,9 +39,9 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width)
     sidechainBtn.setTooltip("Use sidechain as envelope input");
     sidechainBtn.setBounds(col-25, row, 25, 25);
     sidechainBtn.setAlpha(0.0f);
-    sidechainBtn.onClick = [this, isResenv] {
-        if (isResenv) audioProcessor.resenvSidechain = !audioProcessor.resenvSidechain;
-        else audioProcessor.cutenvSidechain = !audioProcessor.cutenvSidechain;
+    sidechainBtn.onClick = [this, isSendenv] {
+        if (isSendenv) audioProcessor.sendenvSidechain = !audioProcessor.sendenvSidechain;
+        else audioProcessor.revenvSidechain = !audioProcessor.revenvSidechain;
         MessageManager::callAsync([this]{ audioProcessor.sendChangeMessage(); });
     };
 
@@ -49,18 +49,18 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width)
     monitorBtn.setTooltip("Monitor envelope input");
     monitorBtn.setBounds(col-25, row+35, 25,25);
     monitorBtn.setAlpha(0.0f);
-    monitorBtn.onClick = [this, isResenv] {
-        if (isResenv) audioProcessor.resenvMonitor = !audioProcessor.resenvMonitor;
-        else audioProcessor.cutenvMonitor = !audioProcessor.cutenvMonitor;
+    monitorBtn.onClick = [this, isSendenv] {
+        if (isSendenv) audioProcessor.sendenvMonitor = !audioProcessor.sendenvMonitor;
+        else audioProcessor.revenvMonitor = !audioProcessor.revenvMonitor;
 
-        if (isResenv && audioProcessor.resenvMonitor) {
+        if (isSendenv && audioProcessor.sendenvMonitor) {
             audioProcessor.useMonitor = false;
-            audioProcessor.cutenvMonitor = false;
+            audioProcessor.revenvMonitor = false;
         }
 
-        if (!isResenv && audioProcessor.cutenvMonitor) {
+        if (!isSendenv && audioProcessor.revenvMonitor) {
             audioProcessor.useMonitor = false;
-            audioProcessor.resenvMonitor = false;
+            audioProcessor.sendenvMonitor = false;
         }
 
         MessageManager::callAsync([this]{ audioProcessor.sendChangeMessage(); });
@@ -72,15 +72,15 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width)
     autoRelBtn.setBounds(col-25, row, 25, 25);
     autoRelBtn.setComponentID("small");
     autoRelBtn.setButtonText("AR");
-    autoRelBtn.onClick = [this, isResenv] {
-        if (isResenv) audioProcessor.resenvAutoRel = !audioProcessor.resenvAutoRel;
-        else audioProcessor.cutenvAutoRel = !audioProcessor.cutenvAutoRel;
+    autoRelBtn.onClick = [this, isSendenv] {
+        if (isSendenv) audioProcessor.resenvAutoRel = !audioProcessor.resenvAutoRel;
+        else audioProcessor.revenvAutoRel = !audioProcessor.revenvAutoRel;
         MessageManager::callAsync([this]{ 
             audioProcessor.onSlider();
             audioProcessor.sendChangeMessage(); 
         });
     };
-    if (!isResenv) {
+    if (!isSendenv) {
         autoRelBtn.setColour(TextButton::buttonColourId, Colour(0xffffffff));
         autoRelBtn.setColour(TextButton::buttonOnColourId, Colour(0xffffffff));
         autoRelBtn.setColour(TextButton::textColourOnId, Colour(COLOR_BG));
@@ -97,16 +97,16 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width)
     filterRange.setColour(Slider::backgroundColourId, Colour(COLOR_BG).brighter(0.1f));
     filterRange.setColour(Slider::trackColourId, Colour(COLOR_ACTIVE).darker(0.5f));
     filterRange.setColour(Slider::thumbColourId, Colour(COLOR_ACTIVE));
-    filterRange.onValueChange = [this, isResenv]() {
+    filterRange.onValueChange = [this, isSendenv]() {
         auto lowcut = filterRange.getMinValue();
         auto highcut = filterRange.getMaxValue();
         if (lowcut > highcut)
             filterRange.setMinAndMaxValues(highcut, highcut);
 
-        MessageManager::callAsync([this, lowcut, highcut, isResenv] {
-            auto param = audioProcessor.params.getParameter(isResenv ? "resenvlowcut" : "cutenvlowcut");
+        MessageManager::callAsync([this, lowcut, highcut, isSendenv] {
+            auto param = audioProcessor.params.getParameter(isSendenv ? "sendenvlowcut" : "revenvlowcut");
             param->setValueNotifyingHost(param->convertTo0to1((float)lowcut));
-            param = audioProcessor.params.getParameter(isResenv ? "resenvhighcut" : "cutenvhighcut");
+            param = audioProcessor.params.getParameter(isSendenv ? "sendenvhighcut" : "revenvhighcut");
             param->setValueNotifyingHost(param->convertTo0to1((float)highcut));
         });
 
@@ -119,8 +119,8 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width)
         filterLabel.setText("Filter", dontSendNotification);
     };
     filterRange.setMinAndMaxValues(
-        (double)audioProcessor.params.getRawParameterValue(isResenv ? "resenvlowcut" : "cutenvlowcut")->load(),
-        (double)audioProcessor.params.getRawParameterValue(isResenv ? "resenvhighcut" : "cutenvhighcut")->load(),
+        (double)audioProcessor.params.getRawParameterValue(isSendenv ? "sendenvlowcut" : "revenvlowcut")->load(),
+        (double)audioProcessor.params.getRawParameterValue(isSendenv ? "sendenvhighcut" : "revenvhighcut")->load(),
         dontSendNotification
     );
 
@@ -133,42 +133,42 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width)
 
 EnvelopeWidget::~EnvelopeWidget()
 {
-    audioProcessor.params.removeParameterListener(isResenv ? "resenvamt" : "cutenvamt", this);
-    audioProcessor.params.removeParameterListener(isResenv ? "resenvlowcut" : "cutenvlowcut", this);
-    audioProcessor.params.removeParameterListener(isResenv ? "resenvhighcut" : "cutenvhighcut", this);
-    audioProcessor.params.removeParameterListener(isResenv ? "resenvon" : "cutenvon", this);
+    audioProcessor.params.removeParameterListener(isSendenv ? "sendenvamt" : "revenvamt", this);
+    audioProcessor.params.removeParameterListener(isSendenv ? "sendenvlowcut" : "revenvlowcut", this);
+    audioProcessor.params.removeParameterListener(isSendenv ? "sendenvhighcut" : "revenvhighcut", this);
+    audioProcessor.params.removeParameterListener(isSendenv ? "sendenvon" : "revenvon", this);
 }
 
 void EnvelopeWidget::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    bool iscutenvon = (bool)audioProcessor.params.getRawParameterValue("cutenvon")->load();
-    bool isresenvon = (bool)audioProcessor.params.getRawParameterValue("resenvon")->load();
-    isOn = (isResenv && isresenvon) || (!isResenv && iscutenvon);
+    bool isrevenvon = (bool)audioProcessor.params.getRawParameterValue("revenvon")->load();
+    bool issendenvon = (bool)audioProcessor.params.getRawParameterValue("sendenvon")->load();
+    isOn = (isSendenv && issendenvon) || (!isSendenv && isrevenvon);
 
-    if (isVisible() && parameterID == "resenvamt" && newValue != 0.0f && !isresenvon) {
+    if (isVisible() && parameterID == "sendenvamt" && newValue != 0.0f && !issendenvon) {
         MessageManager::callAsync([this] {
-            audioProcessor.params.getParameter("resenvon")->setValueNotifyingHost(1.0f);
+            audioProcessor.params.getParameter("sendenvon")->setValueNotifyingHost(1.0f);
         });
     }
-    if (isVisible() && parameterID == "resenvamt" && newValue == 0.0f && isresenvon) {
+    if (isVisible() && parameterID == "sendenvamt" && newValue == 0.0f && issendenvon) {
         MessageManager::callAsync([this] {
-            audioProcessor.params.getParameter("resenvon")->setValueNotifyingHost(0.0f);
+            audioProcessor.params.getParameter("sendenvon")->setValueNotifyingHost(0.0f);
         });
     }
-    if (isVisible() && parameterID == "cutenvamt" && newValue != 0.0f && !iscutenvon) {
+    if (isVisible() && parameterID == "revenvamt" && newValue != 0.0f && !isrevenvon) {
         MessageManager::callAsync([this] {
-            audioProcessor.params.getParameter("cutenvon")->setValueNotifyingHost(1.0f);
+            audioProcessor.params.getParameter("revenvon")->setValueNotifyingHost(1.0f);
         });
     }
-    if (isVisible() && parameterID == "cutenvamt" && newValue == 0.0f && iscutenvon) {
+    if (isVisible() && parameterID == "revenvamt" && newValue == 0.0f && isrevenvon) {
         MessageManager::callAsync([this] {
-            audioProcessor.params.getParameter("cutenvon")->setValueNotifyingHost(0.0f);
+            audioProcessor.params.getParameter("revenvon")->setValueNotifyingHost(0.0f);
         });
     }
-    if (parameterID == "cutenvlowcut" || parameterID == "resenvlowcut") {
+    if (parameterID == "revenvlowcut" || parameterID == "sendenvlowcut") {
         filterRange.setMinValue((double)newValue, dontSendNotification);
     }
-    if (parameterID == "cutenvhighcut" || parameterID == "resenvhighcut") {
+    if (parameterID == "revenvhighcut" || parameterID == "sendenvhighcut") {
         filterRange.setMaxValue((double)newValue, dontSendNotification);
     }
     repaint();
@@ -181,27 +181,27 @@ void EnvelopeWidget::paint(juce::Graphics& g)
     auto bounds = getLocalBounds().expanded(0, -1).toFloat();
     g.setColour(Colour(COLOR_BG).darker(0.125f));
     g.fillRoundedRectangle(bounds, 3.f);
-    g.setColour(Colour(isResenv ? COLOR_ACTIVE : 0xffffffff).withAlpha(0.5f));
+    g.setColour(Colour(isSendenv ? COLOR_ACTIVE : 0xffffffff).withAlpha(0.5f));
     g.drawRoundedRectangle(bounds.translated(0.5f, 0.5f), 3.f, 1.f);
 
-    g.setColour((isResenv ? Colour(COLOR_ACTIVE) : Colours::white).withAlpha(isOn ? 1.0f : 0.5f));
-    if ((isResenv && audioProcessor.resenvMonitor) || (!isResenv && audioProcessor.cutenvMonitor)) {
+    g.setColour((isSendenv ? Colour(COLOR_ACTIVE) : Colours::white).withAlpha(isOn ? 1.0f : 0.5f));
+    if ((isSendenv && audioProcessor.sendenvMonitor) || (!isSendenv && audioProcessor.revenvMonitor)) {
         g.fillRoundedRectangle(monitorBtn.getBounds().toFloat().translated(0.5f, 0.5f), 3.f);
         drawHeadphones(g, monitorBtn.getBounds(), Colour(COLOR_BG));
     }
     else {
         g.drawRoundedRectangle(monitorBtn.getBounds().toFloat().translated(0.5f, 0.5f), 3.f, 1.f);
-        drawHeadphones(g, monitorBtn.getBounds(), (isResenv ? Colour(COLOR_ACTIVE) : Colours::white).withAlpha(isOn ? 1.0f : 0.5f));
+        drawHeadphones(g, monitorBtn.getBounds(), (isSendenv ? Colour(COLOR_ACTIVE) : Colours::white).withAlpha(isOn ? 1.0f : 0.5f));
     }
 
-    g.setColour(isResenv ? Colour(COLOR_ACTIVE) : Colours::white);
-    if ((isResenv && audioProcessor.resenvSidechain) || (!isResenv && audioProcessor.cutenvSidechain)) {
+    g.setColour(isSendenv ? Colour(COLOR_ACTIVE) : Colours::white);
+    if ((isSendenv && audioProcessor.sendenvSidechain) || (!isSendenv && audioProcessor.revenvSidechain)) {
         g.fillRoundedRectangle(sidechainBtn.getBounds().toFloat().translated(0.5f, 0.5f), 3.f);
         drawSidechain(g, sidechainBtn.getBounds(), Colour(COLOR_BG));
     }
     else {
         g.drawRoundedRectangle(sidechainBtn.getBounds().toFloat().translated(0.5f, 0.5f), 3.f, 1.f);
-        drawSidechain(g, sidechainBtn.getBounds(), isResenv ? Colour(COLOR_ACTIVE) : Colours::white);
+        drawSidechain(g, sidechainBtn.getBounds(), isSendenv ? Colour(COLOR_ACTIVE) : Colours::white);
     }
 }
 
@@ -246,6 +246,6 @@ void EnvelopeWidget::drawSidechain(Graphics& g, Rectangle<int> bounds, Colour c)
 
 void EnvelopeWidget::layoutComponents()
 {
-    autoRelBtn.setToggleState((isResenv && audioProcessor.resenvAutoRel) || (!isResenv && audioProcessor.cutenvAutoRel), dontSendNotification);
+    autoRelBtn.setToggleState((isSendenv && audioProcessor.resenvAutoRel) || (!isSendenv && audioProcessor.revenvAutoRel), dontSendNotification);
     repaint();
 }
