@@ -3,7 +3,7 @@
 
 #include <JuceHeader.h>
 #include <cmath>
-#include "../Utils.h"
+#include "Utils.h"
 
 enum FilterSlope {
 	k6dB,
@@ -24,9 +24,9 @@ public:
 	FilterMode mode;
 
 	inline static LookupTable coeffLUT = LookupTable(
-		[] (double ratio) {
-			constexpr double kMaxRads = 0.499 * juce::MathConstants<double>::pi;
-			double scaled = ratio * juce::MathConstants<double>::pi;
+		[] (float ratio) {
+			constexpr float kMaxRads = 0.499f * juce::MathConstants<float>::pi;
+			float scaled = ratio * juce::MathConstants<float>::pi;
 			return std::tan(std::min(kMaxRads, scaled));
 		},
 		0.0, 0.5, 2048
@@ -37,40 +37,40 @@ public:
 
 	void setSlope(FilterSlope s) { slope = s; };
 	void setMode(FilterMode m) { mode = m; };
-	void init(double srate, double freq, double q);
-	double eval(double sample);
-	void reset(double sample);
+	void init(float srate, float freq, float q);
+	float eval(float sample);
+	void reset(float sample);
 
-	static constexpr double kMinNyquistMult = 0.48;
-	inline static double getCoeff(double freq, double srate) {
-		freq = jlimit(20.0, srate * kMinNyquistMult, freq);
-		double ratio = jlimit(0.0, 0.5, freq / srate);
-		return coeffLUT.cubic(ratio);
+	static constexpr float kMinNyquistMult = 0.48f;
+	inline static float getCoeff(float freq, float srate) {
+		freq = jlimit(20.0f, srate * kMinNyquistMult, freq);
+		float ratio = jlimit(0.0f, 0.5f, freq / srate);
+		return (float)coeffLUT.cubic(ratio);
 	}
 
 private:
-	double ic1 = 0.0;
-	double ic2 = 0.0;
-	double ic3 = 0.0;
-	double ic4 = 0.0;
+	float ic1 = 0.0f;
+	float ic2 = 0.0f;
+	float ic3 = 0.0f;
+	float ic4 = 0.0f;
 
-	double drive = 1.0;
-	double idrive = 1.0;
+	float drive = 1.0f;
+	float idrive = 1.0f;
 
-	double g = 0.0;
-	double k = 0.0;
-	double a1 = 0.0;
-	double a2 = 0.0;
-	double a3 = 0.0;
+	float g = 0.0f;
+	float k = 0.0f;
+	float a1 = 0.0f;
+	float a2 = 0.0f;
+	float a3 = 0.0f;
 
-	double b0 = 0.0;
-	double b1 = 0.0;
-	double b2 = 0.0;
-	double x1 = 0.0;
-	double x2 = 0.0;
-	double y1 = 0.0;
-	double y2 = 0.0;
+	float b0 = 0.0f;
+	float b1 = 0.0f;
+	float b2 = 0.0f;
+	float x1 = 0.0f;
+	float x2 = 0.0f;
+	float y1 = 0.0f;
+	float y2 = 0.0f;
 
 	// 6db vars
-	double state = 0.0;
+	float state = 0.0f;
 };

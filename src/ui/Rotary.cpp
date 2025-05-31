@@ -152,7 +152,7 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
 void Rotary::mouseDown(const juce::MouseEvent& e) 
 {
     if (type != RotaryType::NormalKnob) {
-        audioProcessor.setResonanceEditMode(type == ResKnob);
+        audioProcessor.setSendEditMode(type == ResKnob);
     }
     e.source.enableUnboundedMouseMovement(true);
     mouse_down = true;

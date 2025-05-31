@@ -1,6 +1,10 @@
 #pragma once
 
 namespace globals {
+	// convolver
+	inline unsigned int CONV_XFADE = 100;
+	inline unsigned int CONV_LOAD_COOLDOWN = 500;
+
 	// filter consts
 	inline unsigned int F_LERP_MILLIS = 50;
 	inline const double F_MIN_FREQ = 20.0;
@@ -8,7 +12,7 @@ namespace globals {
 	inline const double F_MAX_DRIVE = 36.0;
 
 	inline unsigned int COLOR_BG = 0xff181818;
-	inline unsigned int COLOR_ACTIVE = 0xff00bbff;
+	inline unsigned int COLOR_ACTIVE = 0xff9ca7ff;
 	inline unsigned int COLOR_NEUTRAL = 0xff666666;
 	inline unsigned int COLOR_NEUTRAL_LIGHT = 0x99999999;
 	inline unsigned int COLOR_SEEK = 0xff80ffff;
@@ -43,10 +47,10 @@ namespace globals {
 	inline const int MSEL_PADDING = 8;
 
 	// Envelope follower
-	inline const double ENV_MIN_ATTACK = 0.01;
-	inline const double ENV_MAX_ATTACK = 200.0;
-	inline const double ENV_MIN_RELEASE = 10.0;
-	inline const double ENV_MAX_RELEASE = 10000.0;
+	inline const float ENV_MIN_ATTACK = 0.01f;
+	inline const float ENV_MAX_ATTACK = 200.0f;
+	inline const float ENV_MIN_RELEASE = 10.0f;
+	inline const float ENV_MAX_RELEASE = 10000.0f;
 
 	// paint mode
 	inline const int PAINT_PATS_IDX = 100; // starting index of paint patterns, audio patterns always range 0..11

@@ -30,13 +30,6 @@ void SettingsButton::mouseDown(const juce::MouseEvent& e)
 	}
 	triggerChn.addItem(27, "Any", true, audioProcessor.triggerChn == 16);
 
-	PopupMenu triggerResChn;
-	triggerResChn.addItem(11140, "Off", true, audioProcessor.triggerResChn == -1);
-	for (int i = 0; i < 16; i++) {
-		triggerResChn.addItem(11140 + i + 1, String(i + 1), true, audioProcessor.triggerResChn == i);
-	}
-	triggerResChn.addItem(11157, "Any", true, audioProcessor.triggerResChn == 16);
-
 	PopupMenu audioTrigger;
 	audioTrigger.addItem(32, "Ignore hits while playing", true, audioProcessor.audioIgnoreHitsWhilePlaying);
 
@@ -76,8 +69,7 @@ void SettingsButton::mouseDown(const juce::MouseEvent& e)
 
 	PopupMenu options;
 	options.addSubMenu("Output", output);
-	options.addSubMenu("Cut trigger chn", triggerChn);
-	options.addSubMenu("Res trigger chn", triggerResChn);
+	options.addSubMenu("Trigger chn", triggerChn);
 	options.addSubMenu("Audio trigger", audioTrigger);
 	options.addSeparator();
 	options.addItem(30, "Dual smooth", true, audioProcessor.dualSmooth);
@@ -174,9 +166,6 @@ void SettingsButton::mouseDown(const juce::MouseEvent& e)
 			}
 			else if (result >= 10 && result <= 27) { // Trigger channel
 				audioProcessor.triggerChn = result - 10 - 1;
-			}
-			else if (result >= 11140 && result <= 11157) { // Trigger res channel
-				audioProcessor.triggerResChn = result - 11140 - 1;
 			}
 			else if (result == 30) { // Dual smooth
 				audioProcessor.dualSmooth = !audioProcessor.dualSmooth;

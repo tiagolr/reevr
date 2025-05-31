@@ -57,10 +57,10 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("sendenvamt", "Send Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("sendenvatk", "Send Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("sendenvrel", "Send Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvlowsend", "Send Env Lowsend", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvhighsend", "Send Env HighCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20000.f),
+        std::make_unique<juce::AudioParameterFloat>("sendenvlowcut", "Send Env Lowcut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
+        std::make_unique<juce::AudioParameterFloat>("sendenvhighcut", "Send Env HighCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20000.f),
         std::make_unique<juce::AudioParameterBool>("revenvon", "Rev Env ON", false),
-        std::make_unique<juce::AudioParameterFloat>("revenvthrevh", "Rev Env Threvh", NormalisableRange<float>( 0.0f, 1.0f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("revenvthresh", "Rev Env Threvh", NormalisableRange<float>( 0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revenvamt", "Rev Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revenvatk", "Rev Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("revenvrel", "Rev Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
@@ -495,13 +495,13 @@ void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     revenvBuffer.resize(samplesPerBlock, 0.f);
     sendenvBuffer.resize(samplesPerBlock, 0.f);
-    audioHighcutL.clear(0.0);
-    audioHighcutR.clear(0.0);
-    audioLowcutL.clear(0.0);
-    audioLowcutR.clear(0.0);
+    audioHighcutL.reset(0.0f);
+    audioHighcutR.reset(0.0f);
+    audioLowcutL.reset(0.0f);
+    audioLowcutR.reset(0.0f);
     transDetectorL.clear(sampleRate);
     transDetectorR.clear(sampleRate);
-    std::fill(monSamples.begin(), monSamples.end(), 0.0);
+    std::fill(monSamples.begin(), monSamples.end(), 0.0f);
     clearLatencyBuffers();
     onSlider(); // sets latency
 }
@@ -599,12 +599,12 @@ void REVERAudioProcessor::onSlider()
     else if (sync == 16) syncQN = 2./1.*1.5; // 1/2.
     else if (sync == 17) syncQN = 4./1.*1.5; // 1/1.
 
-    auto highcut = (double)params.getRawParameterValue("highcut")->load();
-    auto lowcut = (double)params.getRawParameterValue("lowcut")->load();
-    audioHighcutL.lp(srate, highcut, 0.707);
-    audioHighcutR.lp(srate, highcut, 0.707);
-    audioLowcutL.hp(srate, lowcut, 0.707);
-    audioLowcutR.hp(srate, lowcut, 0.707);
+    auto highcut = params.getRawParameterValue("highcut")->load();
+    auto lowcut = params.getRawParameterValue("lowcut")->load();
+    audioHighcutL.lp((float)srate, highcut, 0.707f);
+    audioHighcutR.lp((float)srate, highcut, 0.707f);
+    audioLowcutL.hp((float)srate, lowcut, 0.707f);
+    audioLowcutR.hp((float)srate, lowcut, 0.707f);
 
     if (reverbDirty) {
         float avg = (float)pattern->getavgY();
@@ -647,33 +647,33 @@ void REVERAudioProcessor::onSlider()
     bool revenvOn = (bool)params.getRawParameterValue("revenvon")->load();
 
     if (revenvOn) {
-        double thresh = (double)params.getRawParameterValue("revenvthresh")->load();
-        double attack = (double)params.getRawParameterValue("revenvatk")->load();
-        double release = (double)params.getRawParameterValue("revenvrel")->load();
-        double revenvLowCut = (double)params.getRawParameterValue("revenvlowcut")->load();
-        double revenvHighCut = (double)params.getRawParameterValue("revenvhighcut")->load();
-        revenv.prepare(srate, thresh, revenvAutoRel, attack, 0.0, release, revenvLowCut, revenvHighCut);
+        float thresh = params.getRawParameterValue("revenvthresh")->load();
+        float attack = params.getRawParameterValue("revenvatk")->load();
+        float release = params.getRawParameterValue("revenvrel")->load();
+        float revenvLowCut = params.getRawParameterValue("revenvlowcut")->load();
+        float revenvHighCut = params.getRawParameterValue("revenvhighcut")->load();
+        revenv.prepare((float)srate, thresh, revenvAutoRel, attack, 0.0, release, revenvLowCut, revenvHighCut);
     }
 
     if (sendenvOn) {
-        double thresh = (double)params.getRawParameterValue("sendenvthresh")->load();
-        double attack = (double)params.getRawParameterValue("sendenvatk")->load();
-        double release = (double)params.getRawParameterValue("sendenvrel")->load();
-        double sendenvLowCut = (double)params.getRawParameterValue("sendenvlowcut")->load();
-        double sendenvHighCut = (double)params.getRawParameterValue("sendenvhighcut")->load();
-        sendenv.prepare(srate, thresh, resenvAutoRel, attack, 0.0, release, sendenvLowCut, sendenvHighCut);
+        float thresh = params.getRawParameterValue("sendenvthresh")->load();
+        float attack = params.getRawParameterValue("sendenvatk")->load();
+        float release = params.getRawParameterValue("sendenvrel")->load();
+        float sendenvLowCut = params.getRawParameterValue("sendenvlowcut")->load();
+        float sendenvHighCut = params.getRawParameterValue("sendenvhighcut")->load();
+        sendenv.prepare((float)srate, thresh, resenvAutoRel, attack, 0.0, release, sendenvLowCut, sendenvHighCut);
     }
 }
 
 void REVERAudioProcessor::updatePatternFromReverb()
 {
-    double revnorm = (double)params.getParameter("reverb")->getValue();
+    float revnorm = params.getParameter("reverb")->getValue();
     pattern->transform(revnorm);
 }
 
 void REVERAudioProcessor::updateSendPatternFromSend()
 {
-    double sendnorm = (double)params.getParameter("send")->getValue();
+    float sendnorm = params.getParameter("send")->getValue();
     sendpattern->transform(sendnorm);
 }
 
@@ -768,8 +768,8 @@ void REVERAudioProcessor::onStop()
 
 void REVERAudioProcessor::clearWaveBuffers()
 {
-    std::fill(preSamples.begin(), preSamples.end(), 0.0);
-    std::fill(postSamples.begin(), postSamples.end(), 0.0);
+    std::fill(preSamples.begin(), preSamples.end(), 0.0f);
+    std::fill(postSamples.begin(), postSamples.end(), 0.0f);
 }
 
 void REVERAudioProcessor::clearLatencyBuffers()
@@ -778,10 +778,10 @@ void REVERAudioProcessor::clearLatencyBuffers()
     auto latency = trigger == Trigger::Audio
         ? (int)std::ceil(getSampleRate() * LATENCY_MILLIS / 1000.0)
         : 0;
-    latBufferL.resize(latency, 0.0); // these are latency buffers for audio trigger only
-    latBufferR.resize(latency, 0.0);
-    monLatBufferL.resize(getLatencySamples(), 0.0);
-    monLatBufferR.resize(getLatencySamples(), 0.0);
+    latBufferL.resize(latency, 0.0f); // these are latency buffers for audio trigger only
+    latBufferR.resize(latency, 0.0f);
+    monLatBufferL.resize(getLatencySamples(), 0.0f);
+    monLatBufferR.resize(getLatencySamples(), 0.0f);
     latpos = 0;
     monWritePos = 0;
 }
@@ -800,15 +800,15 @@ void REVERAudioProcessor::onSmoothChange()
 {
     auto srate = getSampleRate();
     if (dualSmooth) {
-        float attack = params.getRawParameterValue("attack")->load();
-        float release = params.getRawParameterValue("release")->load();
+        double attack = (double)params.getRawParameterValue("attack")->load();
+        double release = (double)params.getRawParameterValue("release")->load();
         attack *= attack;
         release *= release;
         value->setup(attack * 0.25, release * 0.25, srate);
         sendvalue->setup(attack * 0.25, release * 0.25, srate);
     }
     else {
-        float lfosmooth = params.getRawParameterValue("smooth")->load();
+        double lfosmooth = (double)params.getRawParameterValue("smooth")->load();
         lfosmooth *= lfosmooth * 0.25;
         value->setup(lfosmooth * 0.25, lfosmooth * 0.25, srate);
         sendvalue->setup(lfosmooth * 0.25, lfosmooth * 0.25, srate);
@@ -890,26 +890,25 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         return;
 
     // load params
-    double mix = (double)params.getRawParameterValue("mix")->load();
+    float mix = params.getRawParameterValue("mix")->load();
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     int sync = (int)params.getRawParameterValue("sync")->load();
-    double min = (double)params.getRawParameterValue("min")->load();
-    double max = (double)params.getRawParameterValue("max")->load();
-    double ratehz = (double)params.getRawParameterValue("rate")->load();
-    double phase = (double)params.getRawParameterValue("phase")->load();
-    double lowcut = (double)params.getRawParameterValue("lowcut")->load();
-    double highcut = (double)params.getRawParameterValue("highcut")->load();
+    float min = params.getRawParameterValue("min")->load();
+    float max = params.getRawParameterValue("max")->load();
+    float ratehz = params.getRawParameterValue("rate")->load();
+    float phase = params.getRawParameterValue("phase")->load();
+    float lowcut = params.getRawParameterValue("lowcut")->load();
+    float highcut = params.getRawParameterValue("highcut")->load();
     int algo = (int)params.getRawParameterValue("algo")->load();
-    double threshold = (double)params.getRawParameterValue("threshold")->load();
-    double sense = 1.0 - (double)params.getRawParameterValue("sense")->load();
-    double gain = (double)params.getRawParameterValue("gain")->load();
-    double revoffset = (double)params.getRawParameterValue("revoffset")->load();
-    double sendoffset = (double)params.getRawParameterValue("sendoffset")->load();
+    float threshold = params.getRawParameterValue("threshold")->load();
+    float sense = 1.0f - params.getRawParameterValue("sense")->load();
+    float revoffset = params.getRawParameterValue("revoffset")->load();
+    float sendoffset = params.getRawParameterValue("sendoffset")->load();
     bool revenvon = (bool)params.getRawParameterValue("revenvon")->load();
     bool sendenvon = (bool)params.getRawParameterValue("sendenvon")->load();
-    double revenvamt = (double)params.getRawParameterValue("revenvamt")->load();
-    double sendenvamt = (double)params.getRawParameterValue("sendenvamt")->load();
-    sense = std::pow(sense, 2); // make audio trigger sensitivity more responsive
+    float revenvamt = params.getRawParameterValue("revenvamt")->load();
+    float sendenvamt = params.getRawParameterValue("sendenvamt")->load();
+    sense = std::powf(sense, 2); // make audio trigger sensitivity more responsive
 
     // process viewport background display wave samples
     auto processDisplaySample = [&](int sampidx, double xpos, float prelsamp, float prersamp) {
@@ -930,7 +929,7 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     };
 
     // process audio monitor samples
-    float monIncrementPerSample = 1.0f / ((srate * 2) / monW); // 2 seconds of audio displayed on monitor
+    float monIncrementPerSample = 1.0f / float((srate * 2) / monW); // 2 seconds of audio displayed on monitor
     auto processMonitorSample = [&](float lsamp, float rsamp, bool hit) {
         float indexd = monpos.load();
         indexd += monIncrementPerSample;
@@ -945,7 +944,7 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
         float maxamp = std::max(std::fabs(lsamp), std::fabs(rsamp));
         if (hit || monSamples[index] >= 10.0)
-            maxamp = std::max(maxamp + 10.0, lastHitAmplitude + 10.0); // encode hits by adding +10 to amp
+            maxamp = std::max(maxamp + 10.0f, lastHitAmplitude + 10.0f); // encode hits by adding +10 to amp
 
         monSamples[index] = std::max(monSamples[index], maxamp);
         monpos.store(indexd);
@@ -1099,11 +1098,14 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         if (revenvon || sendenvon) {
             float lsample = buffer.getSample(0, sample);
             float rsample = buffer.getSample(audioInputs > 1 ? 1 : 0, sample);
-            float lsidesample = sideInputs ? buffer.getSample(audioInputs, sample) : 0.0;
-            float rsidesample = sideInputs ? buffer.getSample(sideInputs > 1 ? audioInputs + 1 : audioInputs, sample) : 0.0;
+            float lsidesample = sideInputs ? buffer.getSample(audioInputs, sample) : 0.0f;
+            float rsidesample = sideInputs ? buffer.getSample(sideInputs > 1 ? audioInputs + 1 : audioInputs, sample) : 0.0f;
 
             if (revenvon) {
-                revenvBuffer[sample] = revenvSidechain ? lsidesample : lsample;
+                revenvBuffer[sample] = revenv.process(
+                    revenvSidechain ? lsidesample : lsample,
+                    revenvSidechain ? rsidesample : rsample
+                );
                 if (revenvMonitor) {
                     buffer.setSample(0, sample, revenv.outl);
                     if (audioInputs > 1) {
@@ -1113,7 +1115,10 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             }
 
             if (sendenvon) {
-                sendenvBuffer[sample] = sendenvSidechain ? lsidesample : lsample;
+                sendenvBuffer[sample] = sendenv.process(
+                    sendenvSidechain ? lsidesample : lsample,
+                    sendenvSidechain ? rsidesample : rsample
+                );
                 if (sendenvMonitor) {
                     buffer.setSample(0, sample, sendenv.outl);
                     if (audioInputs > 1) {

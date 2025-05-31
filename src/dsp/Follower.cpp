@@ -1,25 +1,25 @@
 #include "Follower.h"
 
-void Follower::prepare(double srate, double thresh_, bool autorel_, double attack_, double hold_, double release_, double lowcutfreq, double highcutfreq)
+void Follower::prepare(float srate, float thresh_, bool autorel_, float attack_, float hold_, float release_, float lowcutfreq, float highcutfreq)
 {
-	lowcutL.hp(srate, lowcutfreq, 0.707);
-	highcutL.lp(srate, highcutfreq, 0.707);
-	lowcutR.hp(srate, lowcutfreq, 0.707);
-	highcutR.lp(srate, highcutfreq, 0.707);
+	lowcutL.hp(srate, lowcutfreq, 0.707f);
+	highcutL.lp(srate, highcutfreq, 0.707f);
+	lowcutR.hp(srate, lowcutfreq, 0.707f);
+	highcutR.lp(srate, highcutfreq, 0.707f);
 	thresh = thresh_;
 	autorel = autorel_;
-	attack = (ENV_MIN_ATTACK + (ENV_MAX_ATTACK - ENV_MIN_ATTACK) * attack_) / 1000.0;
+	attack = (ENV_MIN_ATTACK + (ENV_MAX_ATTACK - ENV_MIN_ATTACK) * attack_) / 1000.0f;
 	hold = hold_;
-	release = (ENV_MIN_RELEASE + (ENV_MAX_RELEASE - ENV_MIN_RELEASE) * release_) / 1000.0;
+	release = (ENV_MIN_RELEASE + (ENV_MAX_RELEASE - ENV_MIN_RELEASE) * release_) / 1000.0f;
 
-	double targetLevel = 0.2; // -14dB or something slow
+	float targetLevel = 0.2f; // -14dB or something slow
 	attackcoeff = std::exp(std::log(targetLevel) / (attack * srate));
 	releasecoeff = std::exp(std::log(targetLevel) / (release * srate));
-	double minReleaseTime = release * 0.2f; // faster release
+	float minReleaseTime = release * 0.2f; // faster release
 	minreleasecoeff = std::exp(std::log(targetLevel) / (minReleaseTime * srate));
 }
 
-double Follower::process(double lsamp, double rsamp)
+float Follower::process(float lsamp, float rsamp)
 {
 	outl = lowcutL.df1(lsamp);
 	outl = highcutL.df1(outl);
@@ -27,31 +27,31 @@ double Follower::process(double lsamp, double rsamp)
 	outr = lowcutR.df1(rsamp);
 	outr = highcutR.df1(outr);
 
-	double amp = std::max(std::fabs(outl), std::fabs(outr));
-	double in = std::max(0.0, amp - thresh);
+	float amp = std::max(std::fabs(outl), std::fabs(outr));
+	float in = std::max(0.0f, amp - thresh);
 
 	if (in > envelope)
-		envelope = attackcoeff * envelope + (1.0 - attackcoeff) * in;
+		envelope = attackcoeff * envelope + (1.0f - attackcoeff) * in;
 	else if (autorel) {
-		double releaseRatio = (envelope - in) / (envelope + 1e-12);
+		float releaseRatio = (envelope - in) / (envelope + 1e-12f);
 		releaseRatio = releaseRatio * releaseRatio;
-		releaseRatio = std::clamp(releaseRatio, 0.0, 1.0);
-		double adaptiveCoeff = releasecoeff + (minreleasecoeff - releasecoeff) * releaseRatio;
-		envelope = adaptiveCoeff * envelope + (1.0 - adaptiveCoeff) * in;
+		releaseRatio = std::clamp(releaseRatio, 0.0f, 1.0f);
+		float adaptiveCoeff = releasecoeff + (minreleasecoeff - releasecoeff) * releaseRatio;
+		envelope = adaptiveCoeff * envelope + (1.0f - adaptiveCoeff) * in;
 	}
 	else
-		envelope = releasecoeff * envelope + (1.0 - releasecoeff) * in;
+		envelope = releasecoeff * envelope + (1.0f - releasecoeff) * in;
 
 	return envelope;
 }
 
 void Follower::clear()
 {
-	outl = 0.0;
-	outr = 0.0;
-	envelope = 0.0;
-	lowcutL.clear(0.0);
-	lowcutR.clear(0.0);
-	highcutL.clear(0.0);
-	highcutR.clear(0.0);
+	outl = 0.0f;
+	outr = 0.0f;
+	envelope = 0.0f;
+	lowcutL.reset(0.0f);
+	lowcutR.reset(0.0f);
+	highcutL.reset(0.0f);
+	highcutR.reset(0.0f);
 }

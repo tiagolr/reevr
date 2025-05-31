@@ -115,13 +115,13 @@ void View::paint(Graphics& g) {
         audioProcessor.sequencer->draw(g);
 }
 
-void View::drawWave(Graphics& g, std::vector<double>& samples, Colour color) const
+void View::drawWave(Graphics& g, std::vector<float>& samples, Colour color) const
 {
     Path wavePath;
     wavePath.startNewSubPath((float)winx, (float)(winy + winh));
 
     for (int i = 0; i < winw; ++i) {
-        double ypos = std::min(std::abs(samples[i]), 1.0);
+        float ypos = std::min(std::abs(samples[i]), 1.0f);
         float x = (float)(i + winx);
         float y = (float)(winh - ypos * winh + winy);
 
@@ -563,15 +563,15 @@ void View::mouseDrag(const juce::MouseEvent& e)
 
     if (audioProcessor.uimode == UIMode::Seq) {
         audioProcessor.sequencer->mouseDrag(e);
-        audioProcessor.updateCutoffFromPattern();
-        audioProcessor.updateResFromPattern();
+        audioProcessor.updateReverbFromPattern();
+        audioProcessor.updateSendFromPattern();
         return;
     }
 
     if (audioProcessor.uimode == UIMode::Paint) {
         paintTool.mouseDrag(e);
-        audioProcessor.updateCutoffFromPattern();
-        audioProcessor.updateResFromPattern();
+        audioProcessor.updateReverbFromPattern();
+        audioProcessor.updateSendFromPattern();
         return;
     }
 
@@ -581,8 +581,8 @@ void View::mouseDrag(const juce::MouseEvent& e)
 
     if (multiSelect.mouseHover > -1 && e.mods.isLeftButtonDown()) {
         multiSelect.mouseDrag(e);
-        audioProcessor.updateCutoffFromPattern();
-        audioProcessor.updateResFromPattern();
+        audioProcessor.updateReverbFromPattern();
+        audioProcessor.updateSendFromPattern();
         return;
     }
 
@@ -624,8 +624,8 @@ void View::mouseDrag(const juce::MouseEvent& e)
             if (point.x <= prev.x) point.x = prev.x + 1e-8;
         }
         audioProcessor.viewPattern->buildSegments();
-        audioProcessor.updateCutoffFromPattern();
-        audioProcessor.updateResFromPattern();
+        audioProcessor.updateReverbFromPattern();
+        audioProcessor.updateSendFromPattern();
     }
 
     else if (selectedMidpoint > -1) {
@@ -755,8 +755,8 @@ bool View::keyPressed(const juce::KeyPress& key)
     if (key == KeyPress::deleteKey && !multiSelect.selectionPoints.empty()) {
         audioProcessor.createUndoPoint();
         multiSelect.deleteSelectedPoints();
-        audioProcessor.updateCutoffFromPattern();
-        audioProcessor.updateResFromPattern();
+        audioProcessor.updateReverbFromPattern();
+        audioProcessor.updateSendFromPattern();
         return true;
     }
 

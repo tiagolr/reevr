@@ -33,6 +33,6 @@ public:
 
 private:
     bool isOn = false;
-    const bool isResenv;
+    const bool isSendenv;
     REVERAudioProcessor& audioProcessor;
 };

@@ -177,7 +177,7 @@ public:
     RBJ audioHighcutR{};
     RBJ audioLowcutL{};
     RBJ audioLowcutR{};
-    double lastHitAmplitude = 0.0; // used to display transient hits on monitor view
+    float lastHitAmplitude = 0.0f; // used to display transient hits on monitor view
 
     // Envelope follower State
     Follower revenv;

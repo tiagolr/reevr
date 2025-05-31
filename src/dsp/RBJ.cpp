@@ -1,10 +1,10 @@
 #include "RBJ.h"
 #include <cmath>
 
-void RBJ::lp(double srate, double freq, double q)
+void RBJ::lp(float srate, float freq, float q)
 {
-	auto w0 = juce::MathConstants<double>::twoPi * fmin(freq / srate, 0.49);
-	auto alpha = sin(w0) / (2.0*q);
+	auto w0 = juce::MathConstants<float>::twoPi * fmin(freq / srate, 0.49f);
+	auto alpha = sin(w0) / (2.0f*q);
 
 	auto a0 = 1.0 + alpha;
 	auto scale = 1.0 / a0;
@@ -15,41 +15,41 @@ void RBJ::lp(double srate, double freq, double q)
 	b1 = b0 * 2.0;
 }
 
-void RBJ::bp(double srate, double freq, double q)
+void RBJ::bp(float srate, float freq, float q)
 {
-	auto w0 = juce::MathConstants<double>::twoPi * fmin(freq / srate, 0.49);
-	auto alpha = sin(w0) / (2.0*q);
+	auto w0 = juce::MathConstants<float>::twoPi * fmin(freq / srate, 0.49f);
+	auto alpha = sin(w0) / (2.0f*q);
 
-	auto a0 = 1.0 + alpha;
-	auto scale = 1.0/a0;
-	a1 = cos(w0) * -2.0 * scale;
+	auto a0 = 1.0f + alpha;
+	auto scale = 1.0f/a0;
+	a1 = cos(w0) * -2.0f * scale;
 	a2 = (1 - alpha) * scale;
 
-	b2 = -(b0 = (1 - a2) * 0.5 * q);
-	b1 = 0.0;
+	b2 = -(b0 = (1 - a2) * 0.5f * q);
+	b1 = 0.0f;
 }
 
-void RBJ::hp(double srate, double freq, double q)
+void RBJ::hp(float srate, float freq, float q)
 {
-	auto w0 = juce::MathConstants<double>::twoPi * fmin(freq / srate, 0.49);
-	auto alpha = sin(w0) / (2.0*q);
+	auto w0 = juce::MathConstants<float>::twoPi * fmin(freq / srate, 0.49f);
+	auto alpha = sin(w0) / (2.0f*q);
 
-	auto a0 = 1.0 + alpha;
-	auto scale = 1.0 / a0;
-	a1 = cos(w0) * -2.0 * scale;
+	auto a0 = 1.0f + alpha;
+	auto scale = 1.0f / a0;
+	a1 = cos(w0) * -2.0f * scale;
 	a2 = (1.0 - alpha) * scale;
 
-	b2 = b0 = (1.0 - a1  + a2) * 0.25;
-	b1 = b0 * -2.0;
+	b2 = b0 = (1.0f - a1  + a2) * 0.25f;
+	b1 = b0 * -2.0f;
 }
 
-void RBJ::clear(double input)
+void RBJ::reset(float input)
 {
 	x0 = x1 = input;
-	y0 = y1 = input / (1.0 + a1 + a2) * (b0 + b1 + b2);
+	y0 = y1 = input / (1.0f + a1 + a2) * (b0 + b1 + b2);
 }
 
-double RBJ::df1(double sample)
+float RBJ::df1(float sample)
 {
 	auto x2 = x1;
 	x1 = x0;

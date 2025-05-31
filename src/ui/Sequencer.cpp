@@ -432,8 +432,8 @@ void Sequencer::close()
 
 Pattern* Sequencer::getCurrentPattern()
 {
-    return audioProcessor.resonanceEditMode
-        ? audioProcessor.respattern
+    return audioProcessor.sendEditMode
+        ? audioProcessor.sendpattern
         : audioProcessor.pattern;
 }
 

@@ -10,20 +10,20 @@ public:
 	RBJ() {};
 	~RBJ() {};
 
-	void lp(double srate, double freq, double q);
-	void bp(double srate, double freq, double q);
-	void hp(double srate, double freq, double q);
-	void clear(double input);
-	double df1(double sample);
+	void lp(float srate, float freq, float q);
+	void bp(float srate, float freq, float q);
+	void hp(float srate, float freq, float q);
+	void reset(float input);
+	float df1(float sample);
 
 private:
-	double a1 = 0.0;
-	double a2 = 0.0;
-	double b0 = 0.0;
-	double b1 = 0.0;
-	double b2 = 0.0;
-	double x0 = 0.0;
-	double x1 = 0.0;
-	double y0 = 0.0;
-	double y1 = 0.0;
+	float a1 = 0.0f;
+	float a2 = 0.0f;
+	float b0 = 0.0f;
+	float b1 = 0.0f;
+	float b2 = 0.0f;
+	float x0 = 0.0f;
+	float x1 = 0.0f;
+	float y0 = 0.0f;
+	float y1 = 0.0f;
 };

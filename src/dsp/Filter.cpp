@@ -1,6 +1,6 @@
 #include "Filter.h"
 
-void Filter::init(double srate, double freq, double q)
+void Filter::init(float srate, float freq, float q)
 {
     g = getCoeff(freq, srate);
     k = 2 - 2*q;
@@ -10,12 +10,12 @@ void Filter::init(double srate, double freq, double q)
     a3 = g * a2;
 }
 
-double Filter::eval(double sample)
+float Filter::eval(float sample)
 {
 
     if (slope == k6dB) {
-        double delta = g * (sample - state);
-        double low = state += delta;
+        float delta = g * (sample - state);
+        float low = state += delta;
         return mode == LP
             ? state
             : sample - low;
@@ -25,10 +25,10 @@ double Filter::eval(double sample)
     auto v3 = sample - ic2;
     auto v1 = a1 * ic1 + a2 * v3; // band
     auto v2 = ic2 + a2 * ic1 + a3 * v3; // low
-    ic1 = 2.0 * v1 - ic1;
-    ic2 = 2.0 * v2 - ic2;
+    ic1 = 2.0f * v1 - ic1;
+    ic2 = 2.0f * v2 - ic2;
 
-    double output = 0.0;
+    float output = 0.0f;
     if (mode == LP) output = v2;
     else if (mode == BP) output = v1;
     else output = sample - k * v1 - v2;
@@ -39,8 +39,8 @@ double Filter::eval(double sample)
     v3 = output - ic4;
     v1 = a1 * ic3 + a2 * v3;
     v2 = ic4 + a2 * ic3 + a3 * v3;
-    ic3 = 2.0 * v1 - ic3;
-    ic4 = 2.0 * v2 - ic4;
+    ic3 = 2.0f * v1 - ic3;
+    ic4 = 2.0f * v2 - ic4;
 
     if (mode == LP) output = v2;
     else if (mode == BP) output = v1;
@@ -49,7 +49,7 @@ double Filter::eval(double sample)
     return output;
 }
 
-void Filter::reset(double sample)
+void Filter::reset(float sample)
 {
     ic1 = ic2 = ic3 = ic4 = sample;
     state = sample;

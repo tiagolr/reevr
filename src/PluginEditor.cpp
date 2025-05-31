@@ -30,7 +30,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     logoLabel.setFont(FontOptions(26.0f));
     logoLabel.setText("REVE-R", NotificationType::dontSendNotification);
     logoLabel.setBounds(col, row-3, 90, 30);
-    col += 85;
+    col += 100;
 
 #if defined(DEBUG)
     addAndMakeVisible(presetExport);
@@ -134,9 +134,9 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     settingsButton->setBounds(col-20,row,25,25);
 
     col -= 25;
-    mixDial = std::make_unique<TextDial>(p, "mix", "Mix ", "", TextDialLabel::tdPercx100, 16.f, COLOR_NEUTRAL_LIGHT);
+    mixDial = std::make_unique<TextDial>(p, "mix", "Mix", "", TextDialLabel::tdPercx100, 12.f, COLOR_NEUTRAL_LIGHT);
     addAndMakeVisible(*mixDial);
-    mixDial->setBounds(col - 65, row, 65, 25);
+    mixDial->setBounds(col - 20 - 10 - 30, row, 30, 25);
 
     // SECOND ROW
 
@@ -149,8 +149,8 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
         btn->setClickingTogglesState (false);
         btn->setColour (TextButton::textColourOffId,  Colour(COLOR_BG));
         btn->setColour (TextButton::textColourOnId,   Colour(COLOR_BG));
-        btn->setColour (TextButton::buttonColourId,   Colours::white.darker(0.8f));
-        btn->setColour (TextButton::buttonOnColourId, Colours::white);
+        btn->setColour (TextButton::buttonColourId,   Colour(COLOR_ACTIVE).darker(0.8f));
+        btn->setColour (TextButton::buttonOnColourId, Colour(COLOR_ACTIVE));
         btn->setBounds (col + i * 22, row, 22+1, 25); // width +1 makes it seamless on higher DPI
         btn->setConnectedEdges (((i != 0) ? Button::ConnectedOnLeft : 0) | ((i != 11) ? Button::ConnectedOnRight : 0));
         btn->setComponentID(i == 0 ? "leftPattern" : i == 11 ? "rightPattern" : "pattern");
@@ -244,7 +244,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     send->setBounds(col,row,80,65);
     col += 75;
 
-    reverb = std::make_unique<Rotary>(p, "reverb", "Reverb", RotaryLabel::hz, false, COLOR_ACTIVE, CutoffKnob);
+    reverb = std::make_unique<Rotary>(p, "reverb", "Reverb", RotaryLabel::percx100, false, COLOR_ACTIVE, CutoffKnob);
     addAndMakeVisible(*reverb);
     reverb->setBounds(col,row,80,65);
     col += 75;
@@ -258,11 +258,6 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*sendoffset);
     sendoffset->setTooltip("Automate this param instead of Send");
     sendoffset->setBounds(col,row,80,65);
-    col += 75;
-
-    rate = std::make_unique<Rotary>(p, "rate", "Rate", RotaryLabel::hz1f);
-    addAndMakeVisible(*rate);
-    rate->setBounds(col,row,80,65);
     col += 75;
 
     smooth = std::make_unique<Rotary>(p, "smooth", "Smooth", RotaryLabel::percx100);
@@ -544,13 +539,9 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 {
     patterns[audioProcessor.pattern->index].get()->setToggleState(true, dontSendNotification);
     bool isSendMode = audioProcessor.sendEditMode;
-    for (int i = 0; i < 12; ++i) {
-        patterns[i]->setVisible(!isSendMode);
-    }
     revoffset->setVisible(!isSendMode);
     sendoffset->setVisible(isSendMode);
 
-    auto ftype = (int)audioProcessor.params.getRawParameterValue("ftype")->load();
     auto trigger = (int)audioProcessor.params.getRawParameterValue("trigger")->load();
     auto triggerColor = trigger == 0 ? COLOR_ACTIVE : trigger == 1 ? COLOR_MIDI : COLOR_AUDIO;
     triggerMenu.setColour(ComboBox::arrowColourId, Colour(triggerColor));
@@ -565,7 +556,6 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 
     loopButton.setVisible(trigger > 0);
 
-    int sync = (int)audioProcessor.params.getRawParameterValue("sync")->load();
     bool showAudioKnobs = audioProcessor.showAudioKnobs;
 
     // layout knobs
@@ -599,10 +589,6 @@ void REVERAudioProcessorEditor::toggleUIComponents()
         col += 75;
         tensionrel->setTopLeftPosition(col, row);
         if (audioProcessor.dualTension) col += 75;
-        rate->setVisible(sync == 0);
-        rate->setTopLeftPosition(col, row);
-        if (rate->isVisible())
-            col += 75;
     }
 
     audioWidget->setVisible(showAudioKnobs);
@@ -709,10 +695,6 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
         drawGear(g, audioSettingsButton.getBounds(), 10, 6, Colour(COLOR_AUDIO), Colour(COLOR_BG));
     }
 
-    // draw pattern link button
-    bool linkpats = (bool)audioProcessor.params.getRawParameterValue("linkpats")->load();
-    g.setColour(Colour(COLOR_ACTIVE));
-
     // draw rotate pat triangles
     g.setColour(Colour(COLOR_ACTIVE));
     auto triCenter = nudgeLeftButton.getBounds().toFloat().getCentre();
@@ -754,7 +736,7 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
     // draw envelope button extension
     if (audioProcessor.showEnvelopeKnobs) {
         g.setColour(Colour(isSendMode ? COLOR_ACTIVE : 0xffffffff));
-        g.fillRect(revEnvButton.getBounds().expanded(0, 20).translated(0, 15));
+        g.fillRect(revEnvButton.getBounds().expanded(0, 20).translated(0, 30));
     }
 
     if (!isSendMode) {

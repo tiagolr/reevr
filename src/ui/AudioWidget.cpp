@@ -65,8 +65,8 @@ AudioWidget::AudioWidget(REVERAudioProcessor& p) : audioProcessor(p)
         MessageManager::callAsync([this] {
             audioProcessor.useMonitor = !audioProcessor.useMonitor;
             if (audioProcessor.useMonitor) {
-                audioProcessor.cutenvMonitor = false;
-                audioProcessor.resenvMonitor = false;
+                audioProcessor.revenvMonitor = false;
+                audioProcessor.sendenvMonitor = false;
             }
             audioProcessor.sendChangeMessage();
         });
