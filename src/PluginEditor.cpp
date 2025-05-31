@@ -82,6 +82,11 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.params, "sync", syncMenu);
     col += 100;
 
+    rateDial = std::make_unique<TextDial>(p, "rate", "Mix", "", TextDialLabel::tdRateHz, 16.f, 0xffffffff);
+    addAndMakeVisible(*rateDial);
+    rateDial->setBounds(col, row, 50, 25);
+    col += 60;
+
     addAndMakeVisible(triggerLabel);
     triggerLabel.setColour(juce::Label::ColourIds::textColourId, Colour(COLOR_NEUTRAL_LIGHT));
     triggerLabel.setFont(FontOptions(16.0f));
@@ -134,7 +139,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     settingsButton->setBounds(col-20,row,25,25);
 
     col -= 25;
-    mixDial = std::make_unique<TextDial>(p, "mix", "Mix", "", TextDialLabel::tdPercx100, 12.f, COLOR_NEUTRAL_LIGHT);
+    mixDial = std::make_unique<TextDial>(p, "mix", "Mix", "", TextDialLabel::tdMix, 12.f, COLOR_NEUTRAL_LIGHT);
     addAndMakeVisible(*mixDial);
     mixDial->setBounds(col - 20 - 10 - 30, row, 30, 25);
 
@@ -236,9 +241,63 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     };
 
     // KNOBS ROW
+
     row += 35;
     col = PLUG_PADDING;
 
+    irDisplay = std::make_unique<IRDisplay>(p);
+    addAndMakeVisible(*irDisplay);
+    irDisplay->setBounds(col-5,row,75*2+10+5+5,(int)(65*1.5));
+
+    col += 75*2+10;
+    lowcut = std::make_unique<Rotary>(p, "irlowcut", "Lowcut", RotaryLabel::hzHp);
+    addAndMakeVisible(*lowcut);
+    lowcut->setBounds(col,row,80,65);
+    col += 75;
+
+    highcut = std::make_unique<Rotary>(p, "irhighcut", "Highcut", RotaryLabel::hzLp);
+    addAndMakeVisible(*highcut);
+    highcut->setBounds(col,row,80,65);
+    col += 75;
+
+    stretch = std::make_unique<Rotary>(p, "irstretch", "Stretch", RotaryLabel::exp2Range, true);
+    addAndMakeVisible(*stretch);
+    stretch->setBounds(col,row,80,65);
+    col += 75;
+
+    width = std::make_unique<Rotary>(p, "width", "Width", RotaryLabel::percx100, true);
+    addAndMakeVisible(*width);
+    width->setBounds(col,row,80,65);
+    col += 75;
+
+    predelay = std::make_unique<Rotary>(p, "predelay", "Gap", RotaryLabel::kMillis);
+    addAndMakeVisible(*predelay);
+    predelay->setBounds(col,row,80,65);
+    col += 75;
+
+    drywet = std::make_unique<Rotary>(p, "drywet", "Dry/Wet", RotaryLabel::percx100, true);
+    addAndMakeVisible(*drywet);
+    drywet->setBounds(col,row,80,65);
+    col += 75;
+    
+    // AUDIO KNOBS
+    audioWidget = std::make_unique<AudioWidget>(p);
+    addAndMakeVisible(*audioWidget);
+    audioWidget->setBounds(PLUG_PADDING, row, PLUG_WIDTH - PLUG_PADDING * 2, 65 + 10);
+
+    // ENVELOPE WIDGETS
+    auto b = Rectangle<int>(PLUG_PADDING + 75 * 2+10, row, PLUG_WIDTH - (PLUG_PADDING + 75 * 2), 65);
+    revenv = std::make_unique<EnvelopeWidget>(p, false, b.getWidth());
+    addAndMakeVisible(*revenv);
+    revenv->setBounds(b.expanded(0,4));
+
+    sendenv = std::make_unique<EnvelopeWidget>(p, true, b.getWidth());
+    addAndMakeVisible(*sendenv);
+    sendenv->setBounds(b.expanded(0,5));
+
+    // KNOBS 2ND ROW
+    row += 75;
+    col = PLUG_PADDING + 75*2+10;
     send = std::make_unique<Rotary>(p, "send", "Send", RotaryLabel::percx100, false, COLOR_ACTIVE, ResKnob);
     addAndMakeVisible(*send);
     send->setBounds(col,row,80,65);
@@ -288,26 +347,11 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*tensionrel);
     tensionrel->setBounds(col,row,80,65);
     col += 75;
-
-    // AUDIO KNOBS
-    audioWidget = std::make_unique<AudioWidget>(p);
-    addAndMakeVisible(*audioWidget);
-    audioWidget->setBounds(PLUG_PADDING, row, PLUG_WIDTH - PLUG_PADDING * 2, 65 + 10);
-
-    // ENVELOPE WIDGETS
-    auto b = Rectangle<int>(PLUG_PADDING + 75 * 2, row, PLUG_WIDTH - (PLUG_PADDING + 75 * 2) + 10, 65);
-    revenv = std::make_unique<EnvelopeWidget>(p, false, b.getWidth());
-    addAndMakeVisible(*revenv);
-    revenv->setBounds(b.expanded(0,4));
-
-    sendenv = std::make_unique<EnvelopeWidget>(p, true, b.getWidth());
-    addAndMakeVisible(*sendenv);
-    sendenv->setBounds(b.expanded(0,5));
     
 
     // 3RD ROW
     col = PLUG_PADDING;
-    row += 75;
+    row += 80;
 
     addAndMakeVisible(paintButton);
     paintButton.setButtonText("Paint");
@@ -552,9 +596,18 @@ void REVERAudioProcessorEditor::toggleUIComponents()
     if (!audioSettingsButton.isVisible()) {
         audioProcessor.showAudioKnobs = false;
     }
-
-
     loopButton.setVisible(trigger > 0);
+
+    auto sync = (int)audioProcessor.params.getRawParameterValue("sync")->load();
+    rateDial->setVisible(sync == 0);
+
+    triggerLabel.setBounds(triggerLabel.getBounds().withX(rateDial->isVisible() 
+        ? rateDial->getBounds().getRight() + 5
+        : syncMenu.getBounds().getRight() + 10
+    ));
+    triggerMenu.setBounds(triggerMenu.getBounds().withX(triggerLabel.getBounds().getRight() + 10));
+    algoMenu.setBounds(algoMenu.getBounds().withX(triggerMenu.getBounds().getRight() + 10));
+    audioSettingsButton.setBounds(audioSettingsButton.getBounds().withX(algoMenu.getBounds().getRight() + 10));
 
     bool showAudioKnobs = audioProcessor.showAudioKnobs;
 

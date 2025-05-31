@@ -22,6 +22,7 @@
 #include "ui/SequencerWidget.h"
 #include "ui/EnvelopeWidget.h"
 #include "ui/AudioWidget.h"
+#include "ui/IRDisplay.h"
 
 using namespace globals;
 
@@ -46,6 +47,7 @@ private:
     REVERAudioProcessor& audioProcessor;
     CustomLookAndFeel* customLookAndFeel = nullptr;
     std::unique_ptr<About> about;
+    std::unique_ptr<IRDisplay> irDisplay;
 
     std::vector<std::unique_ptr<TextButton>> patterns;
 
@@ -61,8 +63,16 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> patSyncAttachment;
     std::unique_ptr<SettingsButton> settingsButton;
     std::unique_ptr<TextDial> mixDial;
+    std::unique_ptr<TextDial> rateDial;
     std::unique_ptr<EnvelopeWidget> revenv;
     std::unique_ptr<EnvelopeWidget> sendenv;
+
+    std::unique_ptr<Rotary> predelay;
+    std::unique_ptr<Rotary> stretch;
+    std::unique_ptr<Rotary> width;
+    std::unique_ptr<Rotary> lowcut;
+    std::unique_ptr<Rotary> highcut;
+    std::unique_ptr<Rotary> drywet;
 
     std::unique_ptr<Rotary> reverb;
     std::unique_ptr<Rotary> send;

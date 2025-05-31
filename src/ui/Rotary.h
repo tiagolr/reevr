@@ -22,6 +22,8 @@ enum RotaryLabel {
     float2,
     float2x100,
     audioOffset,
+    kMillis,
+    exp2Range
 };
 
 enum RotaryType {

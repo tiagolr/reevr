@@ -29,7 +29,7 @@ public:
 			float scaled = ratio * juce::MathConstants<float>::pi;
 			return std::tan(std::min(kMaxRads, scaled));
 		},
-		0.0, 0.5, 2048
+		0.0f, 0.5f, 2048
 	);
 
 	Filter(FilterSlope slope, FilterMode mode) : slope(slope), mode(mode) {}

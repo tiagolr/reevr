@@ -142,6 +142,17 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
             }
             text = ss.str();
         }
+        else if (format == kMillis) {
+            if (slider_val > 1000) {
+                text = String((int)std::round(slider_val / 10000) / 10.f) + " s";
+            }
+            else {
+                text = std::to_string((int)std::round(slider_val)) + " ms";
+            }
+        }
+        else if (format == exp2Range) {
+            text = std::to_string((int)(std::pow(2, slider_val) * 100)) + " %";
+        }
     }
 
     g.setColour(Colours::white);

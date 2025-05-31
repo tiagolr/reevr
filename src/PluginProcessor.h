@@ -20,6 +20,8 @@
 #include "ui/Sequencer.h"
 #include "dsp/Utils.h"
 #include "dsp/Follower.h"
+#include "dsp/StereoConvolver.h"
+#include "dsp/Impulse.h"
 
 using namespace globals;
 
@@ -56,6 +58,13 @@ enum UIMode {
     Paint,
     PaintEdit,
     Seq
+};
+
+enum LoadState {
+    kIdle,
+    kLoading,
+    kReady,
+    kFading,
 };
 
 /*
@@ -157,6 +166,19 @@ public:
     RCSmoother* value; // smooths cutoff envelope value
     RCSmoother* sendvalue; // smooths resonance envelope value
     bool showLatencyWarning = false;
+
+    // Convolver state
+    Impulse* impulse;
+    std::unique_ptr<StereoConvolver> convolver;
+    std::unique_ptr<StereoConvolver> loadConvolver; // convolver used to load IRs and crossfade
+    AudioBuffer<float> warmer;
+    int loadCooldown = 0;
+    int warmwritepos = 0;
+    bool init = false;
+    bool irDirty = false;
+    std::atomic<LoadState> loadState = kIdle;
+    int xfade = 0;
+    int xfadelen = 0;
 
     // Reverb State
     bool reverbDirty = false;

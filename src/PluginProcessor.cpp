@@ -12,6 +12,9 @@ REVERAudioProcessor::REVERAudioProcessor()
          .withOutput("Output", juce::AudioChannelSet::stereo(), true)
      )
     , settings{}
+    , convolver(new StereoConvolver())
+    , loadConvolver(new StereoConvolver())
+    , impulse(new Impulse())
     , params(*this, &undoManager, "PARAMETERS", {
         std::make_unique<juce::AudioParameterFloat>("mix", "Mix", 0.0f, 1.0f, 1.0f),
         std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1),
@@ -36,13 +39,17 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 1000.f, 1.0f, 0.5f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f),
         std::make_unique<juce::AudioParameterFloat>("irattack", "IR Attack", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irdecay", "IR Decay", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irtrimleft", "IR Trim Left", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irtrimright", "IR Trim Right", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irstretch", "IR Stretch", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Filter Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
-        std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Filter Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
+        std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20.f),
+        std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
+        std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
+        std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
         std::make_unique<juce::AudioParameterFloat>("drywet", "Dry/Wet Mix", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         // audio trigger params
         std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray { "Simple", "Drums" }, 0),
@@ -493,6 +500,21 @@ void REVERAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    warmer.setSize(2, (int)std::ceil(sampleRate));
+    convolver->prepare(samplesPerBlock);
+    loadConvolver->prepare(samplesPerBlock);
+
+    if (!init) {
+        impulse->attack = params.getRawParameterValue("irattack")->load();
+        impulse->decay = params.getRawParameterValue("irdecay")->load();
+        impulse->trimLeft = params.getRawParameterValue("irtrimleft")->load();
+        impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
+        impulse->stretch = params.getRawParameterValue("irstretch")->load();
+        impulse->loadDefault();
+    }
+
+    convolver->loadImpulse(*impulse);
+
     revenvBuffer.resize(samplesPerBlock, 0.f);
     sendenvBuffer.resize(samplesPerBlock, 0.f);
     audioHighcutL.reset(0.0f);
@@ -504,6 +526,7 @@ void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     std::fill(monSamples.begin(), monSamples.end(), 0.0f);
     clearLatencyBuffers();
     onSlider(); // sets latency
+    init = true;
 }
 
 void REVERAudioProcessor::releaseResources()
@@ -662,6 +685,30 @@ void REVERAudioProcessor::onSlider()
         float sendenvLowCut = params.getRawParameterValue("sendenvlowcut")->load();
         float sendenvHighCut = params.getRawParameterValue("sendenvhighcut")->load();
         sendenv.prepare((float)srate, thresh, resenvAutoRel, attack, 0.0, release, sendenvLowCut, sendenvHighCut);
+    }
+
+    // convolver
+    float irattack = params.getRawParameterValue("irattack")->load();
+    float irdecay = params.getRawParameterValue("irdecay")->load();
+    float irtrimleft = params.getRawParameterValue("irtrimleft")->load();
+    float irtrimright = params.getRawParameterValue("irtrimright")->load();
+    float irstretch = params.getRawParameterValue("irstretch")->load();
+
+    if (irtrimleft > 1.0f - irtrimright) {
+        params.getParameter("irtrimleft")->setValueNotifyingHost(1.0f-irtrimright);
+    } 
+    else if (irattack != impulse->attack 
+        || irdecay != impulse->decay 
+        || irtrimleft != impulse->trimLeft 
+        || irtrimright != impulse->trimRight 
+        || impulse->stretch != irstretch
+    ) {
+        impulse->attack = irattack;
+        impulse->decay = irdecay;
+        impulse->trimLeft = irtrimleft;
+        impulse->trimRight = irtrimright;
+        impulse->stretch = irstretch;
+        irDirty = true;
     }
 }
 

@@ -47,13 +47,13 @@ public:
     LookupTable() = default;
 
     template <typename Func>
-    LookupTable(Func fn, double min, double max, size_t size)
+    LookupTable(Func fn, float min, float max, size_t size)
     {
         init(fn, min, max, size);
     }
 
     template <typename Func>
-    void init(Func fn, double min_, double max_, size_t size_)
+    void init(Func fn, float min_, float max_, size_t size_)
     {
         if (max_ <= min_) throw std::invalid_argument("max must be greater than min");
         if (size_ < 2) throw std::invalid_argument("size must be at least 2");
@@ -62,65 +62,65 @@ public:
         size = size_;
         values.resize(size);
 
-        scaler = (size > 1) ? (size - 1) / (max - min) : 0.0;
+        scaler = (size > 1) ? (size - 1) / (max - min) : 0.0f;
         offset = -min * scaler;
 
         for (size_t i = 0; i < size; ++i) {
-            double x = static_cast<double>(i) / (size - 1); // Normalized [0, 1]
-            double mappedX = min + x * (max - min);
+            float x = static_cast<float>(i) / (size - 1); // Normalized [0, 1]
+            float mappedX = min + x * (max - min);
             mappedX = std::clamp(mappedX, min, max);
             values[i] = fn(mappedX);
         }
     }
 
-    inline double operator()(double input) const
+    inline float operator()(float input) const
     {
         input = std::clamp(input, min, max);
-        double normalizedIndex = input * scaler + offset;
+        float normalizedIndex = input * scaler + offset;
         size_t index = static_cast<size_t>(std::floor(normalizedIndex));
 
         if (index >= size - 1)
             return values.back();
 
-        double frac = normalizedIndex - index;
+        float frac = normalizedIndex - index;
         return values[index] + frac * (values[index + 1] - values[index]);
     }
 
-    inline double cubic(double input) const
+    inline float cubic(float input) const
     {
         input = std::clamp(input, min, max);
-        double index = input * scaler + offset;
+        float index = input * scaler + offset;
         int i = (int)index;
-        double t = index - i;
+        float t = index - i;
 
         int i0 = std::max(0, i - 1);
         int i1 = i;
         int i2 = std::min((int)size - 1, i + 1);
         int i3 = std::min((int)size - 1, i + 2);
 
-        double y0 = values[i0];
-        double y1 = values[i1];
-        double y2 = values[i2];
-        double y3 = values[i3];
+        float y0 = values[i0];
+        float y1 = values[i1];
+        float y2 = values[i2];
+        float y3 = values[i3];
 
-        double a0 = y3 - y2 - y0 + y1;
-        double a1 = y0 - y1 - a0;
-        double a2 = y2 - y0;
-        double a3 = y1;
+        float a0 = y3 - y2 - y0 + y1;
+        float a1 = y0 - y1 - a0;
+        float a2 = y2 - y0;
+        float a3 = y1;
 
         return (a0 * t * t * t) + (a1 * t * t) + (a2 * t) + a3;
     }
 
-    const std::vector<double>& getValues() const { return values; }
+    const std::vector<float>& getValues() const { return values; }
     size_t getSize() const { return size; }
-    double getMin() const { return min; }
-    double getMax() const { return max; }
+    float getMin() const { return min; }
+    float getMax() const { return max; }
 
 private:
-    std::vector<double> values;
-    double min = 0.0;
-    double max = 1.0;
-    double scaler = 0.0;
-    double offset = 0.0;
+    std::vector<float> values;
+    float min = 0.0f;
+    float max = 1.0f;
+    float scaler = 0.0f;
+    float offset = 0.0f;
     size_t size = 0;
 };

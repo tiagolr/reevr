@@ -35,7 +35,7 @@ juce_add_plugin(${PROJECT_NAME}
         JUCE_VST3_CAN_REPLACE_VST2 FALSE
         COPY_PLUGIN_AFTER_BUILD TRUE
         PLUGIN_MANUFACTURER_CODE Tilr
-        PLUGIN_CODE fltr
+        PLUGIN_CODE reve
         FORMATS ${plugin_formats}
         PRODUCT_NAME "REVE-R"
         BUNDLE_ID "com.tilr.rever"
@@ -45,6 +45,10 @@ juce_add_plugin(${PROJECT_NAME}
 file(GLOB_RECURSE src
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+
+file(GLOB FFTConvolver
+    "${CMAKE_CURRENT_SOURCE_DIR}/libs/FFTConvolver/*.cpp"
 )
 
 source_group(Source
@@ -77,6 +81,11 @@ source_group(Source\\dsp\\filter FILES ${FILTER_SOURCES})
 
 # Make the SourceFiles buildable
 target_sources(${PROJECT_NAME} PRIVATE ${src})
+target_sources(${PROJECT_NAME} PRIVATE ${FFTConvolver})
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/libs/FFTConvolver"
+)
 
 # These are some toggleable options from the JUCE CMake API
 target_compile_definitions(${PROJECT_NAME}
