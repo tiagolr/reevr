@@ -16,7 +16,6 @@ REVERAudioProcessor::REVERAudioProcessor()
     , loadConvolver(new StereoConvolver())
     , impulse(new Impulse())
     , params(*this, &undoManager, "PARAMETERS", {
-        std::make_unique<juce::AudioParameterFloat>("mix", "Mix", 0.0f, 1.0f, 1.0f),
         std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1),
         std::make_unique<juce::AudioParameterChoice>("patsync", "Pattern Sync", StringArray { "Off", "1/4 Beat", "1/2 Beat", "1 Beat", "2 Beats", "4 Beats"}, 0),
         std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray { "Sync", "MIDI", "Audio" }, 0),
@@ -35,7 +34,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterInt>("grid", "Grid", 0, (int)std::size(GRID_SIZES)-1, 2),
         std::make_unique<juce::AudioParameterInt>("seqstep", "Sequencer Step", 0, (int)std::size(GRID_SIZES)-1, 2),
         // reverb params
-        std::make_unique<juce::AudioParameterFloat>("reverb", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("reverb", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
         std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
         std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
@@ -50,7 +49,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
         std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
         std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
-        std::make_unique<juce::AudioParameterFloat>("drywet", "Dry/Wet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.5f),
+        std::make_unique<juce::AudioParameterFloat>("drywet", "Dry/Wet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.25f),
         // audio trigger params
         std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray { "Simple", "Drums" }, 0),
         std::make_unique<juce::AudioParameterFloat>("threshold", "Audio Threshold", NormalisableRange<float>(0.0f, 1.0f), 0.5f),
@@ -96,7 +95,7 @@ REVERAudioProcessor::REVERAudioProcessor()
     // init patterns
     for (int i = 0; i < 12; ++i) {
         patterns[i] = new Pattern(i);
-        patterns[i]->insertPoint(0.0, 1.0, 0, 1);
+        patterns[i]->insertPoint(0.0, 0.0, 0, 1);
         patterns[i]->buildSegments();
 
         sendpatterns[i] = new Pattern(i+12);
@@ -826,7 +825,8 @@ void REVERAudioProcessor::restartEnv(bool fromZero)
             ? beatPos / syncQN + phase
             : ratePos + phase;
         xpos -= std::floor(xpos);
-        revvalue->reset(getYRev(xpos, min, max, revoffset)); // reset smooth
+
+        revvalue->reset(getYRev(xpos, min, max, revoffset));
         sendvalue->reset(getYSend(xpos, min, max, sendoffset));
     }
 }
@@ -963,7 +963,6 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         return;
 
     // load params
-    float mix = params.getRawParameterValue("mix")->load();
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     int sync = (int)params.getRawParameterValue("sync")->load();
     float min = params.getRawParameterValue("min")->load();
@@ -1562,8 +1561,18 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     // finally mix the dry and wet signals
     if (!revenvMonitor && !sendenvMonitor && !useMonitor) {
-        buffer.applyGain(1.f - drywet);
-        wetBuffer.applyGain(drywet);
+        float dryGain, wetGain;
+
+        if (drywet <= 0.5f) {
+            dryGain = 1.0f;
+            wetGain = drywet * 2.0f;
+        } else {
+            dryGain = (1.0f - drywet) * 2.0f;
+            wetGain = 1.0f;
+        }
+
+        buffer.applyGain(dryGain);
+        wetBuffer.applyGain(wetGain);
 
         buffer.addFrom(0, 0, wetBuffer.getReadPointer(0), numSamples);
         if (audioOutputs > 1) {

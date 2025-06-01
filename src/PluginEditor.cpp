@@ -82,7 +82,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.params, "sync", syncMenu);
     col += 100;
 
-    rateDial = std::make_unique<TextDial>(p, "rate", "Mix", "", TextDialLabel::tdRateHz, 16.f, 0xffffffff);
+    rateDial = std::make_unique<TextDial>(p, "rate", "", "", TextDialLabel::tdRateHz, 16.f, 0xffffffff);
     addAndMakeVisible(*rateDial);
     rateDial->setBounds(col, row, 50, 25);
     col += 60;
@@ -139,9 +139,6 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     settingsButton->setBounds(col-20,row,25,25);
 
     col -= 25;
-    mixDial = std::make_unique<TextDial>(p, "mix", "Mix", "", TextDialLabel::tdMix, 12.f, COLOR_NEUTRAL_LIGHT);
-    addAndMakeVisible(*mixDial);
-    mixDial->setBounds(col - 20 - 10 - 30, row, 30, 25);
 
     // SECOND ROW
 
@@ -924,7 +921,6 @@ void REVERAudioProcessorEditor::resized()
     auto col = getWidth() - PLUG_PADDING;
     auto bounds = settingsButton->getBounds();
     settingsButton->setBounds(bounds.withX(col - bounds.getWidth()));
-    mixDial->setBounds(mixDial->getBounds().withRightX(settingsButton->getBounds().getX() - 10));
 
     audioWidget->setBounds(audioWidget->getBounds().withWidth(getWidth() - PLUG_PADDING * 2));
 
