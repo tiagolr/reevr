@@ -1556,6 +1556,14 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     wetBuffer.addFrom(0, 0, convolver->bufferL.data(), numSamples, 1.f);
     wetBuffer.addFrom(1, 0, convolver->bufferR.data(), numSamples, 1.f);
 
+    // apply reverb envelope to the wet buffer
+    lchannel = wetBuffer.getReadPointer(0);
+    rchannel = wetBuffer.getReadPointer(1);
+    for (int sample = 0; sample < numSamples; ++sample) {
+        wetBuffer.setSample(0, sample, lchannel[sample] * yrevBuffer[sample]);
+        wetBuffer.setSample(1, sample, rchannel[sample] * yrevBuffer[sample]);
+    }
+
     // finally mix the dry and wet signals
     if (!revenvMonitor && !sendenvMonitor && !useMonitor) {
         buffer.applyGain(1.f - drywet);
