@@ -833,7 +833,7 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
     bounds = currentFile.getBounds().toFloat();
     if (audioProcessor.showFileSelector) {
         g.setColour(Colour(COLOR_ACTIVE));
-        g.fillRect(bounds.expanded(-2.f, 0.f));
+        g.fillRect(bounds.expanded(3.f, 3.f));
     }
     g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
     g.setFont(FontOptions(18.f));

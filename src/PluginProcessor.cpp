@@ -36,7 +36,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterInt>("seqstep", "Sequencer Step", 0, (int)std::size(GRID_SIZES)-1, 2),
         // reverb params
         std::make_unique<juce::AudioParameterFloat>("reverb", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
         std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 1000.f, 1.0f, 0.5f), 0.0f),
@@ -128,7 +128,7 @@ REVERAudioProcessor::REVERAudioProcessor()
     preSamples.resize(MAX_PLUG_WIDTH, 0); // samples array size must be >= viewport width
     postSamples.resize(MAX_PLUG_WIDTH, 0);
     monSamples.resize(MAX_PLUG_WIDTH, 0); // samples array size must be >= audio monitor width
-    value = new RCSmoother();
+    revvalue = new RCSmoother();
     sendvalue = new RCSmoother();
 
     updateReverbFromPattern();
@@ -166,14 +166,8 @@ void REVERAudioProcessor::parameterGestureChanged (int parameterIndex, bool gest
 
 void REVERAudioProcessor::loadImpulse(String path)
 {
-    MessageManager::callAsync([this, path] {
-        impulse->load(path);
-        if (!impulse->path.empty()) {
-            irFile = path;
-            saveSettings();
-            sendChangeMessage();
-        }
-    });
+    irFile = path;
+    irDirty = true;
 }
 
 void REVERAudioProcessor::loadSettings ()
@@ -530,9 +524,14 @@ void REVERAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    warmer.setSize(2, (int)std::ceil(sampleRate));
+    warmer.setSize(2, (int)std::ceil(sampleRate)); // 1 second of warmup samples
     convolver->prepare(samplesPerBlock);
     loadConvolver->prepare(samplesPerBlock);
+    yrevBuffer.resize(samplesPerBlock, 0.0f);
+    ysendBuffer.resize(samplesPerBlock, 0.0f);
+    xposBuffer.resize(samplesPerBlock, 0.0f);
+    wetBuffer.setSize(2, samplesPerBlock);
+    sendBuffer.setSize(2, samplesPerBlock);
 
     if (!init) {
         impulse->attack = params.getRawParameterValue("irattack")->load();
@@ -831,7 +830,7 @@ void REVERAudioProcessor::restartEnv(bool fromZero)
         xpos -= std::floor(xpos);
     }
 
-    value->reset(getYRev(xpos, min, max, revoffset)); // reset smooth
+    revvalue->reset(getYRev(xpos, min, max, revoffset)); // reset smooth
     sendvalue->reset(getYSend(xpos, min, max, sendoffset));
 }
 
@@ -881,13 +880,13 @@ void REVERAudioProcessor::onSmoothChange()
         double release = (double)params.getRawParameterValue("release")->load();
         attack *= attack;
         release *= release;
-        value->setup(attack * 0.25, release * 0.25, srate);
+        revvalue->setup(attack * 0.25, release * 0.25, srate);
         sendvalue->setup(attack * 0.25, release * 0.25, srate);
     }
     else {
         double lfosmooth = (double)params.getRawParameterValue("smooth")->load();
         lfosmooth *= lfosmooth * 0.25;
-        value->setup(lfosmooth * 0.25, lfosmooth * 0.25, srate);
+        revvalue->setup(lfosmooth * 0.25, lfosmooth * 0.25, srate);
         sendvalue->setup(lfosmooth * 0.25, lfosmooth * 0.25, srate);
     }
 }
@@ -985,6 +984,7 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     bool sendenvon = (bool)params.getRawParameterValue("sendenvon")->load();
     float revenvamt = params.getRawParameterValue("revenvamt")->load();
     float sendenvamt = params.getRawParameterValue("sendenvamt")->load();
+    float drywet = params.getRawParameterValue("drywet")->load();
     sense = std::powf(sense, 2); // make audio trigger sensitivity more responsive
 
     // process viewport background display wave samples
@@ -1094,7 +1094,7 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     // update outputs with last block information at the start of the new block
     if (outputCC > 0) {
-        auto val = (int)std::round(ypos*127.0);
+        auto val = (int)std::round(yrev*127.0);
         if (bipolarCC) val -= 64;
         auto cc = MidiMessage::controllerEvent(outputCCChan + 1, outputCC-1, val);
         midiMessages.addEvent(cc, 0);
@@ -1167,8 +1167,26 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
+    // process convolver warmer
+    // warmer is a simple circular buffer that stores the last second of audio
+    int spaceToEnd = warmer.getNumSamples() - warmwritepos;
+    if (numSamples <= spaceToEnd) {
+        warmer.copyFrom(0, warmwritepos, buffer, 0, 0, numSamples);
+        warmer.copyFrom(1, warmwritepos, buffer, audioInputs > 1 ? 1 : 0, 0, numSamples);
+    }
+    else {
+        warmer.copyFrom(0, warmwritepos, buffer, 0, 0, spaceToEnd);
+        warmer.copyFrom(0, 0, buffer, 0, spaceToEnd, numSamples - spaceToEnd);
+        warmer.copyFrom(1, warmwritepos, buffer, audioInputs > 1 ? 1 : 0, 0, spaceToEnd);
+        warmer.copyFrom(1, 0, buffer, audioInputs > 1 ? 1 : 0, spaceToEnd, numSamples - spaceToEnd);
+    }
+    warmwritepos = (warmwritepos + numSamples) %  warmer.getNumSamples();
+
     std::fill(revenvBuffer.begin(), revenvBuffer.end(), 0.0f);
     std::fill(sendenvBuffer.begin(), sendenvBuffer.end(), 0.0f);
+    std::fill(yrevBuffer.begin(), yrevBuffer.end(), 0.0f);
+    std::fill(ysendBuffer.begin(), ysendBuffer.end(), 0.0f);
+    std::fill(xposBuffer.begin(), xposBuffer.end(), 0.0f);
 
     // envelope follower processing
     for (int sample = 0; sample < numSamples; ++sample) {
@@ -1279,14 +1297,14 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             
 
             double newypos = getYRev(xpos, min, max, roffset);
-            ypos = value->process(newypos, newypos > ypos);
-            double newyres = getYSend(xpos, min, max, soffset);
-            yres = sendvalue->process(newyres, newyres > yres);
+            yrev = revvalue->process(newypos, newypos > yrev);
+            double newysend = getYSend(xpos, min, max, soffset);
+            ysend = sendvalue->process(newysend, newysend > ysend);
 
-            auto lsample = buffer.getSample(0, sample);
-            auto rsample = buffer.getSample(audioInputs == 1 ? 0 : 1, sample);
-            //applyFilter(sample, ypos, yres, lsample, rsample);
-            processDisplaySample(sample, xpos, lsample, rsample);
+            yrevBuffer[sample] = (float)yrev;
+            ysendBuffer[sample] = (float)ysend;
+            xposBuffer[sample] = (float)xpos;
+            //processDisplaySample(sample, xpos, lsample, rsample);
         }
 
         // MIDI mode
@@ -1319,15 +1337,14 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 soffset += sendenvBuffer[sample] * sendenvamt;
 
             double newypos = getYRev(xpos, min, max, roffset);
-            ypos = value->process(newypos, newypos > ypos);
-            double newyres = getYSend(xpos, min, max, soffset);
-            yres = sendvalue->process(newyres, newyres > yres);
-
-            auto lsample = buffer.getSample(0, sample);
-            auto rsample = buffer.getSample(1 % audioInputs, sample);
-            //applyFilter(sample, ypos, yres, lsample, rsample);
+            yrev = revvalue->process(newypos, newypos > yrev);
+            double newysend = getYSend(xpos, min, max, soffset);
+            ysend = sendvalue->process(newysend, newysend > ysend);
             double viewx = (alwaysPlaying || midiTrigger) ? xpos : (trigpos + trigphase) - std::floor(trigpos + trigphase);
-            processDisplaySample(sample, viewx, lsample, rsample);
+
+            yrevBuffer[sample] = (float)yrev;
+            ysendBuffer[sample] = (float)ysend;
+            xposBuffer[sample] = (float)viewx;
         }
 
         // Audio mode
@@ -1404,14 +1421,15 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 soffset += sendenvBuffer[sample] * sendenvamt;
 
             double newypos = getYRev(xpos, min, max, roffset);
-            ypos = value->process(newypos, newypos > ypos);
-            double newyres = getYSend(xpos, min, max, soffset);
-            yres = sendvalue->process(newyres, newyres > yres);
-
-            //applyFilter(sample, ypos, yres, lsample, rsample);
-
+            yrev = revvalue->process(newypos, newypos > yrev);
+            double newysend = getYSend(xpos, min, max, soffset);
+            ysend = sendvalue->process(newysend, newysend > ysend);
             double viewx = (alwaysPlaying || audioTrigger) ? xpos : (trigpos + trigphase) - std::floor(trigpos + trigphase);
-            processDisplaySample(sample, viewx, lsample, rsample);
+
+            yrevBuffer[sample] = (float)yrev;
+            ysendBuffer[sample] = (float)ysend;
+            xposBuffer[sample] = (float)viewx;
+
             latpos = (latpos + 1) % latency;
 
             if (audioTriggerCountdown > -1)
@@ -1419,7 +1437,7 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
 
         xenv.store(xpos);
-        yenv.store(sendEditMode ? yres : ypos);
+        yenv.store(sendEditMode ? ysend : yrev);
         beatPos += beatsPerSample;
         ratePos += 1 / srate * ratehz;
         if (playing)
@@ -1428,6 +1446,126 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     } // ============================================== END OF SAMPLES PROCESSING
 
     drawSeek.store(playing && (trigger == Trigger::Sync || midiTrigger || audioTrigger)); // informs UI if it should seek or not, typically only during play
+
+    // with the envelopes processed, mix the envelope signals into wet and finally dry wet signal
+    wetBuffer.clear();
+    sendBuffer.clear();
+    auto lchannel = buffer.getReadPointer(0);
+    auto rchannel = buffer.getReadPointer(audioInputs > 1 ? 1 : 0);
+
+    // process send envelope
+    for (int sample = 0; sample < numSamples; ++sample) {
+        sendBuffer.setSample(0, sample, lchannel[sample] * ysendBuffer[sample]);
+        sendBuffer.setSample(1, sample, rchannel[sample] * ysendBuffer[sample]);
+    }
+
+    // process convolver
+    
+    // IR load state machine 
+    // if loadstate is idle and there is an update reload the IR into the load convolver
+    if (irDirty && loadState.load() == kIdle && loadCooldown <= 0) {
+        loadCooldown = (int)(CONV_LOAD_COOLDOWN / 1000.0 * srate);
+        irDirty = false;
+        loadState.store(kLoading);
+
+        threadPool.addJob([this, numSamples]() {
+            if (impulse->path != irFile.toStdString()) {
+                impulse->load(irFile);
+                irFile = String(impulse->path);
+                MessageManager::callAsync([this] { saveSettings(); });
+            }
+            impulse->recalcImpulse();
+            sendChangeMessage();
+            loadConvolver->loadImpulse(*impulse);
+            loadState.store(kReady);
+        });
+    }
+
+    // if new IR is loaded, warmup load convolver and begin crossfade with current convolver
+    if (loadState.load() == kReady) {
+        // warmup convolver
+        int numBlocks = warmer.getNumSamples() / convolver->size;
+        int start = (warmwritepos + 1) % warmer.getNumSamples();
+        AudioBuffer<float> chunk;
+        chunk.setSize(2, convolver->size);
+
+        // copy warmup buffer in chunks into the new convolver
+        for (int i = 0; i < numBlocks; ++i) {
+            int end = (start + convolver->size) % warmer.getNumSamples();
+
+            if (start < end) {
+                chunk.copyFrom(0, 0, warmer, 0, start, convolver->size);
+                chunk.copyFrom(1, 0, warmer, 1, start, convolver->size);
+            } else {
+                int toEnd = warmer.getNumSamples() - start;
+                int remaining = convolver->size - toEnd;
+
+                chunk.copyFrom(0, 0, warmer, 0, start, toEnd);
+                chunk.copyFrom(1, 0, warmer, 1, start, toEnd);
+                chunk.copyFrom(0, toEnd, warmer, 0, 0, remaining);
+                chunk.copyFrom(1, toEnd, warmer, 1, 0, remaining);
+            }
+
+            loadConvolver->process(chunk.getReadPointer(0, 0), chunk.getReadPointer(1, 0), convolver->size);
+            start = (start + convolver->size) % warmer.getNumSamples();
+        }
+
+        // start new crossfade
+        loadState.store(kFading);
+        xfade = (int)std::ceil(srate * CONV_XFADE / 1000.0);
+        xfadelen = xfade;
+    }
+
+    if (loadCooldown > 0)
+        loadCooldown -= numSamples;
+
+    // process send input into the convolver
+    convolver->process(
+        sendBuffer.getReadPointer(0), 
+        sendBuffer.getReadPointer(1),
+        numSamples
+    );
+
+    // crossfade load convolver with current convolver signal
+    if (loadState.load() == kFading) {
+        loadConvolver->process(
+            sendBuffer.getReadPointer(0),
+            sendBuffer.getReadPointer(1),
+            numSamples
+        );
+
+        for (int i = 0; i < convolver->bufferL.size(); ++i) {
+            float alpha = std::clamp((1.f - (float)xfade / (float)xfadelen), 0.f, 1.f);
+            convolver->bufferL[i] *= 1.f - alpha;
+            convolver->bufferR[i] *= 1.f - alpha;
+            loadConvolver->bufferL[i] *= alpha;
+            loadConvolver->bufferR[i] *= alpha;
+            xfade--;
+        }
+
+        if (xfade <= 0) {
+            loadState.store(kIdle);
+            std::swap(loadConvolver, convolver);
+        }
+
+        wetBuffer.addFrom(0, 0, loadConvolver->bufferL.data(), numSamples, 1.f);
+        wetBuffer.addFrom(1, 0, loadConvolver->bufferR.data(), numSamples, 1.f);
+    }
+
+    // apply the convolver to the wet buffer (after crossfade)
+    wetBuffer.addFrom(0, 0, convolver->bufferL.data(), numSamples, 1.f);
+    wetBuffer.addFrom(1, 0, convolver->bufferR.data(), numSamples, 1.f);
+
+    // finally mix the dry and wet signals
+    if (!revenvMonitor && !sendenvMonitor && !useMonitor) {
+        buffer.applyGain(1.f - drywet);
+        wetBuffer.applyGain(drywet);
+
+        buffer.addFrom(0, 0, wetBuffer.getReadPointer(0), numSamples);
+        if (audioOutputs > 1) {
+            buffer.addFrom(1, 0, wetBuffer.getReadPointer(1), numSamples);
+        }
+    }
 }
 
 //==============================================================================

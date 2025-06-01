@@ -308,7 +308,11 @@ void Pattern::transform(double midy)
         avg += p.y;
     }
     avg /= points.size();
-    if (avg == midy) return;
+    if (avg == midy) {
+        incrementVersion();
+        buildSegments();
+        return;
+    }
 
     if (avg < midy) {
         double alpha = (midy - avg) / (1.0 - avg);

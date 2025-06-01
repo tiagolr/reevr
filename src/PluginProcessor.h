@@ -150,8 +150,8 @@ public:
     int queuedResPattern = 0; // queued pat index, 0 = off
     int64_t queuedResPatternCountdown = 0; // samples counter until queued pattern is applied
     double xpos = 0.0; // envelope x pos (0..1)
-    double ypos = 0.0; // envelope y pos (0..1)
-    double yres = 0.0; // resonance envelope y pos
+    double yrev = 0.0; // envelope y pos (0..1)
+    double ysend = 0.0; // send envelope y pos
     double trigpos = 0.0; // used by trigger (Audio and MIDI) to detect one one shot envelope play
     double trigposSinceHit = 1.0; // used by audioIgnoreHitsWhilePlaying option
     double trigphase = 0.0; // phase when trigger occurs, used to sync the background wave draw
@@ -164,16 +164,21 @@ public:
     double ltensionatk = -10.0;
     double ltensionrel = -10.0;
     double lreverb = 0.0; // last cutoff
-    double lsend = 0.0; // last q resonance
-    RCSmoother* value; // smooths cutoff envelope value
-    RCSmoother* sendvalue; // smooths resonance envelope value
+    double lsend = 0.0; // last send value
+    RCSmoother* revvalue; // smooths reveverb envelope value
+    RCSmoother* sendvalue; // smooths send envelope value
     bool showLatencyWarning = false;
+    std::vector<float> yrevBuffer;
+    std::vector<float> ysendBuffer;
+    std::vector<float> xposBuffer;
+    AudioBuffer<float> wetBuffer;
+    AudioBuffer<float> sendBuffer;
 
     // Convolver state
     Impulse* impulse;
     std::unique_ptr<StereoConvolver> convolver;
     std::unique_ptr<StereoConvolver> loadConvolver; // convolver used to load IRs and crossfade
-    AudioBuffer<float> warmer;
+    AudioBuffer<float> warmer; // buffer used to warmup convolver before crossfading new IR
     int loadCooldown = 0;
     int warmwritepos = 0;
     bool init = false;
@@ -245,7 +250,7 @@ public:
     bool showSequencer = false;
     bool sendEditMode = false;
     bool showEnvelopeKnobs = false;
-    bool showFileSelector = true;
+    bool showFileSelector = false;
 
     //==============================================================================
     REVERAudioProcessor();
@@ -338,6 +343,7 @@ private:
     ApplicationProperties settings;
     std::vector<MidiInMsg> midiIn; // midi buffer used to process midi messages offset
     std::vector<MidiOutMsg> midiOut;
+    ThreadPool threadPool{1};
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (REVERAudioProcessor)
