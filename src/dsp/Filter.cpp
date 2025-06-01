@@ -9,7 +9,7 @@ void Filter::init(float srate, float freq, float q)
         g = g / (1.0f + g);
     }
     else {
-        a1 = 1 / (1 + g * (g + k));
+        a1 = 1.0f / (1.0f + g * (g + k));
         a2 = g * a1;
         a3 = g * a2;
     }
@@ -39,7 +39,8 @@ float Filter::eval(float sample)
     else if (mode == BP) output = v1;
     else output = sample - k * v1 - v2;
 
-    if (slope == k12dB) return output;
+    if (slope == k12dB) 
+        return output;
 
     // 24p second stage
     v3 = output - ic4;

@@ -221,10 +221,10 @@ public:
     bool resenvAutoRel = true;
     std::vector<float> revenvBuffer;
     std::vector<float> sendenvBuffer;
-    Filter irHighcutL{FilterSlope::k6dB, FilterMode::LP};
-    Filter irHighcutR{FilterSlope::k6dB, FilterMode::LP};
-    Filter irLowcutL{FilterSlope::k6dB, FilterMode::HP};
-    Filter irLowcutR{FilterSlope::k6dB, FilterMode::HP};
+    Filter irHighcutL{FilterSlope::k12dB, FilterMode::LP};
+    Filter irHighcutR{FilterSlope::k12dB, FilterMode::LP};
+    Filter irLowcutL{FilterSlope::k12dB, FilterMode::HP};
+    Filter irLowcutR{FilterSlope::k12dB, FilterMode::HP};
 
     // PlayHead state
     bool playing = false;
