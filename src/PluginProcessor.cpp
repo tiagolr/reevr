@@ -192,7 +192,6 @@ void REVERAudioProcessor::loadSettings ()
                 irDir = impulsesDir.getFullPathName();
             }
         }
-        irFile = file->getValue("irfile", "");
         auto tensionparam = (double)params.getRawParameterValue("tension")->load();
         auto tensionatk = (double)params.getRawParameterValue("tensionatk")->load();
         auto tensionrel = (double)params.getRawParameterValue("tensionrel")->load();
@@ -223,7 +222,6 @@ void REVERAudioProcessor::saveSettings ()
         file->setValue("width", plugWidth);
         file->setValue("height", plugHeight);
         file->setValue("irdir", irDir);
-        file->setValue("irfile", irFile);
         for (int i = 0; i < PAINT_PATS; ++i) {
             std::ostringstream oss;
             auto points = paintPatterns[i]->points;
@@ -1472,7 +1470,6 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             if (impulse->path != irFile.toStdString()) {
                 impulse->load(irFile);
                 irFile = String(impulse->path);
-                MessageManager::callAsync([this] { saveSettings(); });
             }
             impulse->recalcImpulse();
             sendChangeMessage();
@@ -1615,6 +1612,7 @@ void REVERAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty("linkSeqToGrid", linkSeqToGrid, nullptr);
     state.setProperty("currpattern", pattern->index + 1, nullptr);
     state.setProperty("currsendpattern", sendpattern->index - 12 + 1, nullptr);
+    state.setProperty("irfile", irFile, nullptr);
 
     for (int i = 0; i < 12; ++i) {
         std::ostringstream oss;
@@ -1696,6 +1694,7 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
         sendenvSidechain = (bool)state.getProperty("sendenvSidechain");
         resenvAutoRel = (bool)state.getProperty("sendenvAutoRel");
         linkSeqToGrid = state.hasProperty("linkSeqToGrid") ? (bool)state.getProperty("linkSeqToGrid") : true;
+        if (state.hasProperty("irfile")) irFile = state.getProperty("irfile");
 
         int currpattern = state.hasProperty("currpattern")
             ? state.getProperty("currpattern")
@@ -1760,6 +1759,7 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
     }
 
     setUIMode(Normal);
+    irDirty = true;
 }
 
 //==============================================================================
