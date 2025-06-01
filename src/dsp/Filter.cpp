@@ -5,9 +5,14 @@ void Filter::init(float srate, float freq, float q)
     g = getCoeff(freq, srate);
     k = 2 - 2*q;
 
-    a1 = 1 / (1 + g * (g + k));
-    a2 = g * a1;
-    a3 = g * a2;
+    if (slope == k6dB) {
+        g = g / (1.0f + g);
+    }
+    else {
+        a1 = 1 / (1 + g * (g + k));
+        a2 = g * a1;
+        a3 = g * a2;
+    }
 }
 
 float Filter::eval(float sample)
@@ -15,7 +20,8 @@ float Filter::eval(float sample)
 
     if (slope == k6dB) {
         float delta = g * (sample - state);
-        float low = state += delta;
+        state += delta;
+        float low = state;
         return mode == LP
             ? state
             : sample - low;

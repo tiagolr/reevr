@@ -45,7 +45,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("irtrimleft", "IR Trim Left", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irtrimright", "IR Trim Right", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irstretch", "IR Stretch", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20.f),
+        std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 240.f),
         std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
         std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
         std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
@@ -551,6 +551,10 @@ void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     audioLowcutR.reset(0.0f);
     transDetectorL.clear(sampleRate);
     transDetectorR.clear(sampleRate);
+    irLowcutL.reset(0.0f);
+    irLowcutR.reset(0.0f);
+    irHighcutL.reset(0.0f);
+    irHighcutR.reset(0.0f);
     std::fill(monSamples.begin(), monSamples.end(), 0.0f);
     clearLatencyBuffers();
     onSlider(); // sets latency
@@ -716,6 +720,18 @@ void REVERAudioProcessor::onSlider()
     }
 
     // convolver
+    updateImpulse();
+
+    auto irlowcut = params.getRawParameterValue("irlowcut")->load();
+    auto irhighcut = params.getRawParameterValue("irhighcut")->load();
+    irLowcutL.init((float)srate, irlowcut, 0.2929f);
+    irLowcutR.init((float)srate, irlowcut, 0.2929f);
+    irHighcutL.init((float)srate, irhighcut, 0.2929f);
+    irHighcutR.init((float)srate, irhighcut, 0.2929f);
+}
+
+void REVERAudioProcessor::updateImpulse()
+{
     float irattack = params.getRawParameterValue("irattack")->load();
     float irdecay = params.getRawParameterValue("irdecay")->load();
     float irtrimleft = params.getRawParameterValue("irtrimleft")->load();
@@ -790,6 +806,10 @@ void REVERAudioProcessor::onPlay()
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     double ratehz = (double)params.getRawParameterValue("rate")->load();
     double phase = (double)params.getRawParameterValue("phase")->load();
+    irLowcutL.reset(0.0f);
+    irLowcutR.reset(0.0f);
+    irHighcutL.reset(0.0f);
+    irHighcutR.reset(0.0f);
 
     midiTrigger = false;
     audioTrigger = false;
@@ -984,6 +1004,8 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     float sendenvamt = params.getRawParameterValue("sendenvamt")->load();
     float drywet = params.getRawParameterValue("drywet")->load();
     float width = params.getRawParameterValue("width")->load();
+    float irLowcut = params.getRawParameterValue("irlowcut")->load();
+    float irHighcut = params.getRawParameterValue("irhighcut")->load();
     sense = std::powf(sense, 2); // make audio trigger sensitivity more responsive
 
     // process viewport background display wave samples
@@ -1454,8 +1476,18 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     // process send envelope
     for (int sample = 0; sample < numSamples; ++sample) {
-        sendBuffer.setSample(0, sample, lchannel[sample] * ysendBuffer[sample]);
-        sendBuffer.setSample(1, sample, rchannel[sample] * ysendBuffer[sample]);
+        auto lin = lchannel[sample] * ysendBuffer[sample];
+        auto rin = rchannel[sample] * ysendBuffer[sample];
+        if (irLowcut > 20.f) {
+            lin = irLowcutL.eval(lin);
+            rin = irLowcutR.eval(rin);
+        } 
+        if (irHighcut < 20000.f) {
+            lin = irHighcutL.eval(lin);
+            rin = irHighcutR.eval(rin);
+        }
+        sendBuffer.setSample(0, sample, lin);
+        sendBuffer.setSample(1, sample, rin);
     }
 
     // process convolver
@@ -1472,7 +1504,9 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 impulse->load(irFile);
                 irFile = String(impulse->path);
             }
-            impulse->recalcImpulse();
+            else {
+                impulse->recalcImpulse();
+            }
             sendChangeMessage();
             loadConvolver->loadImpulse(*impulse);
             loadState.store(kReady);
@@ -1779,7 +1813,21 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
     }
 
     setUIMode(Normal);
-    irDirty = true;
+
+    // load impulse instantly
+    updateImpulse();
+    if (irDirty || impulse->path != irFile.toStdString()) {
+        if (impulse->path != irFile.toStdString()) {
+            impulse->load(irFile);
+            irFile = String(impulse->path);
+        }
+        else {
+            impulse->recalcImpulse();
+        }
+        sendChangeMessage();
+        convolver->loadImpulse(*impulse);
+        irDirty = false;
+    }
 }
 
 //==============================================================================

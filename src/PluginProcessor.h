@@ -22,6 +22,7 @@
 #include "dsp/Follower.h"
 #include "dsp/StereoConvolver.h"
 #include "dsp/Impulse.h"
+#include "dsp/Filter.h"
 
 using namespace globals;
 
@@ -220,6 +221,10 @@ public:
     bool resenvAutoRel = true;
     std::vector<float> revenvBuffer;
     std::vector<float> sendenvBuffer;
+    Filter irHighcutL{FilterSlope::k6dB, FilterMode::LP};
+    Filter irHighcutR{FilterSlope::k6dB, FilterMode::LP};
+    Filter irLowcutL{FilterSlope::k6dB, FilterMode::HP};
+    Filter irLowcutR{FilterSlope::k6dB, FilterMode::HP};
 
     // PlayHead state
     bool playing = false;
@@ -287,6 +292,7 @@ public:
 
     //==============================================================================
     void onSlider ();
+    void updateImpulse();
     void updatePatternFromReverb();
     void updateSendPatternFromSend();
     void updateReverbFromPattern();
