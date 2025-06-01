@@ -826,10 +826,9 @@ void REVERAudioProcessor::restartEnv(bool fromZero)
             ? beatPos / syncQN + phase
             : ratePos + phase;
         xpos -= std::floor(xpos);
+        revvalue->reset(getYRev(xpos, min, max, revoffset)); // reset smooth
+        sendvalue->reset(getYSend(xpos, min, max, sendoffset));
     }
-
-    revvalue->reset(getYRev(xpos, min, max, revoffset)); // reset smooth
-    sendvalue->reset(getYSend(xpos, min, max, sendoffset));
 }
 
 void REVERAudioProcessor::onStop()
