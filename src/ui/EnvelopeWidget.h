@@ -14,6 +14,7 @@ public:
     std::unique_ptr<Rotary> amount;
     std::unique_ptr<Rotary> attack;
     std::unique_ptr<Rotary> release;
+    std::unique_ptr<Rotary> hold;
     Slider filterRange;
     Label filterLabel;
 

@@ -49,7 +49,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
         std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
         std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
-        std::make_unique<juce::AudioParameterFloat>("drywet", "Dry/Wet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.25f),
+        std::make_unique<juce::AudioParameterFloat>("drywet", "DryWet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.25f),
         // audio trigger params
         std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray { "Simple", "Drums" }, 0),
         std::make_unique<juce::AudioParameterFloat>("threshold", "Audio Threshold", NormalisableRange<float>(0.0f, 1.0f), 0.5f),
@@ -63,6 +63,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("sendenvamt", "Send Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("sendenvatk", "Send Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("sendenvrel", "Send Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
+        std::make_unique<juce::AudioParameterFloat>("sendenvhold", "Send Env Hold", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("sendenvlowcut", "Send Env Lowcut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
         std::make_unique<juce::AudioParameterFloat>("sendenvhighcut", "Send Env HighCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20000.f),
         std::make_unique<juce::AudioParameterBool>("revenvon", "Rev Env ON", false),
@@ -70,6 +71,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("revenvamt", "Rev Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revenvatk", "Rev Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("revenvrel", "Rev Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
+        std::make_unique<juce::AudioParameterFloat>("revenvhold", "Rev Env Hold", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("revenvlowcut", "Rev Env LowCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
         std::make_unique<juce::AudioParameterFloat>("revenvhighcut", "Rev Env HighCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20000.f),
     })
@@ -981,6 +983,7 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     float revenvamt = params.getRawParameterValue("revenvamt")->load();
     float sendenvamt = params.getRawParameterValue("sendenvamt")->load();
     float drywet = params.getRawParameterValue("drywet")->load();
+    float width = params.getRawParameterValue("width")->load();
     sense = std::powf(sense, 2); // make audio trigger sensitivity more responsive
 
     // process viewport background display wave samples
@@ -1551,12 +1554,21 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     wetBuffer.addFrom(0, 0, convolver->bufferL.data(), numSamples, 1.f);
     wetBuffer.addFrom(1, 0, convolver->bufferR.data(), numSamples, 1.f);
 
-    // apply reverb envelope to the wet buffer
+    // apply reverb envelope and stereo width to the wet buffer
     lchannel = wetBuffer.getReadPointer(0);
     rchannel = wetBuffer.getReadPointer(1);
     for (int sample = 0; sample < numSamples; ++sample) {
-        wetBuffer.setSample(0, sample, lchannel[sample] * yrevBuffer[sample]);
-        wetBuffer.setSample(1, sample, rchannel[sample] * yrevBuffer[sample]);
+        auto lin = lchannel[sample] * yrevBuffer[sample];
+        auto rin = rchannel[sample] * yrevBuffer[sample];
+
+        auto mid = (lin + rin) * 0.5f;
+        auto side = (lin - rin) * 0.5f;
+
+        auto lout = mid + side * (width * 2.f);
+        auto rout = mid - side * (width * 2.f);
+
+        wetBuffer.setSample(0, sample, lout);
+        wetBuffer.setSample(1, sample, rout);
     }
 
     // finally mix the dry and wet signals

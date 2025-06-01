@@ -23,21 +23,11 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width
     amount->setBounds(col,row,80,65);
     col += 75;
 
-    attack = std::make_unique<Rotary>(p, isSendenv ? "sendenvatk" : "revenvatk", "Attack", RotaryLabel::envatk);
-    addAndMakeVisible(*attack);
-    attack->setBounds(col,row,80,65);
-    col += 75;
-
-    release = std::make_unique<Rotary>(p, isSendenv ? "sendenvrel" : "revenvrel", "Release", RotaryLabel::envrel);
-    addAndMakeVisible(*release);
-    release->setBounds(col,row,80,65);
-    col += 75;
-
     col = width - 10 - PLUG_PADDING;
     row += 3; // align buttons middle
     addAndMakeVisible(sidechainBtn);
     sidechainBtn.setTooltip("Use sidechain as envelope input");
-    sidechainBtn.setBounds(col-25, row, 25, 25);
+    sidechainBtn.setBounds(col-25-25-10, row, 25, 25);
     sidechainBtn.setAlpha(0.0f);
     sidechainBtn.onClick = [this, isSendenv] {
         if (isSendenv) audioProcessor.sendenvSidechain = !audioProcessor.sendenvSidechain;
@@ -47,7 +37,7 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width
 
     addAndMakeVisible(monitorBtn);
     monitorBtn.setTooltip("Monitor envelope input");
-    monitorBtn.setBounds(col-25, row+35, 25,25);
+    monitorBtn.setBounds(col-25, row, 25,25);
     monitorBtn.setAlpha(0.0f);
     monitorBtn.onClick = [this, isSendenv] {
         if (isSendenv) audioProcessor.sendenvMonitor = !audioProcessor.sendenvMonitor;
@@ -65,13 +55,12 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width
 
         MessageManager::callAsync([this]{ audioProcessor.sendChangeMessage(); });
     };
-    col -= 35;
 
     addAndMakeVisible(autoRelBtn);
     autoRelBtn.setTooltip("Toggle auto release mode");
-    autoRelBtn.setBounds(col-25, row, 25, 25);
-    autoRelBtn.setComponentID("small");
-    autoRelBtn.setButtonText("AR");
+    autoRelBtn.setBounds(col-25-25-10, row+35, 60, 25);
+    autoRelBtn.setComponentID("button");
+    autoRelBtn.setButtonText("Auto");
     autoRelBtn.onClick = [this, isSendenv] {
         if (isSendenv) audioProcessor.resenvAutoRel = !audioProcessor.resenvAutoRel;
         else audioProcessor.revenvAutoRel = !audioProcessor.revenvAutoRel;
@@ -93,7 +82,7 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width
     filterRange.setRange(20.0, 20000.0);
     filterRange.setSkewFactor(0.5, false);
     filterRange.setTextBoxStyle(Slider::NoTextBox, false, 80, 20);
-    filterRange.setBounds(release->getBounds().getRight() - 10, 20, autoRelBtn.getBounds().getX() - release->getBounds().getRight() + 10 - 5, 25);
+    filterRange.setBounds(amount->getBounds().getRight() - 10, 20, autoRelBtn.getBounds().getX() - amount->getBounds().getRight() + 10 - 5, 25);
     filterRange.setColour(Slider::backgroundColourId, Colour(COLOR_BG).brighter(0.1f));
     filterRange.setColour(Slider::trackColourId, Colour(COLOR_ACTIVE).darker(0.5f));
     filterRange.setColour(Slider::thumbColourId, Colour(COLOR_ACTIVE));
@@ -129,6 +118,25 @@ EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width
     filterLabel.setJustificationType(Justification::centredBottom);
     filterLabel.setText("Filter", dontSendNotification);
     filterLabel.setBounds(filterRange.getBounds().withBottomY(65 + 5 + 1));
+
+    row += 75;
+    col = 0;
+
+    attack = std::make_unique<Rotary>(p, isSendenv ? "sendenvatk" : "revenvatk", "Attack", RotaryLabel::envatk);
+    addAndMakeVisible(*attack);
+    attack->setBounds(col,row,80,65);
+    col += 75;
+
+    hold = std::make_unique<Rotary>(p, isSendenv ? "sendenvhold" : "revenvhold", "Hold", RotaryLabel::envrel);
+    addAndMakeVisible(*hold);
+    hold->setBounds(col,row,80,65);
+    col += 75;
+
+    release = std::make_unique<Rotary>(p, isSendenv ? "sendenvrel" : "revenvrel", "Release", RotaryLabel::envrel);
+    addAndMakeVisible(*release);
+    release->setBounds(col,row,80,65);
+    col += 75;
+
 }
 
 EnvelopeWidget::~EnvelopeWidget()
@@ -182,7 +190,7 @@ void EnvelopeWidget::paint(juce::Graphics& g)
     g.setColour(Colour(COLOR_BG).darker(0.125f));
     g.fillRoundedRectangle(bounds, 3.f);
     g.setColour(Colour(isSendenv ? COLOR_ACTIVE : 0xffffffff).withAlpha(0.5f));
-    g.drawRoundedRectangle(bounds.translated(0.5f, 0.5f), 3.f, 1.f);
+    g.drawRoundedRectangle(bounds.translated(0.5f, -0.5f), 3.f, 1.f);
 
     g.setColour((isSendenv ? Colour(COLOR_ACTIVE) : Colours::white).withAlpha(isOn ? 1.0f : 0.5f));
     if ((isSendenv && audioProcessor.sendenvMonitor) || (!isSendenv && audioProcessor.revenvMonitor)) {

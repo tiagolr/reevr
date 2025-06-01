@@ -1,12 +1,13 @@
 #include "FileSelector.h"
 #include "../PluginProcessor.h"
 
-FileSelector::FileSelector(REVERAudioProcessor& p)
+FileSelector::FileSelector(REVERAudioProcessor& p, std::function<void()> onClose)
     : audioProcessor(p)
     , timeSliceThread()
     , fileFilter()
     , dirContents()
     , fileTree()
+    , onClose(onClose)
 {
     auto bounds = getLocalBounds().expanded(-PLUG_PADDING, - PLUG_PADDING);
     auto col = bounds.getX();
@@ -15,6 +16,7 @@ FileSelector::FileSelector(REVERAudioProcessor& p)
     closeButton.setButtonText("Close");
     closeButton.setComponentID("button");
     closeButton.setBounds(col, row, 60, 25);
+    closeButton.onClick = [this, onClose]{ onClose(); };
     col += 70;
 
     addAndMakeVisible(changedirButton);

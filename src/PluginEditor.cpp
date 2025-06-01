@@ -276,21 +276,6 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*drywet);
     drywet->setBounds(col,row,80,65);
     col += 75;
-    
-    // AUDIO KNOBS
-    audioWidget = std::make_unique<AudioWidget>(p);
-    addAndMakeVisible(*audioWidget);
-    audioWidget->setBounds(PLUG_PADDING, row, PLUG_WIDTH - PLUG_PADDING * 2, 65 + 10);
-
-    // ENVELOPE WIDGETS
-    auto b = Rectangle<int>(PLUG_PADDING + 75 * 2+10, row, PLUG_WIDTH - (PLUG_PADDING + 75 * 2), 65);
-    revenv = std::make_unique<EnvelopeWidget>(p, false, b.getWidth());
-    addAndMakeVisible(*revenv);
-    revenv->setBounds(b.expanded(0,4));
-
-    sendenv = std::make_unique<EnvelopeWidget>(p, true, b.getWidth());
-    addAndMakeVisible(*sendenv);
-    sendenv->setBounds(b.expanded(0,5));
 
     // KNOBS 2ND ROW
     row += 75;
@@ -355,6 +340,21 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*tensionrel);
     tensionrel->setBounds(col,row,80,65);
     col += 75;
+
+    // AUDIO WIDGET
+    audioWidget = std::make_unique<AudioWidget>(p);
+    addAndMakeVisible(*audioWidget);
+    audioWidget->setBounds(PLUG_PADDING+75*2+10, row-75, PLUG_WIDTH - PLUG_PADDING*2 - 75*2 - 10, 75*2);
+
+    // ENVELOPE WIDGETS
+    auto b = Rectangle<int>(PLUG_PADDING +75*4-15, row-75, PLUG_WIDTH - PLUG_PADDING*2 - 75*4+15, 75*2-5);
+    revenv = std::make_unique<EnvelopeWidget>(p, false, b.getWidth());
+    addAndMakeVisible(*revenv);
+    revenv->setBounds(b.expanded(0,4));
+
+    sendenv = std::make_unique<EnvelopeWidget>(p, true, b.getWidth());
+    addAndMakeVisible(*sendenv);
+    sendenv->setBounds(b.expanded(0,5));
     
 
     // 3RD ROW
@@ -539,7 +539,10 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*view);
     view->setBounds(col,row,getWidth(), getHeight() - row);
 
-    fileSelector = std::make_unique<FileSelector>(p);
+    fileSelector = std::make_unique<FileSelector>(p, [this] {
+        audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
+        toggleUIComponents();
+    });
     addAndMakeVisible(*fileSelector);
     fileSelector->setBounds(view->getBounds().withTrimmedTop(PLUG_PADDING));
 
@@ -830,11 +833,11 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
     bounds = currentFile.getBounds().toFloat();
     if (audioProcessor.showFileSelector) {
         g.setColour(Colour(COLOR_ACTIVE));
-        g.fillRect(bounds.expanded(3.f, 3.f));
+        g.fillRect(bounds);
     }
     g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
     g.setFont(FontOptions(18.f));
-    g.drawFittedText(audioProcessor.impulse->name, bounds.toNearestInt(), Justification::centred, 2, 1.f);
+    g.drawFittedText(audioProcessor.impulse->name, bounds.expanded(-3, 0).toNearestInt(), Justification::centred, 2, 1.f);
 }
 
 void REVERAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)
@@ -922,7 +925,7 @@ void REVERAudioProcessorEditor::resized()
     auto bounds = settingsButton->getBounds();
     settingsButton->setBounds(bounds.withX(col - bounds.getWidth()));
 
-    audioWidget->setBounds(audioWidget->getBounds().withWidth(getWidth() - PLUG_PADDING * 2));
+    audioWidget->setBounds(audioWidget->getBounds().withRight(getWidth() - PLUG_PADDING));
 
     about->setBounds(0,0,getWidth(), getHeight());
 

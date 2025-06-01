@@ -2,13 +2,14 @@
 
 #include <JuceHeader.h>
 #include "../Globals.h"
+#include <functional>
 
 using namespace globals;
 class REVERAudioProcessor;
 
 class FileSelector : public juce::Component, public juce::FileBrowserListener {
 public:
-    FileSelector(REVERAudioProcessor& p);
+    FileSelector(REVERAudioProcessor& p, std::function<void()> onClose);
     ~FileSelector() override;
     void readDir();
 
@@ -28,6 +29,7 @@ public:
 
 
 private:
+    std::function<void()> onClose;
     std::unique_ptr<FileTreeComponent> fileTree;
     std::unique_ptr<TimeSliceThread> timeSliceThread;
     std::unique_ptr<FileFilter> fileFilter;

@@ -3,15 +3,12 @@
 
 PaintToolWidget::PaintToolWidget(REVERAudioProcessor& p) : audioProcessor(p) 
 {
-
-
     addAndMakeVisible(paintEditButton);
     paintEditButton.setButtonText("Edit");
     paintEditButton.setComponentID("button");
     paintEditButton.onClick = [this]() {
         audioProcessor.togglePaintEditMode();
     };
-
 
     addAndMakeVisible(paintPrevButton);
     paintPrevButton.setAlpha(0.f);
