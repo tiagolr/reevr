@@ -31,8 +31,14 @@ void StereoConvolver::process(const float* dataL, const float* dataR, size_t nsa
 
 void StereoConvolver::reset()
 {
-	convolverL.reset();
-	convolverR.reset();
+	convolverL->reset();
+	convolverR->reset();
 	bufferL.clear();
 	bufferR.clear();
+}
+
+void StereoConvolver::clear()
+{
+	convolverL->clear();
+	convolverR->clear();
 }

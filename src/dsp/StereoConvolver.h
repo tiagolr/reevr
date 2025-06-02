@@ -16,6 +16,7 @@ public:
     void prepare(int samplesPerBlock);
     void process(const float* data0, const float* data1, size_t nsamples);
     void reset();
+    void clear();
     bool finishedLoading();
 
     std::vector<float> bufferL = {};

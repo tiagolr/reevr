@@ -436,8 +436,9 @@ bool REVERAudioProcessor::isMidiEffect() const
 
 double REVERAudioProcessor::getTailLengthSeconds() const
 {
-    // TODO
-    return 0.0;
+    auto srate = getSampleRate();
+    if (srate <= 0.0) return 0.0;
+    return (double)impulse->bufferL.size() / getSampleRate();
 }
 
 int REVERAudioProcessor::getNumPrograms()
@@ -694,6 +695,7 @@ void REVERAudioProcessor::onSlider()
         lsend = send;
     }
     else if (send != lsend) {
+        convolver->clear();
         updateSendPatternFromSend();
         lsend = send;
     }

@@ -69,6 +69,11 @@ public:
   */
   void process(const Sample* input, Sample* output, size_t len);
 
+  /*
+  * Only clears buffers, leaving IR loaded
+  */
+  void clear();
+
   /**
   * @brief Resets the convolver and discards the set impulse response
   */

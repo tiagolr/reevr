@@ -231,5 +231,22 @@ void TwoStageFFTConvolver::doBackgroundProcessing()
 {
   _tailConvolver.process(_backgroundProcessingInput.data(), _tailOutput.data(), _tailBlockSize);
 }
+
+void TwoStageFFTConvolver::clear()
+{
+    _tailOutput.setZero();
+    _tailOutput0.setZero();
+    _tailPrecalculated.setZero();
+    _tailPrecalculated0.setZero();
+    _tailInput.setZero();
+    _backgroundProcessingInput.setZero();
+
+    _tailInputFill = 0;
+    _precalculatedPos = 0;
+
+    _headConvolver.clear();
+    _tailConvolver0.clear();
+    _tailConvolver.clear();
+}
     
 } // End of namespace fftconvolver

@@ -76,6 +76,11 @@ public:
   * @brief Resets the convolver and discards the set impulse response
   */
   void reset();
+
+  /*
+  * Clears the reverb and its tail while keeping the impulse response
+  */
+  void clear();
   
 protected:
   /**
