@@ -5,7 +5,7 @@
 #include "Rotary.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class EnvelopeWidget : public juce::Component, private juce::AudioProcessorValueTreeState::Listener
 {
@@ -22,7 +22,7 @@ public:
     TextButton monitorBtn;
     TextButton autoRelBtn;
 
-    EnvelopeWidget(REVERAudioProcessor& p, bool isResenv, int width);
+    EnvelopeWidget(REEVRAudioProcessor& p, bool isResenv, int width);
     ~EnvelopeWidget() override;
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
@@ -35,5 +35,5 @@ public:
 private:
     bool isOn = false;
     const bool isSendenv;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };

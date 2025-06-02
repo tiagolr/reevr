@@ -1,7 +1,7 @@
 #include "FileSelector.h"
 #include "../PluginProcessor.h"
 
-FileSelector::FileSelector(REVERAudioProcessor& p, std::function<void()> onClose)
+FileSelector::FileSelector(REEVRAudioProcessor& p, std::function<void()> onClose)
     : audioProcessor(p)
     , timeSliceThread()
     , fileFilter()

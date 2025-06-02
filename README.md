@@ -1,29 +1,29 @@
 <h1 align="center">
   <!-- <img src="doc/logo.png" width="200" style="padding: 5px;" /> -->
-  REVE-R
+  REEV-R
   <br>
 </h1>
 <div align="center">
 
-[![Windows Support](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/tiagolr/rever/releases)
-[![Ubuntu Support](https://img.shields.io/badge/Linux-E95420?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/tiagolr/rever/releases)
-[![Mac Support](https://img.shields.io/badge/MACOS-adb8c5?style=for-the-badge&logo=macos&logoColor=white)](https://github.com/tiagolr/rever/releases)
+[![Windows Support](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/tiagolr/reevr/releases)
+[![Ubuntu Support](https://img.shields.io/badge/Linux-E95420?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/tiagolr/reevr/releases)
+[![Mac Support](https://img.shields.io/badge/MACOS-adb8c5?style=for-the-badge&logo=macos&logoColor=white)](https://github.com/tiagolr/reevr/releases)
 
 </div>
 <div align="center">
 
-[![GitHub package.json version](https://img.shields.io/github/v/release/tiagolr/rever?color=%40&label=latest)](https://github.com/tiagolr/rever/releases/latest)
-![GitHub issues](https://img.shields.io/github/issues-raw/tiagolr/rever)
-![GitHub all releases](https://img.shields.io/github/downloads/tiagolr/rever/total)
-![Github license](https://img.shields.io/github/license/tiagolr/rever)
+[![GitHub package.json version](https://img.shields.io/github/v/release/tiagolr/reevr?color=%40&label=latest)](https://github.com/tiagolr/reevr/releases/latest)
+![GitHub issues](https://img.shields.io/github/issues-raw/tiagolr/reevr)
+![GitHub all releases](https://img.shields.io/github/downloads/tiagolr/reevr/total)
+![Github license](https://img.shields.io/github/license/tiagolr/reevr)
 
 </div>
 
-**REVE-R** is a cross-platform filter modulator inspired by plugins like ShaperBox and FilterShaper. It is the second version of [FLTR-1 JSFX](https://github.com/tiagolr/tilr_jsfx?tab=readme-ov-file#fltr-1) for the Reaper DAW.
+**REEV-R** is a cross-platform filter modulator inspired by plugins like ShaperBox and FilterShaper. It is the second version of [FLTR-1 JSFX](https://github.com/tiagolr/tilr_jsfx?tab=readme-ov-file#fltr-1) for the Reaper DAW.
 
 <div align="center">
 
-![Screenshot](./doc/rever.png)
+![Screenshot](./doc/reevr.png)
 
 </div>
 
@@ -50,19 +50,19 @@ Also check other plugins from this collection:
 
 ## Download
 
-* [Download latest release](https://github.com/tiagolr/rever/releases)
+* [Download latest release](https://github.com/tiagolr/reevr/releases)
 * Current builds include VST3 and LV2 for Windows, Linux and macOS plus AU for macOS.
 * Clap is planned when there is official [JUCE support](https://juce.com/blog/juce-roadmap-update-q3-2024/).
 
 ## About
 
-REVE-R is an envelope generator plugin that applies the same engine of GATE-12 and TIME-12 to filter modulation. it includes 6 unique filters, three of them grabbed from [Saikes Yutani Bass](https://github.com/JoepVanlier/JSFX) (303, MS-20 and Linear), a Moog filter which is the JUCEs stock ladder filter adapted to this project and finally an Analog/Sallen Key and Phaser filters which were broght from [Vital](https://github.com/mtytel/vital) synth source code.
+REEV-R is an envelope generator plugin that applies the same engine of GATE-12 and TIME-12 to filter modulation. it includes 6 unique filters, three of them grabbed from [Saikes Yutani Bass](https://github.com/JoepVanlier/JSFX) (303, MS-20 and Linear), a Moog filter which is the JUCEs stock ladder filter adapted to this project and finally an Analog/Sallen Key and Phaser filters which were broght from [Vital](https://github.com/mtytel/vital) synth source code.
 
 ### Features
 
 #### Point types
 
-Like GrossBeat, REVE-R includes 8 point types that can be changed by right clicking a point, the default point type can also be changed in the tools-bar.
+Like GrossBeat, REEV-R includes 8 point types that can be changed by right clicking a point, the default point type can also be changed in the tools-bar.
 
 ![curves](/doc/curves.png)
 
@@ -125,9 +125,9 @@ MacOS builds are untested and unsigned, please let me know of any issues by open
 Because the builds are unsigned you may have to run the following commands:
 
 ```bash
-sudo xattr -dr com.apple.quarantine /path/to/your/plugins/rever.component
-sudo xattr -dr com.apple.quarantine /path/to/your/plugins/rever.vst3
-sudo xattr -dr com.apple.quarantine /path/to/your/plugins/rever.lv3
+sudo xattr -dr com.apple.quarantine /path/to/your/plugins/reevr.component
+sudo xattr -dr com.apple.quarantine /path/to/your/plugins/reevr.vst3
+sudo xattr -dr com.apple.quarantine /path/to/your/plugins/reevr.lv3
 ```
 
 The commands above will recursively remove the quarantine flag from the plugins.
@@ -135,7 +135,7 @@ The commands above will recursively remove the quarantine flag from the plugins.
 ## Build
 
 ```bash
-git clone --recurse-submodules https://github.com/tiagolr/rever.git
+git clone --recurse-submodules https://github.com/tiagolr/reevr.git
 
 # windows
 cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -S . -B ./build

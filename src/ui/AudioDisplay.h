@@ -15,12 +15,12 @@
 #include "../dsp/Pattern.h"
 #include <deque>
 
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class AudioDisplay : public juce::Component, private juce::Timer
 {
 public:
-    AudioDisplay(REVERAudioProcessor&);
+    AudioDisplay(REEVRAudioProcessor&);
     ~AudioDisplay() override {};
     void resized() override;
     void timerCallback() override;
@@ -28,5 +28,5 @@ public:
     
     std::deque<double> audioBuffer;
     std::deque<bool> hitBuffer; 
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };

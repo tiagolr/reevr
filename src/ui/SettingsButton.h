@@ -3,11 +3,11 @@
 #include <JuceHeader.h>
 #include <functional>
 
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class SettingsButton : public juce::Component {
 public:
-    SettingsButton(REVERAudioProcessor& p) : audioProcessor(p) {}
+    SettingsButton(REEVRAudioProcessor& p) : audioProcessor(p) {}
     ~SettingsButton() override {}
 
     void mouseDown(const juce::MouseEvent& e) override;
@@ -18,5 +18,5 @@ public:
     std::function<void()> toggleAbout;
 
 private:
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };

@@ -6,7 +6,7 @@
 #include "AudioDisplay.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class AudioWidget : public juce::Component
 {
@@ -22,7 +22,7 @@ public:
     TextButton useMonitor;
 
 
-    AudioWidget(REVERAudioProcessor& p);
+    AudioWidget(REEVRAudioProcessor& p);
     ~AudioWidget() override;
 
     void paint(juce::Graphics& g) override;
@@ -30,5 +30,5 @@ public:
     void resized() override;
 
 private:
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };

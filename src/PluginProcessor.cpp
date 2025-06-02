@@ -4,7 +4,7 @@
 #include "PluginEditor.h"
 #include <ctime>
 
-REVERAudioProcessor::REVERAudioProcessor()
+REEVRAudioProcessor::REEVRAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
          .withInput("Input", juce::AudioChannelSet::stereo(), true)
@@ -82,7 +82,7 @@ REVERAudioProcessor::REVERAudioProcessor()
     options.applicationName = ProjectInfo::projectName;
     options.filenameSuffix = ".settings";
 #if defined(JUCE_LINUX) || defined(JUCE_BSD)
-    options.folderName = "~/.config/rever";
+    options.folderName = "~/.config/reevr";
 #endif
     options.osxLibrarySubFolder = "Application Support";
     options.storageFormat = PropertiesFile::storeAsXML;
@@ -137,12 +137,12 @@ REVERAudioProcessor::REVERAudioProcessor()
     loadSettings();
 }
 
-REVERAudioProcessor::~REVERAudioProcessor()
+REEVRAudioProcessor::~REEVRAudioProcessor()
 {
     params.removeParameterListener("pattern", this);
 }
 
-void REVERAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+void REEVRAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)
 {
     if (parameterID == "pattern") {
         int pat = (int)newValue;
@@ -152,26 +152,26 @@ void REVERAudioProcessor::parameterChanged (const juce::String& parameterID, flo
     }
 }
 
-void REVERAudioProcessor::parameterValueChanged (int parameterIndex, float newValue)
+void REEVRAudioProcessor::parameterValueChanged (int parameterIndex, float newValue)
 {
     (void)newValue;
     (void)parameterIndex;
     paramChanged = true;
 }
 
-void REVERAudioProcessor::parameterGestureChanged (int parameterIndex, bool gestureIsStarting)
+void REEVRAudioProcessor::parameterGestureChanged (int parameterIndex, bool gestureIsStarting)
 {
     (void)parameterIndex;
     (void)gestureIsStarting;
 }
 
-void REVERAudioProcessor::loadImpulse(String path)
+void REEVRAudioProcessor::loadImpulse(String path)
 {
     irFile = path;
     irDirty = true;
 }
 
-void REVERAudioProcessor::loadSettings ()
+void REEVRAudioProcessor::loadSettings ()
 {
     settings.closeFiles(); // FIX files changed by other plugin instances not loading
     if (auto* file = settings.getUserSettings()) {
@@ -215,7 +215,7 @@ void REVERAudioProcessor::loadSettings ()
     }
 }
 
-void REVERAudioProcessor::saveSettings ()
+void REEVRAudioProcessor::saveSettings ()
 {
     settings.closeFiles(); // FIX files changed by other plugin instances not loading
     if (auto* file = settings.getUserSettings()) {
@@ -235,25 +235,25 @@ void REVERAudioProcessor::saveSettings ()
     settings.saveIfNeeded();
 }
 
-void REVERAudioProcessor::setScale(float s)
+void REEVRAudioProcessor::setScale(float s)
 {
     scale = s;
     saveSettings();
 }
 
-int REVERAudioProcessor::getCurrentGrid()
+int REEVRAudioProcessor::getCurrentGrid()
 {
     auto gridIndex = (int)params.getRawParameterValue("grid")->load();
     return GRID_SIZES[gridIndex];
 }
 
-int REVERAudioProcessor::getCurrentSeqStep()
+int REEVRAudioProcessor::getCurrentSeqStep()
 {
     auto gridIndex = (int)params.getRawParameterValue("seqstep")->load();
     return GRID_SIZES[gridIndex];
 }
 
-void REVERAudioProcessor::createUndoPoint(int patindex)
+void REEVRAudioProcessor::createUndoPoint(int patindex)
 {
     if (patindex == -1) {
         viewPattern->createUndo();
@@ -279,7 +279,7 @@ void REVERAudioProcessor::createUndoPoint(int patindex)
     Assigns the snapshot points to the pattern temporarily
     Creates an undo point and finally replaces back the points
 */
-void REVERAudioProcessor::createUndoPointFromSnapshot(std::vector<PPoint> snapshot)
+void REEVRAudioProcessor::createUndoPointFromSnapshot(std::vector<PPoint> snapshot)
 {
     if (!Pattern::comparePoints(snapshot, viewPattern->points)) {
         auto points = viewPattern->points;
@@ -291,7 +291,7 @@ void REVERAudioProcessor::createUndoPointFromSnapshot(std::vector<PPoint> snapsh
     }
 }
 
-void REVERAudioProcessor::setSendEditMode(bool isSend)
+void REEVRAudioProcessor::setSendEditMode(bool isSend)
 {
     MessageManager::callAsync([this, isSend] {
         if (sendEditMode == isSend) return;
@@ -308,7 +308,7 @@ void REVERAudioProcessor::setSendEditMode(bool isSend)
     });
 }
 
-void REVERAudioProcessor::setUIMode(UIMode mode)
+void REEVRAudioProcessor::setUIMode(UIMode mode)
 {
     MessageManager::callAsync([this, mode]() {
         if ((mode != Seq && mode != PaintEdit) && sequencer->isOpen)
@@ -347,7 +347,7 @@ void REVERAudioProcessor::setUIMode(UIMode mode)
     });
 }
 
-void REVERAudioProcessor::togglePaintMode()
+void REEVRAudioProcessor::togglePaintMode()
 {
     setUIMode(uimode == UIMode::Paint
         ? UIMode::Normal
@@ -355,7 +355,7 @@ void REVERAudioProcessor::togglePaintMode()
     );
 }
 
-void REVERAudioProcessor::togglePaintEditMode()
+void REEVRAudioProcessor::togglePaintEditMode()
 {
     setUIMode(uimode == UIMode::PaintEdit
         ? luimode
@@ -363,7 +363,7 @@ void REVERAudioProcessor::togglePaintEditMode()
     );
 }
 
-void REVERAudioProcessor::toggleSequencerMode()
+void REEVRAudioProcessor::toggleSequencerMode()
 {
     setUIMode(uimode == UIMode::Seq
         ? UIMode::Normal
@@ -371,12 +371,12 @@ void REVERAudioProcessor::toggleSequencerMode()
     );
 }
 
-Pattern* REVERAudioProcessor::getPaintPatern(int index)
+Pattern* REEVRAudioProcessor::getPaintPatern(int index)
 {
     return paintPatterns[index];
 }
 
-void REVERAudioProcessor::setViewPattern(int index)
+void REEVRAudioProcessor::setViewPattern(int index)
 {
     if (index >= 0 && index < 12) {
         viewPattern = patterns[index];
@@ -387,7 +387,7 @@ void REVERAudioProcessor::setViewPattern(int index)
     sendChangeMessage();
 }
 
-void REVERAudioProcessor::restorePaintPatterns()
+void REEVRAudioProcessor::restorePaintPatterns()
 {
     for (int i = 0; i < 8; ++i) {
         paintPatterns[i]->clear();
@@ -402,12 +402,12 @@ void REVERAudioProcessor::restorePaintPatterns()
 }
 
 //==============================================================================
-const juce::String REVERAudioProcessor::getName() const
+const juce::String REEVRAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool REVERAudioProcessor::acceptsMidi() const
+bool REEVRAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -416,7 +416,7 @@ bool REVERAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool REVERAudioProcessor::producesMidi() const
+bool REEVRAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -425,7 +425,7 @@ bool REVERAudioProcessor::producesMidi() const
    #endif
 }
 
-bool REVERAudioProcessor::isMidiEffect() const
+bool REEVRAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -434,30 +434,30 @@ bool REVERAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double REVERAudioProcessor::getTailLengthSeconds() const
+double REEVRAudioProcessor::getTailLengthSeconds() const
 {
     auto srate = getSampleRate();
     if (srate <= 0.0) return 0.0;
     return (double)impulse->bufferL.size() / getSampleRate();
 }
 
-int REVERAudioProcessor::getNumPrograms()
+int REEVRAudioProcessor::getNumPrograms()
 {
     return 40;
 }
 
-int REVERAudioProcessor::getCurrentProgram()
+int REEVRAudioProcessor::getCurrentProgram()
 {
     return currentProgram == -1 ? 0 : currentProgram;
 }
 
-void REVERAudioProcessor::setCurrentProgram (int index)
+void REEVRAudioProcessor::setCurrentProgram (int index)
 {
     if (currentProgram == index) return;
     loadProgram(index);
 }
 
-void REVERAudioProcessor::loadProgram (int index)
+void REEVRAudioProcessor::loadProgram (int index)
 {
     if (sequencer->isOpen)
         sequencer->close();
@@ -504,7 +504,7 @@ void REVERAudioProcessor::loadProgram (int index)
     sendChangeMessage(); // UI Repaint
 }
 
-const juce::String REVERAudioProcessor::getProgramName (int index)
+const juce::String REEVRAudioProcessor::getProgramName (int index)
 {
     static const std::array<juce::String, 40> progNames = {
         "Init",
@@ -515,14 +515,14 @@ const juce::String REVERAudioProcessor::getProgramName (int index)
     return progNames.at(index);
 }
 
-void REVERAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void REEVRAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
     (void)index;
     (void)newName;
 }
 
 //==============================================================================
-void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     warmer.setSize(2, (int)std::ceil(sampleRate)); // 1 second of warmup samples
     convolver->prepare(samplesPerBlock);
@@ -562,14 +562,14 @@ void REVERAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     init = true;
 }
 
-void REVERAudioProcessor::releaseResources()
+void REEVRAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool REVERAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool REEVRAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -594,7 +594,7 @@ bool REVERAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 }
 #endif
 
-void REVERAudioProcessor::onSlider()
+void REEVRAudioProcessor::onSlider()
 {
     onSmoothChange();
     auto srate = getSampleRate();
@@ -737,7 +737,7 @@ void REVERAudioProcessor::onSlider()
     irHighcutR.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
 }
 
-void REVERAudioProcessor::updateImpulse()
+void REEVRAudioProcessor::updateImpulse()
 {
     float irattack = params.getRawParameterValue("irattack")->load();
     float irdecay = params.getRawParameterValue("irdecay")->load();
@@ -763,31 +763,31 @@ void REVERAudioProcessor::updateImpulse()
     }
 }
 
-void REVERAudioProcessor::updatePatternFromReverb()
+void REEVRAudioProcessor::updatePatternFromReverb()
 {
     float revnorm = params.getParameter("reverb")->getValue();
     pattern->transform(revnorm);
 }
 
-void REVERAudioProcessor::updateSendPatternFromSend()
+void REEVRAudioProcessor::updateSendPatternFromSend()
 {
     float sendnorm = params.getParameter("send")->getValue();
     sendpattern->transform(sendnorm);
 }
 
-void REVERAudioProcessor::updateReverbFromPattern()
+void REEVRAudioProcessor::updateReverbFromPattern()
 {
     reverbDirty = true;
     paramChanged = true;
 }
 
-void REVERAudioProcessor::updateSendFromPattern()
+void REEVRAudioProcessor::updateSendFromPattern()
 {
     sendDirty = true;
     paramChanged = true;
 }
 
-void REVERAudioProcessor::onTensionChange()
+void REEVRAudioProcessor::onTensionChange()
 {
     auto tension = (double)params.getRawParameterValue("tension")->load();
     auto tensionatk = (double)params.getRawParameterValue("tensionatk")->load();
@@ -802,7 +802,7 @@ void REVERAudioProcessor::onTensionChange()
     }
 }
 
-void REVERAudioProcessor::onPlay()
+void REEVRAudioProcessor::onPlay()
 {
     std::fill(revenvBuffer.begin(), revenvBuffer.end(), 0.f);
     std::fill(sendenvBuffer.begin(), sendenvBuffer.end(), 0.f);
@@ -841,7 +841,7 @@ void REVERAudioProcessor::onPlay()
     }
 }
 
-void REVERAudioProcessor::restartEnv(bool fromZero)
+void REEVRAudioProcessor::restartEnv(bool fromZero)
 {
     int sync = (int)params.getRawParameterValue("sync")->load();
     double min = (double)params.getRawParameterValue("min")->load();
@@ -864,7 +864,7 @@ void REVERAudioProcessor::restartEnv(bool fromZero)
     }
 }
 
-void REVERAudioProcessor::onStop()
+void REEVRAudioProcessor::onStop()
 {
     if (showLatencyWarning) {
         showLatencyWarning = false;
@@ -872,13 +872,13 @@ void REVERAudioProcessor::onStop()
     }
 }
 
-void REVERAudioProcessor::clearWaveBuffers()
+void REEVRAudioProcessor::clearWaveBuffers()
 {
     std::fill(preSamples.begin(), preSamples.end(), 0.0f);
     std::fill(postSamples.begin(), postSamples.end(), 0.0f);
 }
 
-void REVERAudioProcessor::clearLatencyBuffers()
+void REEVRAudioProcessor::clearLatencyBuffers()
 {
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     auto latency = trigger == Trigger::Audio
@@ -892,17 +892,17 @@ void REVERAudioProcessor::clearLatencyBuffers()
     monWritePos = 0;
 }
 
-double inline REVERAudioProcessor::getYRev(double x, double min, double max, double offset)
+double inline REEVRAudioProcessor::getYRev(double x, double min, double max, double offset)
 {
     return std::clamp(min + (max - min) * (1 - pattern->get_y_at(x)) + offset, 0.0, 1.0);
 }
 
-double inline REVERAudioProcessor::getYSend(double x, double min, double max, double offset)
+double inline REEVRAudioProcessor::getYSend(double x, double min, double max, double offset)
 {
     return std::clamp(min + (max - min) * (1 - sendpattern->get_y_at(x)) + offset, 0.0, 1.0);
 }
 
-void REVERAudioProcessor::onSmoothChange()
+void REEVRAudioProcessor::onSmoothChange()
 {
     auto srate = getSampleRate();
     if (dualSmooth) {
@@ -921,7 +921,7 @@ void REVERAudioProcessor::onSmoothChange()
     }
 }
 
-void REVERAudioProcessor::queuePattern(int patidx)
+void REEVRAudioProcessor::queuePattern(int patidx)
 {
     queuedPattern = patidx;
     queuedPatternCountdown = 0;
@@ -941,12 +941,12 @@ void REVERAudioProcessor::queuePattern(int patidx)
     }
 }
 
-bool REVERAudioProcessor::supportsDoublePrecisionProcessing() const
+bool REEVRAudioProcessor::supportsDoublePrecisionProcessing() const
 {
     return false;
 }
 
-void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals disableDenormals;
     double srate = getSampleRate();
@@ -1654,18 +1654,18 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 }
 
 //==============================================================================
-bool REVERAudioProcessor::hasEditor() const
+bool REEVRAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* REVERAudioProcessor::createEditor()
+juce::AudioProcessorEditor* REEVRAudioProcessor::createEditor()
 {
-    return new REVERAudioProcessorEditor (*this);
+    return new REEVRAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void REVERAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void REEVRAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = ValueTree("PluginState");
     state.appendChild(params.copyState(), nullptr);
@@ -1741,7 +1741,7 @@ void REVERAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     copyXmlToBinary(*xml, destData);
 }
 
-void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (sequencer->isOpen) {
         sequencer->close();
@@ -1849,6 +1849,9 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
             impulse->load(irFile);
             irFile = String(impulse->path);
         }
+        else if (impulse->bufferL.empty()) {
+            impulse->load(""); // load default IR, Fixes setStateInformation called before prepareToPlay()
+        }
         else {
             impulse->recalcImpulse();
         }
@@ -1862,5 +1865,5 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new REVERAudioProcessor();
+    return new REEVRAudioProcessor();
 }

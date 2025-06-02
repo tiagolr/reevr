@@ -4,7 +4,7 @@
 #include "PluginEditor.h"
 #include "Globals.h"
 
-REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
+REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     : AudioProcessorEditor (&p)
     , audioProcessor (p)
 {
@@ -28,8 +28,8 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(logoLabel);
     logoLabel.setColour(juce::Label::ColourIds::textColourId, Colours::white);
     logoLabel.setFont(FontOptions(26.0f));
-    logoLabel.setText("REVE-R", NotificationType::dontSendNotification);
-    logoLabel.setBounds(col, row-3, 90, 30);
+    logoLabel.setText("REEV-R", NotificationType::dontSendNotification);
+    logoLabel.setBounds(col-5, row-3, 95, 30);
     col += 100;
 
 #if defined(DEBUG)
@@ -183,7 +183,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     patSyncMenu.addItem("4 Beats", 6);
     patSyncMenu.setBounds(col, row, 75, 25);
     patSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.params, "patsync", patSyncMenu);
-    
+
     // SECOND ROW RIGHT
     col = getWidth() - PLUG_PADDING;
     addAndMakeVisible(revEnvButton);
@@ -385,7 +385,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     sendenv = std::make_unique<EnvelopeWidget>(p, true, b.getWidth());
     addAndMakeVisible(*sendenv);
     sendenv->setBounds(b.expanded(0,5));
-    
+
 
     // 3RD ROW
     col = PLUG_PADDING;
@@ -597,7 +597,7 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     toggleUIComponents();
 }
 
-REVERAudioProcessorEditor::~REVERAudioProcessorEditor()
+REEVRAudioProcessorEditor::~REEVRAudioProcessorEditor()
 {
     audioProcessor.saveSettings(); // save paint patterns to disk
     setLookAndFeel(nullptr);
@@ -609,21 +609,21 @@ REVERAudioProcessorEditor::~REVERAudioProcessorEditor()
     audioProcessor.removeChangeListener(this);
 }
 
-void REVERAudioProcessorEditor::changeListenerCallback(ChangeBroadcaster* source)
+void REEVRAudioProcessorEditor::changeListenerCallback(ChangeBroadcaster* source)
 {
     (void)source;
 
     MessageManager::callAsync([this] { toggleUIComponents(); });
 }
 
-void REVERAudioProcessorEditor::parameterChanged (const juce::String& parameterID, float newValue)
+void REEVRAudioProcessorEditor::parameterChanged (const juce::String& parameterID, float newValue)
 {
     (void)parameterID;
     (void)newValue;
     MessageManager::callAsync([this]() { toggleUIComponents(); });
 };
 
-void REVERAudioProcessorEditor::toggleUIComponents()
+void REEVRAudioProcessorEditor::toggleUIComponents()
 {
     patterns[audioProcessor.pattern->index].get()->setToggleState(true, dontSendNotification);
     bool isSendMode = audioProcessor.sendEditMode;
@@ -645,7 +645,7 @@ void REVERAudioProcessorEditor::toggleUIComponents()
     auto sync = (int)audioProcessor.params.getRawParameterValue("sync")->load();
     rateDial->setVisible(sync == 0);
 
-    triggerLabel.setBounds(triggerLabel.getBounds().withX(rateDial->isVisible() 
+    triggerLabel.setBounds(triggerLabel.getBounds().withX(rateDial->isVisible()
         ? rateDial->getBounds().getRight() + 5
         : syncMenu.getBounds().getRight() + 10
     ));
@@ -659,12 +659,12 @@ void REVERAudioProcessorEditor::toggleUIComponents()
     tension->setVisible(!audioProcessor.dualTension);
     tensionatk->setVisible(audioProcessor.dualTension);
     tensionrel->setVisible(audioProcessor.dualTension);
-    
+
     {
         auto col = revoffset->getBounds().getX();
         auto row = revoffset->getBounds().getY();
         col += 75;
-        
+
         if (audioProcessor.dualSmooth) {
             smooth->setVisible(false);
             attack->setVisible(true);
@@ -695,7 +695,7 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 
     paintWidget->setVisible(audioProcessor.showPaintWidget);
     seqWidget->setVisible(audioProcessor.showSequencer);
-    seqWidget->setBounds(seqWidget->getBounds().withY(paintWidget->isVisible() 
+    seqWidget->setBounds(seqWidget->getBounds().withY(paintWidget->isVisible()
         ? paintWidget->getBounds().getBottom() + 10
         : paintWidget->getBounds().getY()
     ).withWidth(getWidth() - PLUG_PADDING * 2));
@@ -736,7 +736,7 @@ void REVERAudioProcessorEditor::toggleUIComponents()
 
 //==============================================================================
 
-void REVERAudioProcessorEditor::paint (Graphics& g)
+void REEVRAudioProcessorEditor::paint (Graphics& g)
 {
     g.fillAll(Colour(COLOR_BG));
     auto bounds = getLocalBounds().withTop(view->getBounds().getY() + 10).withHeight(3).toFloat();
@@ -880,7 +880,7 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
     g.drawFittedText(audioProcessor.impulse->name, bounds.expanded(-3, 0).toNearestInt(), Justification::centred, 2, 1.f);
 }
 
-void REVERAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)
+void REEVRAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)
 {
     bounds.expand(-6,-6);
     auto pi = MathConstants<float>::pi;
@@ -892,13 +892,13 @@ void REVERAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bo
     g.strokePath(p, PathStrokeType(2.f, PathStrokeType::curved, PathStrokeType::rounded));
 }
 
-void REVERAudioProcessorEditor::drawGear(Graphics& g, Rectangle<int> bounds, float radius, int segs, Colour color, Colour background)
+void REEVRAudioProcessorEditor::drawGear(Graphics& g, Rectangle<int> bounds, float radius, int segs, Colour color, Colour background)
 {
     float x = bounds.toFloat().getCentreX();
     float y = bounds.toFloat().getCentreY();
     float oradius = radius;
     float iradius = radius / 3.f;
-    float cradius = iradius / 1.5f; 
+    float cradius = iradius / 1.5f;
     float coffset = MathConstants<float>::twoPi;
     float inc = MathConstants<float>::twoPi / segs;
 
@@ -914,7 +914,7 @@ void REVERAudioProcessorEditor::drawGear(Graphics& g, Rectangle<int> bounds, flo
     }
     g.fillEllipse(x-iradius, y-iradius, iradius*2.f, iradius*2.f);
 }
-void REVERAudioProcessorEditor::drawUndoButton(Graphics& g, juce::Rectangle<float> area, bool invertx, Colour color)
+void REEVRAudioProcessorEditor::drawUndoButton(Graphics& g, juce::Rectangle<float> area, bool invertx, Colour color)
 {
         auto bounds = area;
         auto thickness = 2.f;
@@ -955,7 +955,7 @@ void REVERAudioProcessorEditor::drawUndoButton(Graphics& g, juce::Rectangle<floa
         g.strokePath(arrowPath, PathStrokeType(thickness));
 }
 
-void REVERAudioProcessorEditor::resized()
+void REEVRAudioProcessorEditor::resized()
 {
     if (!init) return; // defer resized() call during constructor
 

@@ -6,7 +6,7 @@
 #include "algorithm"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 enum CellShape {
     SNone,
@@ -55,7 +55,7 @@ public:
     int patternIdx = -1;
     std::vector<PPoint> backup;
 
-    Sequencer(REVERAudioProcessor& p);
+    Sequencer(REEVRAudioProcessor& p);
     ~Sequencer() {}
 
     void setViewBounds(int _x, int _y, int _w, int _h);
@@ -115,7 +115,7 @@ private:
     int winy = 0;
     int winw = 0;
     int winh = 0;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
     bool isSnapping(const MouseEvent& e);
     std::vector<PPoint> removeCollinearPoints(std::vector<PPoint>& pts);

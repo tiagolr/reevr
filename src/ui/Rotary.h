@@ -5,7 +5,7 @@
 #include "../Globals.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 enum RotaryLabel {
     hz,
@@ -35,7 +35,7 @@ enum RotaryType {
 
 class Rotary : public juce::SettableTooltipClient, public juce::Component, private juce::AudioProcessorValueTreeState::Listener {
 public:
-    Rotary(REVERAudioProcessor& p, juce::String paramId, juce::String name, RotaryLabel format, 
+    Rotary(REEVRAudioProcessor& p, juce::String paramId, juce::String name, RotaryLabel format, 
         bool isSymmetric = false, unsigned int color = COLOR_ACTIVE, RotaryType type = RotaryType::NormalKnob
     );
     ~Rotary() override;
@@ -53,7 +53,7 @@ protected:
     juce::String paramId;
     juce::String name;
     RotaryLabel format;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
 private:
     RotaryType type;

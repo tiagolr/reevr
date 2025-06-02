@@ -1,7 +1,7 @@
 #include "EnvelopeWidget.h"
 #include "../PluginProcessor.h"
 
-EnvelopeWidget::EnvelopeWidget(REVERAudioProcessor& p, bool isSendenv, int width) : audioProcessor(p), isSendenv(isSendenv) 
+EnvelopeWidget::EnvelopeWidget(REEVRAudioProcessor& p, bool isSendenv, int width) : audioProcessor(p), isSendenv(isSendenv) 
 {
     audioProcessor.params.addParameterListener(isSendenv ? "sendenvon" : "revenvon", this);
     audioProcessor.params.addParameterListener(isSendenv ? "sendenvamt" : "revenvamt", this);

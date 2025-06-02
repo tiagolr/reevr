@@ -1,7 +1,7 @@
 #include "SequencerWidget.h"
 #include "../PluginProcessor.h"
 
-SequencerWidget::SequencerWidget(REVERAudioProcessor& p) : audioProcessor(p)
+SequencerWidget::SequencerWidget(REEVRAudioProcessor& p) : audioProcessor(p)
 {
 	auto addButton = [this](TextButton& button, String label, int col, int row, SeqEditMode mode) {
 		Colour color = audioProcessor.sequencer->getEditModeColour(mode);

@@ -13,7 +13,7 @@
 #include "../Globals.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 struct SelPoint {
     uint64_t id;
@@ -58,7 +58,7 @@ inline Vec2 bilinearInterpolate(const Quad& quad, double u, double v) {
 class Multiselect
 {
 public:
-	Multiselect(REVERAudioProcessor& p) : audioProcessor(p) {}
+	Multiselect(REEVRAudioProcessor& p) : audioProcessor(p) {}
 	~Multiselect() {}
 
     void setViewBounds(int _x, int _y, int _w, int _h);
@@ -103,7 +103,7 @@ private:
 
 	Rectangle<double> selectionAreaStart = Rectangle<double>(); // used to drag or scale selection area
     Quad selectionQuadStart = {Vec2(0.0,0.0), Vec2(1.0, 0.0), Vec2(0.0, 1.0), Vec2(1.0,1.0)};
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
     bool isSnapping(const MouseEvent& e);
     Vec2 pointToVec(Point<double> p);

@@ -4,11 +4,11 @@
 #include "../Globals.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class IRDisplay : public juce::Component, private juce::Timer, private juce::AudioProcessorValueTreeState::Listener {
 public:
-    IRDisplay(REVERAudioProcessor& p);
+    IRDisplay(REEVRAudioProcessor& p);
     ~IRDisplay() override;
     void timerCallback() override;
     void parameterChanged (const juce::String& parameterID, float newValue) override;
@@ -35,7 +35,7 @@ private:
     Point<int> last_mouse_position;
     std::vector<float> waveLeft;
     std::vector<float> waveRight;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
     Rectangle<int> getDisplayBounds();
     Rectangle<int> getTrimLeftBounds();

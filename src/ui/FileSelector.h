@@ -5,11 +5,11 @@
 #include <functional>
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class FileSelector : public juce::Component, public juce::FileBrowserListener {
 public:
-    FileSelector(REVERAudioProcessor& p, std::function<void()> onClose);
+    FileSelector(REEVRAudioProcessor& p, std::function<void()> onClose);
     ~FileSelector() override;
     void readDir();
 
@@ -38,6 +38,6 @@ private:
     TextButton closeButton;
     TextButton changedirButton;
 
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
 };

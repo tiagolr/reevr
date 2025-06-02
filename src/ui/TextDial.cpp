@@ -1,7 +1,7 @@
 #include "TextDial.h"
 #include "../PluginProcessor.h"
 
-TextDial::TextDial(REVERAudioProcessor& p, String paramId, String prefix, String suffix, TextDialLabel format, float fontSize, unsigned int color)
+TextDial::TextDial(REEVRAudioProcessor& p, String paramId, String prefix, String suffix, TextDialLabel format, float fontSize, unsigned int color)
     : audioProcessor(p), paramId(paramId), prefix(prefix), suffix(suffix), format(format), fontSize(fontSize), fontColor(color)
 {
     audioProcessor.params.addParameterListener(paramId, this);

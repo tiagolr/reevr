@@ -1,7 +1,7 @@
 #include "IRDisplay.h"
 #include "../PluginProcessor.h"
 
-IRDisplay::IRDisplay(REVERAudioProcessor& p) : audioProcessor(p)
+IRDisplay::IRDisplay(REEVRAudioProcessor& p) : audioProcessor(p)
 {
 	startTimerHz(15);
 	attack = audioProcessor.params.getRawParameterValue("irattack")->load();

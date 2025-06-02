@@ -6,7 +6,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(BUILD_STANDALONE "Build Standalone plugin format" ON) # Allow overriding from the command line
 
-project(REVER VERSION 0.1.0)
+project(REEVR VERSION 0.1.0)
 
 add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
@@ -35,11 +35,11 @@ juce_add_plugin(${PROJECT_NAME}
         JUCE_VST3_CAN_REPLACE_VST2 FALSE
         COPY_PLUGIN_AFTER_BUILD TRUE
         PLUGIN_MANUFACTURER_CODE Tilr
-        PLUGIN_CODE reve
+        PLUGIN_CODE reev
         FORMATS ${plugin_formats}
-        PRODUCT_NAME "REVE-R"
-        BUNDLE_ID "com.tilr.rever"
-        LV2URI "https://github.com/tiagolr/rever"
+        PRODUCT_NAME "REEV-R"
+        BUNDLE_ID "com.tilr.reevr"
+        LV2URI "https://github.com/tiagolr/reevr"
 )
 
 file(GLOB_RECURSE src

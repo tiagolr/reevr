@@ -1,7 +1,7 @@
 #include "GridSelector.h"
 #include "../PluginProcessor.h"
 
-GridSelector::GridSelector(REVERAudioProcessor& p, bool seqStepSelector) 
+GridSelector::GridSelector(REEVRAudioProcessor& p, bool seqStepSelector) 
     : audioProcessor(p)
     , seqStepSelector(seqStepSelector)
 {

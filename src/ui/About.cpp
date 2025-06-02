@@ -15,13 +15,13 @@ void About::paint(Graphics& g)
 	bounds.reduce(50,50);
 	g.setColour(Colours::white);
 	g.setFont(FontOptions(30.f));
-	g.drawText("REVE-R", bounds.removeFromTop(35), Justification::centred);
+	g.drawText("REEV-R", bounds.removeFromTop(35), Justification::centred);
 	g.setFont(FontOptions(20.f));
 	g.drawText(std::string("v") + PROJECT_VERSION, bounds.removeFromTop(25), Justification::centred);
 	g.setFont(FontOptions(20.0f));
 	g.drawText("Copyright (C) Tilr 2025", bounds.removeFromTop(25), Justification::centred);
 	g.setColour(Colour(COLOR_ACTIVE));
-	g.drawText("github.com/tiagolr/rever", bounds.removeFromTop(25), Justification::centred);
+	g.drawText("github.com/tiagolr/reevr", bounds.removeFromTop(25), Justification::centred);
 	g.setColour(Colours::white);
 	bounds.removeFromTop(40);
 	auto w = PLUG_WIDTH - 100;

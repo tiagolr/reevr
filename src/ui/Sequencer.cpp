@@ -1,7 +1,7 @@
 #include "Sequencer.h"
 #include "../PluginProcessor.h"
 
-Sequencer::Sequencer(REVERAudioProcessor& p) : audioProcessor(p)
+Sequencer::Sequencer(REEVRAudioProcessor& p) : audioProcessor(p)
 {
     tmp = new Pattern(-1);
     pat = new Pattern(-1);

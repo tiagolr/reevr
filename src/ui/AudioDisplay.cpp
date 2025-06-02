@@ -11,7 +11,7 @@
 #include "../PluginProcessor.h"
 #include "../Globals.h"
 
-AudioDisplay::AudioDisplay(REVERAudioProcessor& p) : audioProcessor(p)
+AudioDisplay::AudioDisplay(REEVRAudioProcessor& p) : audioProcessor(p)
 {
     startTimerHz(60);
 };

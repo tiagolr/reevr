@@ -32,14 +32,14 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: rever-win
+          name: reevr-win
           path: |
-            ./build/REVER_artefacts/Release/LV2
-            ./build/REVER_artefacts/Release/VST3
-            !./build/REVER_artefacts/Release/VST3/*.exp
-            !./build/REVER_artefacts/Release/VST3/*.lib
-            !./build/REVER_artefacts/Release/LV2/*.exp
-            !./build/REVER_artefacts/Release/LV2/*.lib
+            ./build/REEVR_artefacts/Release/LV2
+            ./build/REEVR_artefacts/Release/VST3
+            !./build/REEVR_artefacts/Release/VST3/*.exp
+            !./build/REEVR_artefacts/Release/VST3/*.lib
+            !./build/REEVR_artefacts/Release/LV2/*.exp
+            !./build/REEVR_artefacts/Release/LV2/*.lib
 
   build-macos:
     runs-on: macos-latest
@@ -62,7 +62,7 @@ jobs:
 
       - name: Copy readme
         run: |
-          cp ./doc/macos-readme.txt ./build/REVER_artefacts/Release/readme.txt
+          cp ./doc/macos-readme.txt ./build/REEVR_artefacts/Release/readme.txt
 
       - name: List errors
         run: cat "./build/CMakeFiles/CMakeError.log" || true
@@ -70,14 +70,14 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: rever-macos
+          name: reevr-macos
           path: |
-            ./build/REVER_artefacts/Release/LV2
-            ./build/REVER_artefacts/Release/AU
-            ./build/REVER_artefacts/Release/VST3
-            ./build/REVER_artefacts/Release/readme.txt
-            !./build/REVER_artefacts/Release/VST3/*.exp
-            !./build/REVER_artefacts/Release/VST3/*.lib
+            ./build/REEVR_artefacts/Release/LV2
+            ./build/REEVR_artefacts/Release/AU
+            ./build/REEVR_artefacts/Release/VST3
+            ./build/REEVR_artefacts/Release/readme.txt
+            !./build/REEVR_artefacts/Release/VST3/*.exp
+            !./build/REEVR_artefacts/Release/VST3/*.lib
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -106,12 +106,12 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: rever-linux
+          name: reevr-linux
           path: |
-            ./build/REVER_artefacts/Release/LV2
-            ./build/REVER_artefacts/Release/VST3
-            !./build/REVER_artefacts/Release/VST3/*.exp
-            !./build/REVER_artefacts/Release/VST3/*.lib
+            ./build/REEVR_artefacts/Release/LV2
+            ./build/REEVR_artefacts/Release/VST3
+            !./build/REEVR_artefacts/Release/VST3/*.exp
+            !./build/REEVR_artefacts/Release/VST3/*.lib
 
   release:
     runs-on: ubuntu-latest
@@ -121,20 +121,20 @@ jobs:
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: rever-win
-          path: artifacts/rever-win
+          name: reevr-win
+          path: artifacts/reevr-win
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: rever-macos
-          path: artifacts/rever-macos
+          name: reevr-macos
+          path: artifacts/reevr-macos
 
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: rever-linux
-          path: artifacts/rever-linux
+          name: reevr-linux
+          path: artifacts/reevr-linux
 
       - name: Append tag to artifacts
         run: |
@@ -142,9 +142,9 @@ jobs:
 
           # Zip each platform's artifacts with the tag in the name
           cd artifacts
-          zip -r rever-win-${TAG_NAME}.zip rever-win
-          zip -r rever-macos-${TAG_NAME}.zip rever-macos
-          zip -r rever-linux-${TAG_NAME}.zip rever-linux
+          zip -r reevr-win-${TAG_NAME}.zip reevr-win
+          zip -r reevr-macos-${TAG_NAME}.zip reevr-macos
+          zip -r reevr-linux-${TAG_NAME}.zip reevr-linux
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -152,8 +152,8 @@ jobs:
           draft: true
           tag_name: ${{ github.ref_name }}
           files: |
-            artifacts/rever-win-*.zip
-            artifacts/rever-macos-*.zip
-            artifacts/rever-linux-*.zip
+            artifacts/reevr-win-*.zip
+            artifacts/reevr-macos-*.zip
+            artifacts/reevr-linux-*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -27,11 +27,11 @@
 
 using namespace globals;
 
-class REVERAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::AudioProcessorValueTreeState::Listener, public juce::ChangeListener
+class REEVRAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::AudioProcessorValueTreeState::Listener, public juce::ChangeListener
 {
 public:
-    REVERAudioProcessorEditor (REVERAudioProcessor&);
-    ~REVERAudioProcessorEditor() override;
+    REEVRAudioProcessorEditor (REEVRAudioProcessor&);
+    ~REEVRAudioProcessorEditor() override;
 
     //==============================================================================
     void parameterChanged (const juce::String& parameterID, float newValue) override;
@@ -45,7 +45,7 @@ public:
 
 private:
     bool init = false;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
     CustomLookAndFeel* customLookAndFeel = nullptr;
     std::unique_ptr<About> about;
     std::unique_ptr<IRDisplay> irDisplay;
@@ -123,5 +123,5 @@ private:
 
     TooltipWindow tooltipWindow;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (REVERAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (REEVRAudioProcessorEditor)
 };

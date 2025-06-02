@@ -102,7 +102,7 @@ public:
 //==============================================================================
 /**
 */
-class REVERAudioProcessor
+class REEVRAudioProcessor
     : public AudioProcessor
     , public AudioProcessorParameter::Listener
     , public ChangeBroadcaster
@@ -260,8 +260,8 @@ public:
     bool showFileSelector = false;
 
     //==============================================================================
-    REVERAudioProcessor();
-    ~REVERAudioProcessor() override;
+    REEVRAudioProcessor();
+    ~REEVRAudioProcessor() override;
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
     void loadImpulse(String path);
@@ -354,5 +354,5 @@ private:
     ThreadPool threadPool{1};
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (REVERAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (REEVRAudioProcessor)
 };

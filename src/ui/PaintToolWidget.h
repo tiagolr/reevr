@@ -4,11 +4,11 @@
 #include "../Globals.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class PaintToolWidget : public juce::Component, private juce::Timer {
 public:
-    PaintToolWidget(REVERAudioProcessor& p);
+    PaintToolWidget(REEVRAudioProcessor& p);
     ~PaintToolWidget() override {}
 
     TextButton paintEditButton;
@@ -25,5 +25,5 @@ public:
     std::vector<Rectangle<int>> getPatRects();
 
 private:
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };

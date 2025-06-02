@@ -6,11 +6,11 @@
 
 using namespace globals;
 
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class GridSelector : public juce::SettableTooltipClient, public juce::Component, private juce::AudioProcessorValueTreeState::Listener {
 public:
-    GridSelector(REVERAudioProcessor&, bool seqStepSelector = false);
+    GridSelector(REEVRAudioProcessor&, bool seqStepSelector = false);
     ~GridSelector() override;
     void paint(juce::Graphics& g) override;
 
@@ -20,5 +20,5 @@ public:
 
 private:
     bool seqStepSelector;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };

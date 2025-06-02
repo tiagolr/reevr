@@ -1,7 +1,7 @@
 #include "Rotary.h"
 #include "../PluginProcessor.h"
 
-Rotary::Rotary(REVERAudioProcessor& p, juce::String paramId, juce::String name, RotaryLabel format, bool isSymmetric, unsigned int color, RotaryType type)
+Rotary::Rotary(REEVRAudioProcessor& p, juce::String paramId, juce::String name, RotaryLabel format, bool isSymmetric, unsigned int color, RotaryType type)
     : juce::SettableTooltipClient()
     , juce::Component()
     , audioProcessor(p)

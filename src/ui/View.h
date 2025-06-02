@@ -16,7 +16,7 @@
 #include "Multiselect.h"
 #include "PaintTool.h"
 
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 using namespace globals;
 
 class View : public juce::Component, private juce::Timer
@@ -27,7 +27,7 @@ public:
     int winw = 0;
     int winh = 0;
 
-    View(REVERAudioProcessor&);
+    View(REEVRAudioProcessor&);
     ~View() override;
     void resized() override;
     void timerCallback() override;
@@ -71,7 +71,7 @@ private:
     int rmousePoint = -1;
     int luimode = false;
 
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
     double origTension = 0;
     int dragStartY = 0; // used for midpoint dragging
     uint64_t patternID = 0; // used to detect pattern changes

@@ -1,7 +1,7 @@
 #include "PaintTool.h"
 #include "../PluginProcessor.h"
 
-PaintTool::PaintTool(REVERAudioProcessor& p) : audioProcessor(p) 
+PaintTool::PaintTool(REEVRAudioProcessor& p) : audioProcessor(p) 
 {
     pat = new Pattern(-1);
 }

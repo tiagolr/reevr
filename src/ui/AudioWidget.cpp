@@ -1,7 +1,7 @@
 #include "AudioWidget.h"
 #include "../PluginProcessor.h"
 
-AudioWidget::AudioWidget(REVERAudioProcessor& p) : audioProcessor(p)
+AudioWidget::AudioWidget(REEVRAudioProcessor& p) : audioProcessor(p)
 {
     int col = 0;
     int row = 0;

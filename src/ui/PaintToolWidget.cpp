@@ -1,7 +1,7 @@
 #include "PaintToolWidget.h"
 #include "../PluginProcessor.h"
 
-PaintToolWidget::PaintToolWidget(REVERAudioProcessor& p) : audioProcessor(p) 
+PaintToolWidget::PaintToolWidget(REEVRAudioProcessor& p) : audioProcessor(p) 
 {
     addAndMakeVisible(paintEditButton);
     paintEditButton.setButtonText("Edit");

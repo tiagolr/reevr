@@ -4,7 +4,7 @@
 #include "../Globals.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 enum TextDialLabel {
     tdMix,
@@ -13,7 +13,7 @@ enum TextDialLabel {
 
 class TextDial : public juce::SettableTooltipClient, public juce::Component, private juce::AudioProcessorValueTreeState::Listener {
 public:
-    TextDial(REVERAudioProcessor& p, String paramId, String prefix, String suffix, TextDialLabel format, float fontSize, unsigned int color);
+    TextDial(REEVRAudioProcessor& p, String paramId, String prefix, String suffix, TextDialLabel format, float fontSize, unsigned int color);
     ~TextDial() override;
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
@@ -33,7 +33,7 @@ private:
     TextDialLabel format;
     float fontSize = 16.0f;
     unsigned int fontColor;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
     float pixels_per_percent{100.0f};
     float cur_normed_value{0.0f};

@@ -5,13 +5,13 @@
 #include "../dsp/Pattern.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class PaintTool {
 public:
     bool dragging = false;
 
-    PaintTool(REVERAudioProcessor& p);
+    PaintTool(REEVRAudioProcessor& p);
     ~PaintTool() {}
 
     void setViewBounds(int _x, int _y, int _w, int _h);
@@ -39,7 +39,7 @@ private:
     bool snap = false;
     Point<int> mousePos;
     Point<int> lmousePos;
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 
     Rectangle<double> getBounds();
     bool isSnapping(const MouseEvent& e);

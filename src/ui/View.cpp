@@ -11,7 +11,7 @@
 #include "../PluginProcessor.h"
 #include <utility>
 
-View::View(REVERAudioProcessor& p) : audioProcessor(p), multiSelect(p), paintTool(p)
+View::View(REEVRAudioProcessor& p) : audioProcessor(p), multiSelect(p), paintTool(p)
 {
     setWantsKeyboardFocus(true);
     startTimerHz(60);

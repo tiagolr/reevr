@@ -5,11 +5,11 @@
 #include "GridSelector.h"
 
 using namespace globals;
-class REVERAudioProcessor;
+class REEVRAudioProcessor;
 
 class SequencerWidget : public juce::Component {
 public:
-    SequencerWidget(REVERAudioProcessor& p);
+    SequencerWidget(REEVRAudioProcessor& p);
     ~SequencerWidget() override {}
     void resized() override;
 
@@ -46,5 +46,5 @@ public:
     void drawChain(Graphics& g, Rectangle<int> bounds, Colour color, Colour background);
 
 private:
-    REVERAudioProcessor& audioProcessor;
+    REEVRAudioProcessor& audioProcessor;
 };
