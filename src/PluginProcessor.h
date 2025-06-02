@@ -174,6 +174,9 @@ public:
     std::vector<float> xposBuffer;
     AudioBuffer<float> wetBuffer;
     AudioBuffer<float> sendBuffer;
+    AudioBuffer<float> delayBuffer;
+    int delaypos = 0;
+
 
     // Convolver state
     Impulse* impulse;
@@ -280,6 +283,7 @@ public:
     void setViewPattern(int index);
     void restorePaintPatterns();
     void setSendEditMode(bool isSend);
+    int getPredelaySync();
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;

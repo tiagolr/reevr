@@ -38,7 +38,9 @@ REEVRAudioProcessor::REEVRAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
         std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 1000.f, 1.0f, 0.5f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 250.f), 0.0f),
+        std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray { "Off", "1/16", "1/8", "1/8d", "1/8t", "1/4" }, 0),
+        std::make_unique<juce::AudioParameterBool>("predelayusesync", "Pre-Delay Use Sync", false),
         std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f),
         std::make_unique<juce::AudioParameterFloat>("irattack", "IR Attack", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irdecay", "IR Decay", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
@@ -308,6 +310,19 @@ void REEVRAudioProcessor::setSendEditMode(bool isSend)
     });
 }
 
+int REEVRAudioProcessor::getPredelaySync()
+{
+    int predelaySync = (int)params.getRawParameterValue("predelaysync")->load();
+    double noteLength = 0.0;
+    if (predelaySync == 1) noteLength = 0.25; // 1/16
+    else if (predelaySync == 2) noteLength = 0.5; // 1/8
+    else if (predelaySync == 3) noteLength = 0.75; // 1/8d
+    else if (predelaySync == 4) noteLength = 1/3.0; // 1/8t
+    else if (predelaySync == 5) noteLength = 1.0; // 1/4
+
+    return static_cast<int>(samplesPerBeat * noteLength);
+}
+
 void REEVRAudioProcessor::setUIMode(UIMode mode)
 {
     MessageManager::callAsync([this, mode]() {
@@ -543,6 +558,9 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     }
 
     convolver->loadImpulse(*impulse);
+
+    delayBuffer.setSize(2, int(2.0f * sampleRate));
+    delayBuffer.clear();
 
     revenvBuffer.resize(samplesPerBlock, 0.f);
     sendenvBuffer.resize(samplesPerBlock, 0.f);
@@ -818,6 +836,9 @@ void REEVRAudioProcessor::onPlay()
     irHighcutL.reset(0.0f);
     irHighcutR.reset(0.0f);
 
+    delayBuffer.clear();
+    delaypos = 0;
+
     clearTails = false;
     clearTailsCooldown = 0;
     pattern->shouldClearTails = false;
@@ -1017,7 +1038,17 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     float width = params.getRawParameterValue("width")->load();
     float irLowcut = params.getRawParameterValue("irlowcut")->load();
     float irHighcut = params.getRawParameterValue("irhighcut")->load();
-    sense = std::powf(sense, 2); // make audio trigger sensitivity more responsive
+    int predelay = (bool)params.getRawParameterValue("predelayusesync")->load()
+        ? getPredelaySync()
+        : (int)(params.getRawParameterValue("predelay")->load() / 1000.f * srate);
+
+    if (predelay > delayBuffer.getNumSamples()) {
+        delayBuffer.setSize(2, predelay * 2);
+        delayBuffer.clear();
+        delaypos = 0;
+    }
+
+    sense *= sense; // make audio trigger sensitivity more responsive
 
     // process viewport background display wave samples
     auto processDisplaySample = [&](int sampidx, double xpos, float prelsamp, float prersamp) {
@@ -1577,10 +1608,36 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         clearTails = false;
     }
 
+    // predelay
+    int delaySize = delayBuffer.getNumSamples();
+    for (int channel = 0; channel < 2; ++channel) {
+        auto* delayWrite = delayBuffer.getWritePointer(channel);
+        auto* sendRead = sendBuffer.getReadPointer(channel);
+
+        for (int i = 0; i < numSamples; ++i) {
+            int index = (delaypos + i) % delaySize;
+            delayWrite[index] = sendRead[i];
+        }
+    }
+    juce::AudioBuffer<float> delayedBuffer(2, numSamples);
+    delayedBuffer.clear();
+    for (int channel = 0; channel < 2; ++channel) {
+        auto* delayRead = delayBuffer.getReadPointer(channel);
+        auto* delayedWrite = delayedBuffer.getWritePointer(channel);
+
+        int readPosition = (delaypos + delaySize - predelay) % delaySize;
+
+        for (int i = 0; i < numSamples; ++i) {
+            int index = (readPosition + i) % delaySize;
+            delayedWrite[i] = delayRead[index];
+        }
+    }
+    delaypos = (delaypos + numSamples) % delaySize;
+
     // process send input into the convolver
     convolver->process(
-        sendBuffer.getReadPointer(0), 
-        sendBuffer.getReadPointer(1),
+        delayedBuffer.getReadPointer(0), 
+        delayedBuffer.getReadPointer(1),
         numSamples
     );
 

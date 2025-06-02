@@ -72,6 +72,7 @@ private:
     std::unique_ptr<EnvelopeWidget> sendenv;
 
     std::unique_ptr<Rotary> predelay;
+    std::unique_ptr<Rotary> predelaysync;
     std::unique_ptr<Rotary> stretch;
     std::unique_ptr<Rotary> width;
     std::unique_ptr<Rotary> lowcut;
@@ -95,6 +96,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> algoAttachment;
     TextButton lowcutSlope;
     TextButton highcutSlope;
+    TextButton predelayUseSync;
     TextButton revEnvButton;
     TextButton revEnvOnButton;
     TextButton sendEnvButton;

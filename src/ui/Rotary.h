@@ -25,6 +25,7 @@ enum RotaryLabel {
     kMillis,
     exp2Range,
     dryWet,
+    kChoice,
 };
 
 enum RotaryType {

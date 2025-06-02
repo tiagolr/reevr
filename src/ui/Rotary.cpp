@@ -166,6 +166,9 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
 
             text = std::to_string((int)std::round(dryGain * 100)) + ":" +
                 std::to_string((int)std::round(wetGain * 100));
+        } 
+        else if (format == kChoice) {
+            text = audioProcessor.params.getParameter(paramId)->getCurrentValueAsText();
         }
     }
 

@@ -272,6 +272,11 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     predelay = std::make_unique<Rotary>(p, "predelay", "Gap", RotaryLabel::kMillis);
     addAndMakeVisible(*predelay);
     predelay->setBounds(col,row,80,65);
+
+    predelaysync = std::make_unique<Rotary>(p, "predelaysync", "Gap", RotaryLabel::kChoice);
+    addAndMakeVisible(*predelaysync);
+    predelaysync->setBounds(col,row,80,65);
+
     col += 75;
 
     drywet = std::make_unique<Rotary>(p, "drywet", "Dry/Wet", RotaryLabel::dryWet, true);
@@ -371,6 +376,18 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     tensionrel->setBounds(col,row,80,65);
     col += 75;
 
+    addAndMakeVisible(predelayUseSync);
+    predelayUseSync.setBounds(predelay->getBounds().getRight()-15, predelay->getBounds().getY(), 25,20);
+    predelayUseSync.setAlpha(0.0f);
+    predelayUseSync.onClick = [this]() {
+        MessageManager::callAsync([this] {
+            int useSync = (bool)audioProcessor.params.getRawParameterValue("predelayusesync")->load();
+            auto param = audioProcessor.params.getParameter("predelayusesync");
+            param->setValueNotifyingHost(param->convertTo0to1((float)!useSync));
+            toggleUIComponents();
+        });
+    };
+
     // AUDIO WIDGET
     audioWidget = std::make_unique<AudioWidget>(p);
     addAndMakeVisible(*audioWidget);
@@ -385,7 +402,6 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     sendenv = std::make_unique<EnvelopeWidget>(p, true, b.getWidth());
     addAndMakeVisible(*sendenv);
     sendenv->setBounds(b.expanded(0,5));
-
 
     // 3RD ROW
     col = PLUG_PADDING;
@@ -630,6 +646,10 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     revoffset->setVisible(!isSendMode);
     sendoffset->setVisible(isSendMode);
 
+    bool useSync = (bool)audioProcessor.params.getRawParameterValue("predelayusesync")->load();
+    predelay->setVisible(!useSync);
+    predelaysync->setVisible(useSync);
+
     auto trigger = (int)audioProcessor.params.getRawParameterValue("trigger")->load();
     auto triggerColor = trigger == 0 ? COLOR_ACTIVE : trigger == 1 ? COLOR_MIDI : COLOR_AUDIO;
     triggerMenu.setColour(ComboBox::arrowColourId, Colour(triggerColor));
@@ -869,6 +889,14 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     String highslopeLabel = highcutslope == 0 ? "6dB" : highcutslope == 1 ? "12dB" : "24dB";
     g.drawFittedText(lowslopeLabel, lowcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
     g.drawFittedText(highslopeLabel, highcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
+
+    // draw predelay useSync
+    bool useSync = (bool)audioProcessor.params.getRawParameterValue("predelayusesync")->load();
+    g.setColour(Colour(useSync ? COLOR_ACTIVE : COLOR_NEUTRAL));
+    bounds = predelayUseSync.getBounds().toFloat();
+    auto r = 3.f;
+    g.fillEllipse(bounds.getCentreX() - r*2, bounds.getBottom()-r*2, r*2, r*2);
+    g.drawLine(bounds.getCentreX(), bounds.getBottom()-r, bounds.getCentreX(), bounds.getY()+r);
 
     bounds = currentFile.getBounds().toFloat();
     if (audioProcessor.showFileSelector) {
