@@ -19,7 +19,7 @@
 
 </div>
 
-**REEV-R** is a cross-platform filter modulator inspired by plugins like ShaperBox and FilterShaper. It is the second version of [FLTR-1 JSFX](https://github.com/tiagolr/tilr_jsfx?tab=readme-ov-file#fltr-1) for the Reaper DAW.
+**REEV-R** is a cross-platform convolution reverb modulator where both the pre/send and post reverb signals can be modulated using MSEGs. It's a very close implementation to ShaperBox reverb module, see notes below.
 
 <div align="center">
 
@@ -54,9 +54,33 @@ Also check other plugins from this collection:
 * Current builds include VST3 and LV2 for Windows, Linux and macOS plus AU for macOS.
 * Clap is planned when there is official [JUCE support](https://juce.com/blog/juce-roadmap-update-q3-2024/).
 
+## Install
+
+REEV does not come with impulse response files (IRs) other than the default one, you should either install convolution IRs on the plugin impulses folder or change the plugin IR directory to another  folder containing IRs.
+
+Here are some links to download reverb IRs:
+
+* [Bricastis M7](https://samplicity.com/bricasti-m7-impulse-response-files/)
+* [Voxengo](https://oramics.github.io/sampled/IR/Voxengo/)
+* [Reaper Stash](https://stash.reaper.fm/tag/Reverb-Impulses)
+* [Open Air](https://www.openair.hosted.york.ac.uk/?page_id=36)
+
+These links may be broken, search for reverb IR files to find free ones on the internet.
+
+
 ## About
 
-REEV-R is an envelope generator plugin that applies the same engine of GATE-12 and TIME-12 to filter modulation. it includes 6 unique filters, three of them grabbed from [Saikes Yutani Bass](https://github.com/JoepVanlier/JSFX) (303, MS-20 and Linear), a Moog filter which is the JUCEs stock ladder filter adapted to this project and finally an Analog/Sallen Key and Phaser filters which were broght from [Vital](https://github.com/mtytel/vital) synth source code.
+REEV-R is a convolution reverb with modulation capabilities, it is possible thanks to [KlangFalter](https://github.com/HiFi-LoFi/KlangFalter) FFT Convolution library, JUCE stock reverb was consuming 20% CPU usage on debug builds while this one takes less than 1%, this was the only library I found that perfectly fits this plugin.
+
+### How it works
+
+REEV supports IR manipulation like stretching, reversing, trimming, attack and decay. Because loading IRs is expensive this plugin uses two reverbs, one active and one idle, and loads the modified impulses on the idle reverb on a separate thread. Once the secondary reverb is ready it warms it with one second of buffered audio, so that it achieves the same state as the main reverb, finally both reverbs are cross-faded for a smooth transition before swapping the two.
+
+### A note on ShaperBox
+
+This plugin, more so than the others, is feature-by-feature almost a copy of ShaperBox - from the send/reverb modulations to the envelope followers to the knobs that move the average of the points.. this was not intentional or planned, there are not many references and I didn't want to stay behind some very well thought features of CableGuys plugins so I ended replicating them.
+
+If you like this plugin consider checking ShaperBox Reverb, it's probably more studio grade, more polished, the reverb sounds a bit more defined on the low-end and the price tag is still affordable.
 
 ### Features
 

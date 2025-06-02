@@ -5,6 +5,7 @@
 *.rpp
 *.rpp-bak
 *.wav
+!resources/impulses/*.wav
 
 # Compiled Object files
 *.slo
