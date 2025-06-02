@@ -217,28 +217,33 @@ void View::drawPoints(Graphics& g)
 {
     auto& points = audioProcessor.viewPattern->points;
     int index = audioProcessor.viewPattern->index;
-    bool isResPattern = index >= 12 && index <= 24;
+    bool isSendPattern = index >= 12 && index <= 24;
 
-    Colour color = isResPattern ? Colour(COLOR_ACTIVE) : Colours::white;
+    Colour color = isSendPattern ? Colour(COLOR_ACTIVE) : Colours::white;
     g.setColour(color);
-    for (auto pt = points.begin(); pt != points.end(); ++pt) {
+    for (auto pt = points.begin(); pt != points.end(); ++pt) { // draw points
         auto xx = pt->x * winw + winx;
         auto yy = pt->y * winh + winy;
-        g.fillEllipse((float)(xx - POINT_RADIUS), (float)(yy - 4.0), (float)(POINT_RADIUS * 2), (float)(POINT_RADIUS * 2));
+        g.fillEllipse((float)(xx - POINT_RADIUS), (float)(yy - POINT_RADIUS), (float)(POINT_RADIUS * 2), (float)(POINT_RADIUS * 2));
+        if (pt->clearsTails) {
+            g.setColour(Colour(COLOR_ACTIVE));
+            g.drawEllipse((float)(xx - POINT_RADIUS * 2), (float)(yy - POINT_RADIUS * 2), (float)(POINT_RADIUS * 4), (float)(POINT_RADIUS * 4), 1.f);
+            g.setColour(color);
+        }
     }
 
-    if (selectedPoint == -1 && selectedMidpoint == -1 && hoverPoint > -1) {
+    if (selectedPoint == -1 && selectedMidpoint == -1 && hoverPoint > -1) { // draw hovered point
         g.setColour(color.withAlpha(0.5f));
         auto xx = points[hoverPoint].x * winw + winx;
         auto yy = points[hoverPoint].y * winh + winy;
         g.fillEllipse((float)(xx - HOVER_RADIUS), (float)(yy - HOVER_RADIUS), (float)HOVER_RADIUS * 2.f, (float)HOVER_RADIUS * 2.f);
     }
 
-    if (selectedPoint != -1) {
+    if (selectedPoint != -1) { // draw selected point
         g.setColour(Colours::red.withAlpha(0.5f));
         auto xx = points[selectedPoint].x * winw + winx;
         auto yy = points[selectedPoint].y * winh + winy;
-        g.fillEllipse((float)(xx - 4.0), (float)(yy-4.0), 8.0f, 8.0f);
+        g.fillEllipse((float)(xx - POINT_RADIUS), (float)(yy-POINT_RADIUS), (float)(POINT_RADIUS*2), (float)(POINT_RADIUS*2));
     }
 }
 
@@ -780,6 +785,8 @@ void View::showPointContextMenu(const juce::MouseEvent& event)
     (void)event;
     auto point = rmousePoint;
     int type = audioProcessor.viewPattern->points[point].type;
+    bool clearsTails = audioProcessor.viewPattern->points[point].clearsTails;
+    int patIndex = audioProcessor.viewPattern->index;
     PopupMenu menu;
     menu.addItem(1, "Hold", true, type == 0);
     menu.addItem(2, "Curve", true, type == 1);
@@ -789,9 +796,19 @@ void View::showPointContextMenu(const juce::MouseEvent& event)
     menu.addItem(6, "Triangle", true, type == 5);
     menu.addItem(7, "Stairs", true, type == 6);
     menu.addItem(8, "Smooth stairs", true, type == 7);
-    menu.showMenuAsync(PopupMenu::Options().withTargetComponent(this).withMousePosition(),[this, point](int result) {
-        int type = audioProcessor.viewPattern->points[point].type;
-        if (result > 0 && type != result - 1) {
+    if (audioProcessor.viewPattern->index < 12) {
+        menu.addSeparator();
+        menu.addItem(100, "Clear tails", true, clearsTails);
+    }
+    menu.showMenuAsync(PopupMenu::Options().withTargetComponent(this).withMousePosition(),[this, point, type, patIndex, clearsTails](int result) {
+        if (audioProcessor.viewPattern->index != patIndex) {
+            return;
+        }
+        if (result == 100) {
+            audioProcessor.viewPattern->points[point].clearsTails = !clearsTails;
+            audioProcessor.viewPattern->buildSegments();
+        }
+        else if (result > 0 && type != result - 1) {
             audioProcessor.createUndoPoint();
             audioProcessor.viewPattern->points[point].type = result - 1;
             audioProcessor.viewPattern->buildSegments();

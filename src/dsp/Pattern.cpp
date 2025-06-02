@@ -499,6 +499,7 @@ double Pattern::get_y_at(double x)
     std::lock_guard<std::mutex> lock(mtx); // prevents crash while building segments
     int low = 0;
     int high = static_cast<int>(segments.size()) - 1;
+    shouldClearTails = false;
 
     // binary search the segment containing x
     while (low <= high) {
@@ -510,6 +511,7 @@ double Pattern::get_y_at(double x)
         } else if (x > seg.x2) {
             low = mid + 1;
         } else {
+            shouldClearTails = seg.clearsTails && x - seg.x1 < 1e-5;
             if (seg.type == PointType::Hold) return seg.y1; // hold
             if (seg.type == PointType::Curve) return get_y_curve(seg, x);
             if (seg.type == PointType::SCurve) return get_y_scurve(seg, x);

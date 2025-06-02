@@ -818,6 +818,10 @@ void REVERAudioProcessor::onPlay()
     irHighcutL.reset(0.0f);
     irHighcutR.reset(0.0f);
 
+    clearTails = false;
+    clearTailsCooldown = 0;
+    pattern->shouldClearTails = false;
+
     midiTrigger = false;
     audioTrigger = false;
 
@@ -1471,6 +1475,16 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         if (playing)
             timeInSamples += 1;
 
+        if (pattern->shouldClearTails) {
+            if (clearTailsCooldown == 0) {
+                clearTails = true;
+            }
+            clearTailsCooldown = int(CONV_CLEAR_TAILS_COOLDOWN / 1000.0 * srate);
+        }
+        if (clearTailsCooldown > 0) {
+            clearTailsCooldown -= 1;
+        }
+
     } // ============================================== END OF SAMPLES PROCESSING
 
     drawSeek.store(playing && (trigger == Trigger::Sync || midiTrigger || audioTrigger)); // informs UI if it should seek or not, typically only during play
@@ -1557,6 +1571,11 @@ void REVERAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     if (loadCooldown > 0)
         loadCooldown -= numSamples;
+
+    if (clearTails) {
+        convolver->clear();
+        clearTails = false;
+    }
 
     // process send input into the convolver
     convolver->process(

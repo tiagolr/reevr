@@ -187,6 +187,8 @@ public:
     std::atomic<LoadState> loadState = kIdle;
     int xfade = 0;
     int xfadelen = 0;
+    int clearTailsCooldown = 0;
+    bool clearTails = false;
 
     // Reverb State
     bool reverbDirty = false;
