@@ -250,11 +250,13 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     lowcut = std::make_unique<Rotary>(p, "irlowcut", "Lowcut", RotaryLabel::hzHp);
     addAndMakeVisible(*lowcut);
     lowcut->setBounds(col,row,80,65);
+
     col += 75;
 
     highcut = std::make_unique<Rotary>(p, "irhighcut", "Highcut", RotaryLabel::hzLp);
     addAndMakeVisible(*highcut);
     highcut->setBounds(col,row,80,65);
+
     col += 75;
 
     stretch = std::make_unique<Rotary>(p, "irstretch", "Stretch", RotaryLabel::exp2Range, true);
@@ -276,6 +278,34 @@ REVERAudioProcessorEditor::REVERAudioProcessorEditor (REVERAudioProcessor& p)
     addAndMakeVisible(*drywet);
     drywet->setBounds(col,row,80,65);
     col += 75;
+
+    addAndMakeVisible(lowcutSlope);
+    lowcutSlope.setBounds(lowcut->getBounds().getRight()-15, lowcut->getBounds().getY(), 25,20);
+    lowcutSlope.setColour(ComboBox::outlineColourId, Colours::transparentBlack);
+    lowcutSlope.setAlpha(0.0f);
+    lowcutSlope.onClick = [this]() {
+        MessageManager::callAsync([this] {
+            int slope = (int)audioProcessor.params.getRawParameterValue("irlowcutslope")->load();
+            slope = (slope + 1) % 3;
+            auto param = audioProcessor.params.getParameter("irlowcutslope");
+            param->setValueNotifyingHost(param->convertTo0to1((float)slope));
+            toggleUIComponents();
+        });
+    };
+
+    addAndMakeVisible(highcutSlope);
+    highcutSlope.setBounds(highcut->getBounds().getRight()-15, highcut->getBounds().getY(), 25,20);
+    highcutSlope.setColour(ComboBox::outlineColourId, Colours::transparentBlack);
+    highcutSlope.setAlpha(0.0f);
+    highcutSlope.onClick = [this]() {
+        MessageManager::callAsync([this] {
+            int slope = (int)audioProcessor.params.getRawParameterValue("irhighcutslope")->load();
+            slope = (slope + 1) % 3;
+            auto param = audioProcessor.params.getParameter("irhighcutslope");
+            param->setValueNotifyingHost(param->convertTo0to1((float)slope));
+            toggleUIComponents();
+        });
+    };
 
     // KNOBS 2ND ROW
     row += 75;
@@ -829,6 +859,16 @@ void REVERAudioProcessorEditor::paint (Graphics& g)
             drawPowerButton(g, bounds, Colour(COLOR_NEUTRAL));
         }
     }
+
+    // draw slope buttons text
+    g.setColour(Colour(COLOR_ACTIVE));
+    g.setFont(FontOptions(10.0f));
+    int lowcutslope = (int)audioProcessor.params.getRawParameterValue("irlowcutslope")->load();
+    int highcutslope = (int)audioProcessor.params.getRawParameterValue("irhighcutslope")->load();
+    String lowslopeLabel = lowcutslope == 0 ? "6dB" : lowcutslope == 1 ? "12dB" : "24dB";
+    String highslopeLabel = highcutslope == 0 ? "6dB" : highcutslope == 1 ? "12dB" : "24dB";
+    g.drawFittedText(lowslopeLabel, lowcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
+    g.drawFittedText(highslopeLabel, highcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
 
     bounds = currentFile.getBounds().toFloat();
     if (audioProcessor.showFileSelector) {

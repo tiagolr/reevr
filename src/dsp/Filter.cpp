@@ -1,9 +1,10 @@
 #include "Filter.h"
 
-void Filter::init(float srate, float freq, float q)
+void Filter::init(float srate, float freq, float q, float q2)
 {
     g = getCoeff(freq, srate);
     k = 2 - 2*q;
+    k2 = 2 - 2*q2;
 
     if (slope == k6dB) {
         g = g / (1.0f + g);
@@ -12,6 +13,10 @@ void Filter::init(float srate, float freq, float q)
         a1 = 1.0f / (1.0f + g * (g + k));
         a2 = g * a1;
         a3 = g * a2;
+
+        a12 = 1.0f / (1.0f + g * (g + k2));
+        a22 = g * a12;
+        a32 = g * a22;
     }
 }
 
@@ -44,14 +49,14 @@ float Filter::eval(float sample)
 
     // 24p second stage
     v3 = output - ic4;
-    v1 = a1 * ic3 + a2 * v3;
-    v2 = ic4 + a2 * ic3 + a3 * v3;
+    v1 = a12 * ic3 + a22 * v3;
+    v2 = ic4 + a22 * ic3 + a32 * v3;
     ic3 = 2.0f * v1 - ic3;
     ic4 = 2.0f * v2 - ic4;
 
     if (mode == LP) output = v2;
     else if (mode == BP) output = v1;
-    else output = output - k * v1 - v2;
+    else output = output - k2 * v1 - v2;
 
     return output;
 }

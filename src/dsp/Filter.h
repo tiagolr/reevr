@@ -37,7 +37,7 @@ public:
 
 	void setSlope(FilterSlope s) { slope = s; };
 	void setMode(FilterMode m) { mode = m; };
-	void init(float srate, float freq, float q);
+	void init(float srate, float freq, float q = 0.0765f, float q2 = 0.6173 );
 	float eval(float sample);
 	void reset(float sample);
 
@@ -59,9 +59,13 @@ private:
 
 	float g = 0.0f;
 	float k = 0.0f;
+	float k2 = 0.0f;
 	float a1 = 0.0f;
 	float a2 = 0.0f;
 	float a3 = 0.0f;
+	float a12 = 0.0f;
+	float a22 = 0.0f;
+	float a32 = 0.0f;
 
 	float b0 = 0.0f;
 	float b1 = 0.0f;

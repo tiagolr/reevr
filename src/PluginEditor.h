@@ -93,6 +93,8 @@ private:
     std::unique_ptr<AudioWidget> audioWidget;
     ComboBox algoMenu;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> algoAttachment;
+    TextButton lowcutSlope;
+    TextButton highcutSlope;
     TextButton revEnvButton;
     TextButton revEnvOnButton;
     TextButton sendEnvButton;

@@ -47,8 +47,8 @@ REVERAudioProcessor::REVERAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("irstretch", "IR Stretch", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 240.f),
         std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
-        std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
-        std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 1),
+        std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 0),
+        std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Highcut Slope", StringArray { "6dB", "12dB", "24dB" }, 0),
         std::make_unique<juce::AudioParameterFloat>("drywet", "DryWet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.25f),
         // audio trigger params
         std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray { "Simple", "Drums" }, 0),
@@ -719,15 +719,21 @@ void REVERAudioProcessor::onSlider()
         sendenv.prepare((float)srate, thresh, resenvAutoRel, attack, 0.0, release, sendenvLowCut, sendenvHighCut);
     }
 
-    // convolver
+    //
     updateImpulse();
 
     auto irlowcut = params.getRawParameterValue("irlowcut")->load();
     auto irhighcut = params.getRawParameterValue("irhighcut")->load();
-    irLowcutL.init((float)srate, irlowcut, 0.2929f);
-    irLowcutR.init((float)srate, irlowcut, 0.2929f);
-    irHighcutL.init((float)srate, irhighcut, 0.2929f);
-    irHighcutR.init((float)srate, irhighcut, 0.2929f);
+    auto irlowcutSlope = (int)params.getRawParameterValue("irlowcutslope")->load();
+    auto irhighcutSlope = (int)params.getRawParameterValue("irhighcutslope")->load();
+    irLowcutL.setSlope((FilterSlope)irlowcutSlope);
+    irLowcutR.setSlope((FilterSlope)irlowcutSlope);
+    irHighcutL.setSlope((FilterSlope)irhighcutSlope);
+    irHighcutR.setSlope((FilterSlope)irhighcutSlope);
+    irLowcutL.init((float)srate, irlowcut, irLowcutL.slope == k24dB ? 0.0765f : 0.2929f);
+    irLowcutR.init((float)srate, irlowcut, irLowcutR.slope == k24dB ? 0.0765f : 0.2929f);
+    irHighcutL.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
+    irHighcutR.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
 }
 
 void REVERAudioProcessor::updateImpulse()
