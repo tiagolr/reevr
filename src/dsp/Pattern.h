@@ -29,6 +29,7 @@ struct PPoint {
     double y;
     double tension;
     int type;
+    bool clearsTails;
 };
 
 struct Segment {
@@ -39,6 +40,8 @@ struct Segment {
     double tension;
     double power;
     int type;
+    bool clearsTails;
+
 };
 
 class Pattern
@@ -59,8 +62,8 @@ public:
     Pattern(int index);
     void incrementVersion(); // generates a new unique ID for this pattern
 
-    int insertPoint(double x, double y, double tension, int type, bool sort = true);
-    int insertPointUnsafe(double x, double y, double tension, int type, bool sort = true);
+    int insertPoint(double x, double y, double tension, int type, bool sort = true, bool clearsTails = false);
+    int insertPointUnsafe(double x, double y, double tension, int type, bool sort = true, bool clearsTails = false);
     void sortPoints();
     void sortPointsSafe();
     void setTension(double t, double tatk, double trel, bool dual); // sets global tension multiplier

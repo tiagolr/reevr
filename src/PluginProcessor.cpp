@@ -111,7 +111,7 @@ REVERAudioProcessor::REVERAudioProcessor()
         if (i < 8) {
             auto preset = Presets::getPaintPreset(i);
             for (auto& point : preset) {
-                paintPatterns[i]->insertPoint(point.x, point.y, point.tension, point.type);
+                paintPatterns[i]->insertPoint(point.x, point.y, point.tension, point.type, point.clearsTails);
             }
         }
         else {
@@ -695,7 +695,6 @@ void REVERAudioProcessor::onSlider()
         lsend = send;
     }
     else if (send != lsend) {
-        convolver->clear();
         updateSendPatternFromSend();
         lsend = send;
     }
@@ -1686,7 +1685,7 @@ void REVERAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         }
 
         for (const auto& point : points) {
-            oss << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
+            oss << point.x << " " << point.y << " " << point.tension << " " << point.type << " " << point.clearsTails << " ";
         }
         state.setProperty("pattern" + juce::String(i), var(oss.str()), nullptr);
 
@@ -1697,7 +1696,7 @@ void REVERAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         }
 
         for (const auto& point : points) {
-            ossres << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
+            ossres << point.x << " " << point.y << " " << point.tension << " " << point.type << " " << point.clearsTails << " ";
         }
         state.setProperty("sendpattern" + juce::String(i), var(ossres.str()), nullptr);
     }
@@ -1775,9 +1774,10 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
             if (!str.empty()) {
                 double x, y, tension;
                 int type;
+                bool clearsTails;
                 std::istringstream iss(str);
-                while (iss >> x >> y >> tension >> type) {
-                    patterns[i]->insertPoint(x,y,tension,type);
+                while (iss >> x >> y >> tension >> type >> clearsTails) {
+                    patterns[i]->insertPoint(x,y,tension,type,clearsTails);
                 }
             }
 
@@ -1785,9 +1785,10 @@ void REVERAudioProcessor::setStateInformation (const void* data, int sizeInBytes
             if (!str.empty()) {
                 double x, y, tension;
                 int type;
+                bool clearsTails;
                 std::istringstream iss(str);
-                while (iss >> x >> y >> tension >> type) {
-                    sendpatterns[i]->insertPoint(x,y,tension,type);
+                while (iss >> x >> y >> tension >> type >> clearsTails ) {
+                    sendpatterns[i]->insertPoint(x,y,tension,type,clearsTails);
                 }
             }
 

@@ -48,13 +48,13 @@ void Pattern::setTension(double t, double tatk, double trel, bool dual)
     tensionMult.store(t);
 }
 
-int Pattern::insertPoint(double x, double y, double tension, int type, bool sort)
+int Pattern::insertPoint(double x, double y, double tension, int type, bool sort, bool clearsTails)
 {
     std::lock_guard<std::mutex> lock(pointsmtx);
     auto id = pointsIDCounter;
     pointsIDCounter += 1;
 
-    const PPoint p = { id, x, y, tension, type };
+    const PPoint p = { id, x, y, tension, type, clearsTails };
     points.push_back(p);
     if (sort)
         sortPoints();
@@ -65,12 +65,12 @@ int Pattern::insertPoint(double x, double y, double tension, int type, bool sort
     return pidx == points.end() ? -1 : (int)std::distance(points.begin(), pidx);
 };
 
-int Pattern::insertPointUnsafe(double x, double y, double tension, int type, bool sort)
+int Pattern::insertPointUnsafe(double x, double y, double tension, int type, bool sort, bool clearsTails)
 {
     auto id = pointsIDCounter;
     pointsIDCounter += 1;
 
-    const PPoint p = { id, x, y, tension, type };
+    const PPoint p = { id, x, y, tension, type, clearsTails };
     points.push_back(p);
     if (sort)
         sortPoints();
@@ -219,18 +219,18 @@ void Pattern::buildSegments()
     // add ghost points outside the 0..1 boundary
     // allows the pattern to repeat itself and rotate seamlessly
     if (pts.size() == 0) {
-        pts.push_back({0, -1.0, clearY, 0.0, 1});
-        pts.push_back({0, 2.0, clearY, 0.0, 1});
+        pts.push_back({0, -1.0, clearY, 0.0, 1, false});
+        pts.push_back({0, 2.0, clearY, 0.0, 1, false});
     }
     else if (pts.size() == 1) {
-        pts.insert(pts.begin(), {0, -1.0, pts[0].y, 0.0, 1});
-        pts.push_back({0, 2.0, pts[0].y, 0.0, 1});
+        pts.insert(pts.begin(), {0, -1.0, pts[0].y, 0.0, 1, false});
+        pts.push_back({0, 2.0, pts[0].y, 0.0, 1, false});
     }
     else {
         auto p1 = pts[0];
         auto p2 = pts[pts.size()-1];
-        pts.insert(pts.begin(), {0, p2.x - 1.0, p2.y, p2.tension, p2.type});
-        pts.push_back({0, p1.x + 1.0, p1.y, p1.tension, p1.type});
+        pts.insert(pts.begin(), {0, p2.x - 1.0, p2.y, p2.tension, p2.type, false});
+        pts.push_back({0, p1.x + 1.0, p1.y, p1.tension, p1.type, false});
     }
 
     std::lock_guard<std::mutex> lock(mtx); // prevents crash while reading Y from another thread
@@ -238,7 +238,7 @@ void Pattern::buildSegments()
     for (size_t i = 0; i < pts.size() - 1; ++i) {
         auto p1 = pts[i];
         auto p2 = pts[i + 1];
-        segments.push_back({p1.x, p2.x, p1.y, p2.y, p1.tension, 0, p1.type});
+        segments.push_back({ p1.x, p2.x, p1.y, p2.y, p1.tension, 0, p1.type, p1.clearsTails });
     }
 }
 
