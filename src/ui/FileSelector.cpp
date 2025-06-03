@@ -57,6 +57,12 @@ FileSelector::FileSelector(REEVRAudioProcessor& p, std::function<void()> onClose
 
 FileSelector::~FileSelector()
 {
+    fileTree = nullptr;
+    dirContents = nullptr;
+    if (timeSliceThread) {
+        timeSliceThread->stopThread(2000);
+        timeSliceThread = nullptr;
+    }
 }
 
 void FileSelector::readDir() 

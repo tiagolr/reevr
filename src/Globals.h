@@ -50,6 +50,8 @@ namespace globals {
 	// Envelope follower
 	inline const float ENV_MIN_ATTACK = 0.01f;
 	inline const float ENV_MAX_ATTACK = 200.0f;
+	inline const float ENV_MIN_HOLD = 0.0f;
+	inline const float ENV_MAX_HOLD = 500.0f;
 	inline const float ENV_MIN_RELEASE = 10.0f;
 	inline const float ENV_MAX_RELEASE = 10000.0f;
 

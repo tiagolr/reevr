@@ -142,6 +142,16 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
             }
             text = ss.str();
         }
+        else if (format == envhold) {
+            auto val = ENV_MIN_HOLD + (ENV_MAX_HOLD - ENV_MIN_HOLD) * slider_val;
+            if (val > 100) {
+                ss << std::fixed << std::setprecision(0) << val << " ms";
+            }
+            else {
+                ss << std::fixed << std::setprecision(1) << val << " ms";
+            }
+            text = ss.str();
+        }
         else if (format == kMillis) {
             if (slider_val > 1000) {
                 text = String((int)std::round(slider_val / 10000) / 10.f) + " s";

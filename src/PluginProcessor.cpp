@@ -724,19 +724,21 @@ void REEVRAudioProcessor::onSlider()
     if (revenvOn) {
         float thresh = params.getRawParameterValue("revenvthresh")->load();
         float attack = params.getRawParameterValue("revenvatk")->load();
+        float hold = params.getRawParameterValue("revenvhold")->load();
         float release = params.getRawParameterValue("revenvrel")->load();
         float revenvLowCut = params.getRawParameterValue("revenvlowcut")->load();
         float revenvHighCut = params.getRawParameterValue("revenvhighcut")->load();
-        revenv.prepare((float)srate, thresh, revenvAutoRel, attack, 0.0, release, revenvLowCut, revenvHighCut);
+        revenv.prepare((float)srate, thresh, revenvAutoRel, attack, hold, release, revenvLowCut, revenvHighCut);
     }
 
     if (sendenvOn) {
         float thresh = params.getRawParameterValue("sendenvthresh")->load();
         float attack = params.getRawParameterValue("sendenvatk")->load();
+        float hold = params.getRawParameterValue("sendenvhold")->load();
         float release = params.getRawParameterValue("sendenvrel")->load();
         float sendenvLowCut = params.getRawParameterValue("sendenvlowcut")->load();
         float sendenvHighCut = params.getRawParameterValue("sendenvhighcut")->load();
-        sendenv.prepare((float)srate, thresh, resenvAutoRel, attack, 0.0, release, sendenvLowCut, sendenvHighCut);
+        sendenv.prepare((float)srate, thresh, resenvAutoRel, attack, hold, release, sendenvLowCut, sendenvHighCut);
     }
 
     //

@@ -30,6 +30,7 @@ private:
 	bool autorel = false;
 	float attack = 1.0f; // s
 	float hold = 0.0f; // s
+	float holdCounter = 0.0f;
 	float release = 1.0f; // s
 	float attackcoeff = .1f;
 	float releasecoeff = .1f;

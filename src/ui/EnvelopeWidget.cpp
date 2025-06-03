@@ -127,7 +127,7 @@ EnvelopeWidget::EnvelopeWidget(REEVRAudioProcessor& p, bool isSendenv, int width
     attack->setBounds(col,row,80,65);
     col += 75;
 
-    hold = std::make_unique<Rotary>(p, isSendenv ? "sendenvhold" : "revenvhold", "Hold", RotaryLabel::envrel);
+    hold = std::make_unique<Rotary>(p, isSendenv ? "sendenvhold" : "revenvhold", "Hold", RotaryLabel::envhold);
     addAndMakeVisible(*hold);
     hold->setBounds(col,row,80,65);
     col += 75;
