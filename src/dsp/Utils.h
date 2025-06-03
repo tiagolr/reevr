@@ -47,9 +47,9 @@ public:
     LookupTable() = default;
 
     template <typename Func>
-    LookupTable(Func fn, float min, float max, size_t size)
+    LookupTable(Func fn, float min_, float max_, size_t size_)
     {
-        init(fn, min, max, size);
+        init(fn, min_, max_, size_);
     }
 
     template <typename Func>

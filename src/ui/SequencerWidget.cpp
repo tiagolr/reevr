@@ -193,7 +193,9 @@ void SequencerWidget::updateButtonsState()
 	clearBtn.setColour(TextButton::textColourOnId, Colour(COLOR_BG));
 	clearBtn.setColour(TextButton::textColourOffId, modeColor);
 
-	repaint();
+	MessageManager::callAsync([this] {
+		repaint();
+	});
 }
 
 void SequencerWidget::paint(Graphics& g)

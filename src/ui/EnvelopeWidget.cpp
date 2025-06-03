@@ -179,7 +179,9 @@ void EnvelopeWidget::parameterChanged(const juce::String& parameterID, float new
     if (parameterID == "revenvhighcut" || parameterID == "sendenvhighcut") {
         filterRange.setMaxValue((double)newValue, dontSendNotification);
     }
-    repaint();
+    MessageManager::callAsync([this] { 
+        repaint(); 
+    });
 }
 
 void EnvelopeWidget::paint(juce::Graphics& g) 
@@ -255,5 +257,7 @@ void EnvelopeWidget::drawSidechain(Graphics& g, Rectangle<int> bounds, Colour c)
 void EnvelopeWidget::layoutComponents()
 {
     autoRelBtn.setToggleState((isSendenv && audioProcessor.resenvAutoRel) || (!isSendenv && audioProcessor.revenvAutoRel), dontSendNotification);
-    repaint();
+    MessageManager::callAsync([this] {
+        repaint();
+    })
 }

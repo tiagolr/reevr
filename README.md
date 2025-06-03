@@ -32,6 +32,7 @@ Also check other plugins from this collection:
 
 * [GATE-12](https://github.com/tiagolr/gate12) - An envelope generator for volume/gate control.
 * [TIME-12](https://github.com/tiagolr/time12) - An envelope based delay modulator.
+* [FILT-R](https://github.com/tiagolr/filtr) - An envelope based filter modulator.
 
 ## Features
 
@@ -57,7 +58,7 @@ Also check other plugins from this collection:
 
 ## Install
 
-REEV does not come with impulse response files (IRs) other than the default one, you should  install convolution IRs into the plugin impulses folder or change the plugin IR directory to  an existing folder containing the impulses.
+REEV does not come with impulse response files (IRs) other than the default one, you should  install convolution IRs into the plugin impulses folder or change the plugin IR directory to  an existing folder containing impulses.
 
 Here are some links to download reverb IRs:
 
@@ -65,6 +66,7 @@ Here are some links to download reverb IRs:
 * [Voxengo](https://oramics.github.io/sampled/IR/Voxengo/)
 * [Reaper Stash](https://stash.reaper.fm/tag/Reverb-Impulses)
 * [Open Air](https://www.openair.hosted.york.ac.uk/?page_id=36)
+* [FL Studio demo](https://www.image-line.com/) comes with many impulses, only they need to be converted to `*.wav`.
 
 These links may be broken, search for reverb IR files to find free or paid ones on the internet.
 
@@ -101,9 +103,13 @@ This mode has to be activated by clicking the `Paint` button, a list of patterns
 
 There are 32 patterns that can be used and edited, these patterns are saved in the settings file and shared by any instances of the plugin.
 
+#### Envelope Followers
+
+Envelope followers for either Send or Reverb can be activated on the Envelope widget by setting the amount positive or negative.
+
 #### Self repeating patterns
 
-Patterns are not constrained by start and endpoints like they used to, they can have only one point or no points, this mainly allows patterns to be seamlessly rotated to create new rhythm variations.
+Patterns are not constrained by start and endpoints, they can have only one point or no points, this mainly allows patterns to be seamlessly rotated to create new rhythm variations.
 
 #### Multi-point selections
 
@@ -146,6 +152,12 @@ Reverb tails can be cleared on any point of the reverb pattern, to do so, `Right
 - `Alt + drag` selection handles skews selected points.
 - `Right click + drag` in paint mode changes paint tool tension.
 - `Shift + mouse wheel` on sequencer to change step size.
+
+## Acknowledgements
+
+Big thanks to KlangFalter creator for his wonderful convolution library, without it this plugin would not be possible, maybe there are other solutions out there but this one really fits.
+
+CableGuys for ShaperBox, this plugin re-implements many of its features, they are very well thought and it would be difficult to miss out on them, including the self repeating patterns, envelope followers, average points manipulation and many others.
 
 ## MacOS
 

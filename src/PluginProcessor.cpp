@@ -64,7 +64,7 @@ REEVRAudioProcessor::REEVRAudioProcessor()
         std::make_unique<juce::AudioParameterBool>("sendenvon", "Send Env ON", false),
         std::make_unique<juce::AudioParameterFloat>("sendenvthresh", "Send Env Thresh", NormalisableRange<float>( 0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("sendenvamt", "Send Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvatk", "Send Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
+        std::make_unique<juce::AudioParameterFloat>("sendenvatk", "Send Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.005f),
         std::make_unique<juce::AudioParameterFloat>("sendenvrel", "Send Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
         std::make_unique<juce::AudioParameterFloat>("sendenvhold", "Send Env Hold", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("sendenvlowcut", "Send Env Lowcut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
@@ -72,7 +72,7 @@ REEVRAudioProcessor::REEVRAudioProcessor()
         std::make_unique<juce::AudioParameterBool>("revenvon", "Rev Env ON", false),
         std::make_unique<juce::AudioParameterFloat>("revenvthresh", "Rev Env Threvh", NormalisableRange<float>( 0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revenvamt", "Rev Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("revenvatk", "Rev Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
+        std::make_unique<juce::AudioParameterFloat>("revenvatk", "Rev Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.005f),
         std::make_unique<juce::AudioParameterFloat>("revenvrel", "Rev Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
         std::make_unique<juce::AudioParameterFloat>("revenvhold", "Rev Env Hold", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
         std::make_unique<juce::AudioParameterFloat>("revenvlowcut", "Rev Env LowCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
@@ -769,11 +769,11 @@ void REEVRAudioProcessor::updateImpulse()
 
     if (irtrimleft > 1.0f - irtrimright) {
         params.getParameter("irtrimleft")->setValueNotifyingHost(1.0f-irtrimright);
-    } 
-    else if (irattack != impulse->attack 
-        || irdecay != impulse->decay 
-        || irtrimleft != impulse->trimLeft 
-        || irtrimright != impulse->trimRight 
+    }
+    else if (irattack != impulse->attack
+        || irdecay != impulse->decay
+        || irtrimleft != impulse->trimLeft
+        || irtrimright != impulse->trimRight
         || impulse->stretch != irstretch
         || impulse->reverse != irreverse
     ) {
@@ -1341,7 +1341,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 roffset += revenvBuffer[sample] * revenvamt;
             if (sendenvon)
                 soffset += sendenvBuffer[sample] * sendenvamt;
-            
+
 
             double newypos = getYRev(xpos, min, max, roffset);
             yrev = revvalue->process(newypos, newypos > yrev);
@@ -1517,7 +1517,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         if (irLowcut > 20.f) {
             lin = irLowcutL.eval(lin);
             rin = irLowcutR.eval(rin);
-        } 
+        }
         if (irHighcut < 20000.f) {
             lin = irHighcutL.eval(lin);
             rin = irHighcutR.eval(rin);
@@ -1527,8 +1527,8 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     }
 
     // process convolver
-    
-    // IR load state machine 
+
+    // IR load state machine
     // if loadstate is idle and there is an update reload the IR into the load convolver
     if (irDirty && loadState.load() == kIdle && loadCooldown <= 0) {
         loadCooldown = (int)(CONV_LOAD_COOLDOWN / 1000.0 * srate);
@@ -1649,7 +1649,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     // process send input into the convolver
     convolver->process(
-        delayedBuffer.getReadPointer(0), 
+        delayedBuffer.getReadPointer(0),
         delayedBuffer.getReadPointer(1),
         numSamples
     );
@@ -1687,6 +1687,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // apply reverb envelope and stereo width to the wet buffer
     lchannel = wetBuffer.getReadPointer(0);
     rchannel = wetBuffer.getReadPointer(1);
+    float normalization = 1.0f / (1.0f + width);
     for (int sample = 0; sample < numSamples; ++sample) {
         auto lin = lchannel[sample] * yrevBuffer[sample];
         auto rin = rchannel[sample] * yrevBuffer[sample];
@@ -1694,8 +1695,8 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         auto mid = (lin + rin) * 0.5f;
         auto side = (lin - rin) * 0.5f;
 
-        auto lout = mid + side * (width * 2.f);
-        auto rout = mid - side * (width * 2.f);
+        auto lout = (mid + side * width) * normalization;
+        auto rout = (mid - side * width) * normalization;
 
         wetBuffer.setSample(0, sample, lout);
         wetBuffer.setSample(1, sample, rout);
@@ -1734,7 +1735,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         // process display samples
         auto lpre = buffer.getReadPointer(0);
         auto rpre = buffer.getReadPointer(audioInputs > 1 ? 1 : 0);
-        for (int sample = 0; sample < numSamples; ++sample) {  
+        for (int sample = 0; sample < numSamples; ++sample) {
             processDisplaySample(xposBuffer[sample], lpre[sample], rpre[sample], 0.f, 0.f);
         }
     }
@@ -1864,7 +1865,7 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
         if (state.hasProperty("irfile")) irFile = state.getProperty("irfile");
 
         int currpattern = state.hasProperty("currpattern")
-            ? state.getProperty("currpattern")
+            ? (int)state.getProperty("currpattern")
             : (int)params.getRawParameterValue("pattern")->load();
         queuePattern(currpattern);
         auto param = params.getParameter("pattern");

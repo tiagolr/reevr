@@ -39,18 +39,27 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     presetExport.setButtonText("Export");
     presetExport.setBounds(10, 10, 100, 25);
     presetExport.onClick = [this] {
-        std::ostringstream oss;
-        auto points = audioProcessor.viewPattern->points;
-        for (const auto& point : points) {
-            oss << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
-        }
-        DBG(oss.str() << "\n");
+        //std::ostringstream oss;
+        //auto points = audioProcessor.viewPattern->points;
+        //for (const auto& point : points) {
+        //    oss << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
+        //}
+        //DBG(oss.str() << "\n");
         //std::ostringstream oss2;
         //points = audioProcessor.sendpattern->points;
         //for (const auto& point : points) {
         //    oss2 << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
         //}
         //DBG(oss2.str() << "\n");
+        juce::MemoryBlock stateData;
+        processor.getStateInformation(stateData);
+
+        if (auto xml = AudioProcessor::getXmlFromBinary(stateData.getData(), (int)stateData.getSize())) {
+            DBG(xml->toString());
+        }
+        else {
+            DBG("Failed to parse XML from state information.");
+        }
     };
 #endif
 
@@ -269,11 +278,11 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     width->setBounds(col,row,80,65);
     col += 75;
 
-    predelay = std::make_unique<Rotary>(p, "predelay", "Gap", RotaryLabel::kMillis);
+    predelay = std::make_unique<Rotary>(p, "predelay", "Delay", RotaryLabel::kMillis);
     addAndMakeVisible(*predelay);
     predelay->setBounds(col,row,80,65);
 
-    predelaysync = std::make_unique<Rotary>(p, "predelaysync", "Gap", RotaryLabel::kChoice);
+    predelaysync = std::make_unique<Rotary>(p, "predelaysync", "Delay", RotaryLabel::kChoice);
     addAndMakeVisible(*predelaysync);
     predelaysync->setBounds(col,row,80,65);
 
@@ -751,7 +760,9 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
 
     fileSelector->setVisible(audioProcessor.showFileSelector);
 
-    repaint();
+    MessageManager::callAsync([this] {
+        repaint();
+    });
 }
 
 //==============================================================================
