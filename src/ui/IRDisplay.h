@@ -37,6 +37,8 @@ private:
     std::vector<float> waveRight;
     REEVRAudioProcessor& audioProcessor;
 
+    TextButton reverseButton;
+    
     Rectangle<int> getDisplayBounds();
     Rectangle<int> getTrimLeftBounds();
     Rectangle<int> getTrimRightBounds();

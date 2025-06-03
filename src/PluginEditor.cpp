@@ -40,17 +40,17 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     presetExport.setBounds(10, 10, 100, 25);
     presetExport.onClick = [this] {
         std::ostringstream oss;
-        auto points = audioProcessor.pattern->points;
+        auto points = audioProcessor.viewPattern->points;
         for (const auto& point : points) {
             oss << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
         }
         DBG(oss.str() << "\n");
-        std::ostringstream oss2;
-        points = audioProcessor.sendpattern->points;
-        for (const auto& point : points) {
-            oss2 << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
-        }
-        DBG(oss2.str() << "\n");
+        //std::ostringstream oss2;
+        //points = audioProcessor.sendpattern->points;
+        //for (const auto& point : points) {
+        //    oss2 << point.x << " " << point.y << " " << point.tension << " " << point.type << " ";
+        //}
+        //DBG(oss2.str() << "\n");
     };
 #endif
 
@@ -893,7 +893,7 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     // draw predelay useSync
     bool useSync = (bool)audioProcessor.params.getRawParameterValue("predelayusesync")->load();
     g.setColour(Colour(useSync ? COLOR_ACTIVE : COLOR_NEUTRAL));
-    bounds = predelayUseSync.getBounds().toFloat();
+    bounds = predelayUseSync.getBounds().withTrimmedBottom(4).toFloat();
     auto r = 3.f;
     g.fillEllipse(bounds.getCentreX() - r*2, bounds.getBottom()-r*2, r*2, r*2);
     g.drawLine(bounds.getCentreX(), bounds.getBottom()-r, bounds.getCentreX(), bounds.getY()+r);

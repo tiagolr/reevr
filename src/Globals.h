@@ -2,8 +2,8 @@
 
 namespace globals {
 	// convolver
-	inline unsigned int CONV_XFADE = 100;
-	inline unsigned int CONV_LOAD_COOLDOWN = 500;
+	inline unsigned int CONV_XFADE = 50;
+	inline unsigned int CONV_LOAD_COOLDOWN = 250;
 	inline unsigned int CONV_CLEAR_TAILS_COOLDOWN = 5;
 
 	// filter consts

@@ -35,8 +35,9 @@ Also check other plugins from this collection:
 
 ## Features
 
-  * 6 Unique filters with different slopes and modes
-  * 5 Modes per filter (LP, BP, HP, Notch and Peak)
+  * High performance Convolution Reverb thanks to KlangFalter library
+  * IR manipulations like stretch, trim, reverse, attack and decay
+  * Pre/send and post/reverb MSEG modulation
   * 12 patterns triggered by midi notes
   * Paint mode with user defined shapes
   * Point type - hold, curve, s-curve, stairs ..
@@ -131,6 +132,10 @@ Clicking the `Seq` button toggles the sequencer mode where patterns can be built
 The left buttons are the edit mode used when clicking the view. On the right there is a row of shapes used to draw on the view and below is the randomization of the current selected mode.
 
 After creating a sequence click `Apply` to save it as the current pattern and edit from there.
+
+#### Clearing Reverb Tails
+
+Reverb tails can be cleared on any point of the reverb pattern, to do so, `Right Click` a point and select `Clear Tails`.
 
 ## Tips
 

@@ -136,6 +136,11 @@ void Impulse::recalcImpulse()
         peak = std::max(std::max(peak, std::fabs(bufferL[i])), std::fabs(bufferR[i]));
     }
 
+    if (reverse) {
+        std::reverse(bufferL.begin(), bufferL.end());
+        std::reverse(bufferR.begin(), bufferR.end());
+    }
+
     applyStretch();
     applyTrim();
     applyEnvelope();

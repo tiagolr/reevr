@@ -13,6 +13,15 @@ IRDisplay::IRDisplay(REEVRAudioProcessor& p) : audioProcessor(p)
 	audioProcessor.params.addParameterListener("irdecay", this);
 	audioProcessor.params.addParameterListener("irtrimleft", this);
 	audioProcessor.params.addParameterListener("irtrimright", this);
+
+	addAndMakeVisible(reverseButton);
+	reverseButton.setTooltip("Reverse IR");
+	reverseButton.setBounds(getLocalBounds().getRight()-25, getLocalBounds().getY() + 5, 20, 20);
+	reverseButton.setAlpha(0.f);
+	reverseButton.onClick = [this] {
+		bool reverse = (bool)audioProcessor.params.getRawParameterValue("irreverse")->load();
+		audioProcessor.params.getParameter("irreverse")->setValueNotifyingHost((float)!reverse);
+	};
 }
 
 
@@ -77,8 +86,10 @@ void IRDisplay::recalcWave()
 
 void IRDisplay::resized() 
 {
-	waveLeft.resize(getDisplayBounds().getWidth(), 0.0);
-	waveRight.resize(getDisplayBounds().getWidth(), 0.0);
+	auto bounds = getDisplayBounds();
+	waveLeft.resize(bounds.getWidth(), 0.0);
+	waveRight.resize(bounds.getWidth(), 0.0);
+	reverseButton.setBounds(reverseButton.getBounds().withRightX(bounds.getRight() - 5).withY(bounds.getY() + 5));
 	recalcWave();
 }
 
@@ -141,15 +152,28 @@ void IRDisplay::paint(juce::Graphics& g)
 	p.addTriangle(bleft.getTopLeft().translated(bleft.getWidth()/2.f, 0.f), bleft.getBottomLeft(), bleft.getBottomRight());
 	g.fillPath(p);
 
-	//g.setColour(Colour(COLOR_NEUTRAL));
-	//if (trimLeft > 0.f)
-	//	g.drawLine(std::floor(bleft.getCentreX()) + 0.5f, bounds.getY(), std::floor(bleft.getCentreX()) + 0.5f, bounds.getBottom());
-	//if (trimRight > 0.f)
-	//	g.drawLine(std::floor(bright.getCentreX()) + 0.5f, bounds.getY(), std::floor(bright.getCentreX()) + 0.5f, bounds.getBottom());
-
 	g.setColour(Colours::white);
 	g.fillEllipse(batk);
 	g.fillEllipse(bdec);
+
+	g.setColour(Colour(audioProcessor.impulse->reverse ? COLOR_ACTIVE : COLOR_NEUTRAL));
+	bounds = reverseButton.getBounds().toFloat();
+	bounds.removeFromRight(6);
+	auto rr = 3.f;
+	Path arrows;
+	arrows.startNewSubPath(bounds.getRight(), bounds.getCentreY() - 4);
+	arrows.lineTo(bounds.getX(), bounds.getCentreY() - 4);
+	arrows.startNewSubPath(bounds.getX() + rr, bounds.getCentreY() - 4 - rr);
+	arrows.lineTo(bounds.getX(), bounds.getCentreY() - 4);
+	arrows.lineTo(bounds.getX()+rr, bounds.getCentreY() - 4 + rr);
+
+	arrows.startNewSubPath(bounds.getRight(), bounds.getCentreY() + 4);
+	arrows.lineTo(bounds.getX(), bounds.getCentreY() + 4);
+	arrows.startNewSubPath(bounds.getRight() - rr, bounds.getCentreY() + 4 - rr);
+	arrows.lineTo(bounds.getRight(), bounds.getCentreY() + 4);
+	arrows.lineTo(bounds.getRight()-rr, bounds.getCentreY() + 4 + rr);
+
+	g.strokePath(arrows, PathStrokeType(1.f));
 }
 
 void IRDisplay::mouseDown(const juce::MouseEvent& e)

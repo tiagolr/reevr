@@ -240,6 +240,19 @@ void Pattern::buildSegments()
         auto p2 = pts[i + 1];
         segments.push_back({ p1.x, p2.x, p1.y, p2.y, p1.tension, 0, p1.type, p1.clearsTails });
     }
+
+    // transfer segments clearTails to next segment if the segment length is very short
+    // fixes segments not clearing tails when segment points are on the same xpos
+    for (int i = 0; i < segments.size(); ++i) {
+        auto& seg = segments[i];
+        if (seg.clearsTails) {
+            double length = seg.x2 - seg.x1;
+            if (length < 1e-5) {
+                auto& next = i < segments.size() - 1 ? segments[i + 1] : segments[0];
+                next.clearsTails = true;
+            }
+        }
+    }
 }
 
 // Thread safely returns a copy of segments
@@ -308,19 +321,16 @@ void Pattern::transform(double midy)
         avg += p.y;
     }
     avg /= points.size();
-    if (avg == midy) {
-        incrementVersion();
-        buildSegments();
-        return;
-    }
 
-    if (avg < midy) {
+    if (avg <= midy) {
+        if (avg == 1.0) avg -= 1e-10;
         double alpha = (midy - avg) / (1.0 - avg);
         for (int i = 0; i < points.size(); i++) {
             points[i].y = rawpoints[i].y + alpha * (1 - rawpoints[i].y);
         }
     }
     else {
+        if (avg == 0.0) avg += 1e-10;
         double beta = (avg - midy) / avg;
         for (int i = 0; i < points.size(); i++) {
             points[i].y = (1.0 - beta) * rawpoints[i].y;
@@ -494,12 +504,14 @@ double Pattern::get_y_smooth_stairs(Segment seg, double x)
 }
 
 
-double Pattern::get_y_at(double x)
+double Pattern::get_y_at(double x, bool updateClearTails)
 {
     std::lock_guard<std::mutex> lock(mtx); // prevents crash while building segments
     int low = 0;
     int high = static_cast<int>(segments.size()) - 1;
-    shouldClearTails = false;
+
+    if (updateClearTails)
+        shouldClearTails = false;
 
     // binary search the segment containing x
     while (low <= high) {
@@ -511,7 +523,10 @@ double Pattern::get_y_at(double x)
         } else if (x > seg.x2) {
             low = mid + 1;
         } else {
-            shouldClearTails = seg.clearsTails && x - seg.x1 < 1e-5;
+            if (updateClearTails) {
+                shouldClearTails = seg.clearsTails && lastx < seg.x1; // xpos has crossed this segment, clear reverb tail
+                lastx = x;
+            }
             if (seg.type == PointType::Hold) return seg.y1; // hold
             if (seg.type == PointType::Curve) return get_y_curve(seg, x);
             if (seg.type == PointType::SCurve) return get_y_scurve(seg, x);

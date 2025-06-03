@@ -32,6 +32,7 @@ public:
 	float trimLeft = 0.0;
 	float trimRight = 0.0;
 	float stretch = 0.0;
+	bool reverse = false;
 	unsigned long int version = 1;
 
 private:

@@ -59,6 +59,7 @@ public:
     std::atomic<double> tensionAtk = 0.0; // tension multiplier for attack only
     std::atomic<double> tensionRel = 0.0; // tension multiplier for release only
     bool shouldClearTails = false; // keeps track of clearTails
+    double lastx = 0.0; // used to detect clear reverb tails
 
     Pattern(int index);
     void incrementVersion(); // generates a new unique ID for this pattern
@@ -98,7 +99,7 @@ public:
     double get_y_triangle(Segment seg, double x);
     double get_y_stairs(Segment seg, double x);
     double get_y_smooth_stairs(Segment seg, double x);
-    double get_y_at(double x);
+    double get_y_at(double x, bool updateClearTails = false);
 
     void createUndo();
     void undo();

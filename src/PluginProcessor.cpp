@@ -38,7 +38,7 @@ REEVRAudioProcessor::REEVRAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
         std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 250.f), 0.0f),
+        std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 250.f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray { "Off", "1/16", "1/8", "1/8d", "1/8t", "1/4" }, 0),
         std::make_unique<juce::AudioParameterBool>("predelayusesync", "Pre-Delay Use Sync", false),
         std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f),
@@ -47,6 +47,7 @@ REEVRAudioProcessor::REEVRAudioProcessor()
         std::make_unique<juce::AudioParameterFloat>("irtrimleft", "IR Trim Left", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irtrimright", "IR Trim Right", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
         std::make_unique<juce::AudioParameterFloat>("irstretch", "IR Stretch", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f),
+        std::make_unique<juce::AudioParameterBool>("irreverse", "IR Reverse", false),
         std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 240.f),
         std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
         std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 0),
@@ -762,6 +763,7 @@ void REEVRAudioProcessor::updateImpulse()
     float irtrimleft = params.getRawParameterValue("irtrimleft")->load();
     float irtrimright = params.getRawParameterValue("irtrimright")->load();
     float irstretch = params.getRawParameterValue("irstretch")->load();
+    bool irreverse = (bool)params.getRawParameterValue("irreverse")->load();
 
     if (irtrimleft > 1.0f - irtrimright) {
         params.getParameter("irtrimleft")->setValueNotifyingHost(1.0f-irtrimright);
@@ -771,12 +773,14 @@ void REEVRAudioProcessor::updateImpulse()
         || irtrimleft != impulse->trimLeft 
         || irtrimright != impulse->trimRight 
         || impulse->stretch != irstretch
+        || impulse->reverse != irreverse
     ) {
         impulse->attack = irattack;
         impulse->decay = irdecay;
         impulse->trimLeft = irtrimleft;
         impulse->trimRight = irtrimright;
         impulse->stretch = irstretch;
+        impulse->reverse = irreverse;
         irDirty = true;
     }
 }
@@ -915,7 +919,7 @@ void REEVRAudioProcessor::clearLatencyBuffers()
 
 double inline REEVRAudioProcessor::getYRev(double x, double min, double max, double offset)
 {
-    return std::clamp(min + (max - min) * (1 - pattern->get_y_at(x)) + offset, 0.0, 1.0);
+    return std::clamp(min + (max - min) * (1 - pattern->get_y_at(x, true)) + offset, 0.0, 1.0);
 }
 
 double inline REEVRAudioProcessor::getYSend(double x, double min, double max, double offset)
@@ -1051,10 +1055,8 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     sense *= sense; // make audio trigger sensitivity more responsive
 
     // process viewport background display wave samples
-    auto processDisplaySample = [&](int sampidx, double xpos, float prelsamp, float prersamp) {
+    auto processDisplaySample = [&](double xpos, float prelsamp, float prersamp, float postlsamp, float postrsamp) {
         auto preamp = std::max(std::fabs(prelsamp), std::fabs(prersamp));
-        auto postlsamp = buffer.getSample(0, sampidx);
-        auto postrsamp = audioInputs > 1 ? buffer.getSample(1, sampidx) : postlsamp;
         auto postamp = std::max(std::fabs(postlsamp), std::fabs(postrsamp));
         winpos = (int)std::floor(xpos * viewW);
         if (lwinpos != winpos) {
@@ -1069,7 +1071,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     };
 
     // process audio monitor samples
-    float monIncrementPerSample = 1.0f / float((srate * 2) / monW); // 2 seconds of audio displayed on monitor
+    float monIncrementPerSample = 1.0f / float((srate * 4) / monW); // 2 seconds of audio displayed on monitor
     auto processMonitorSample = [&](float lsamp, float rsamp, bool hit) {
         float indexd = monpos.load();
         indexd += monIncrementPerSample;
@@ -1089,28 +1091,6 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         monSamples[index] = std::max(monSamples[index], maxamp);
         monpos.store(indexd);
     };
-
-    // applies envelope to a sample index
-    //auto applyFilter = [&](int sampidx, double env, double resenv, double lsample, double rsample) {
-    //    double cutoff = Utils::normalToFreq(env);
-    //    lFilter->init(srate * samplingFactor, cutoff, resenv);
-    //    rFilter->init(srate * samplingFactor, cutoff, resenv);
-    //    double outl = lFilter->eval(lsample) * gain;
-    //    double outr = rFilter->eval(rsample) * gain;
-    //    lFilter->tick();
-    //    rFilter->tick();
-    //
-    //    for (int channel = 0; channel < audioOutputs; ++channel) {
-    //        auto wet = channel == 0 ? outl : outr;
-    //        auto dry = (double)upsampledBlock.getSample(channel, sampidx);
-    //        if (outputCV) {
-    //            upsampledBlock.setSample(channel, sampidx, env);
-    //        }
-    //        else {
-    //            upsampledBlock.setSample(channel, sampidx, wet * mix + dry * (1.0 - mix));
-    //        }
-    //    }
-    //};
 
     if (paramChanged) {
         onSlider();
@@ -1217,7 +1197,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             monLatBufferR[monWritePos] = monSampleR;
 
             int latency = (int)monLatBufferL.size();
-            auto monReadPos = (monWritePos + latency - 1) % latency;
+            auto monReadPos = (monWritePos + 1) % latency;
             if (useMonitor) {
                 monSampleL = monLatBufferL[monReadPos];
                 monSampleR = monLatBufferR[monReadPos];
@@ -1322,6 +1302,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                     sequencer->close(); // sync call (required)
                     setUIMode(UIMode::Normal); // async call
                 }
+                pattern->shouldClearTails = false;
                 pattern = patterns[queuedPattern - 1];
                 sendpattern = sendpatterns[queuedPattern - 1];
                 viewPattern = sendEditMode ? sendpattern : pattern;
@@ -1688,7 +1669,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         wetBuffer.setSample(1, sample, rout);
     }
 
-    // finally mix the dry and wet signals
+    // mix the dry and wet signals
     if (!revenvMonitor && !sendenvMonitor && !useMonitor) {
         float dryGain, wetGain;
 
@@ -1703,9 +1684,26 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         buffer.applyGain(dryGain);
         wetBuffer.applyGain(wetGain);
 
+        // process display samples
+        auto lpre = buffer.getReadPointer(0);
+        auto rpre = buffer.getReadPointer(audioInputs > 1 ? 1 : 0);
+        auto lpost = wetBuffer.getReadPointer(0);
+        auto rpost = wetBuffer.getReadPointer(1);
+        for (int sample = 0; sample < numSamples; ++sample) {
+            processDisplaySample(xposBuffer[sample], lpre[sample], rpre[sample], lpost[sample], rpost[sample]);
+        }
+
         buffer.addFrom(0, 0, wetBuffer.getReadPointer(0), numSamples);
         if (audioOutputs > 1) {
             buffer.addFrom(1, 0, wetBuffer.getReadPointer(1), numSamples);
+        }
+    }
+    else {
+        // process display samples
+        auto lpre = buffer.getReadPointer(0);
+        auto rpre = buffer.getReadPointer(audioInputs > 1 ? 1 : 0);
+        for (int sample = 0; sample < numSamples; ++sample) {  
+            processDisplaySample(xposBuffer[sample], lpre[sample], rpre[sample], 0.f, 0.f);
         }
     }
 }
@@ -1853,7 +1851,7 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
                 bool clearsTails;
                 std::istringstream iss(str);
                 while (iss >> x >> y >> tension >> type >> clearsTails) {
-                    patterns[i]->insertPoint(x,y,tension,type,clearsTails);
+                    patterns[i]->insertPoint(x,y,tension,type, false, clearsTails);
                 }
             }
 
@@ -1864,7 +1862,7 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
                 bool clearsTails;
                 std::istringstream iss(str);
                 while (iss >> x >> y >> tension >> type >> clearsTails ) {
-                    sendpatterns[i]->insertPoint(x,y,tension,type,clearsTails);
+                    sendpatterns[i]->insertPoint(x,y,tension,type, false,clearsTails);
                 }
             }
 
