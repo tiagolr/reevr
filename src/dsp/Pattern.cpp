@@ -215,7 +215,11 @@ void Pattern::clearUnsafe()
 
 void Pattern::buildSegments()
 {
-    auto pts = points; // make points copy
+    std::vector<PPoint> pts;
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        pts = points;
+    }
     // add ghost points outside the 0..1 boundary
     // allows the pattern to repeat itself and rotate seamlessly
     if (pts.size() == 0) {

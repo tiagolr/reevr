@@ -459,7 +459,7 @@ double REEVRAudioProcessor::getTailLengthSeconds() const
 
 int REEVRAudioProcessor::getNumPrograms()
 {
-    return 40;
+    return 11;
 }
 
 int REEVRAudioProcessor::getCurrentProgram()
@@ -475,58 +475,30 @@ void REEVRAudioProcessor::setCurrentProgram (int index)
 
 void REEVRAudioProcessor::loadProgram (int index)
 {
-    if (sequencer->isOpen)
-        sequencer->close();
-
     currentProgram = index;
-    auto loadPreset = [](Pattern& pat, int idx) {
-        auto preset = pat.index >= 12
-            ? Presets::getResPreset(idx)
-            : Presets::getCutPreset(idx);
-        pat.clear();
-        for (auto p = preset.begin(); p < preset.end(); ++p) {
-            pat.insertPoint(p->x, p->y, p->tension, p->type);
-        }
-        pat.buildSegments();
-        pat.clearUndo();
-    };
+    if (currentProgram == -1) return;
 
-    if (index == 0) { // Init
-        for (int i = 0; i < 12; ++i) {
-            patterns[i]->clear();
-            patterns[i]->insertPoint(0.0, 0.0, 0, 1);
-            patterns[i]->buildSegments();
-            patterns[i]->clearUndo();
+    auto data = BinaryData::init_xml;
+    auto size = BinaryData::init_xmlSize;
 
-            sendpatterns[i]->clear();
-            sendpatterns[i]->insertPoint(0.0, 1.0, 0, 1);
-            sendpatterns[i]->buildSegments();
-            sendpatterns[i]->clearUndo();
-        }
-    }
-    else if (index == 1 || index == 14 || index == 27) {
-        for (int i = 0; i < 12; ++i) {
-            loadPreset(*patterns[i], index + i);
-            loadPreset(*sendpatterns[i], index + i);
-        }
-    }
-    else {
-        loadPreset(*pattern, index - 1);
-    }
+    if (index == 1) { data = BinaryData::cleartails_xml; size = BinaryData::cleartails_xmlSize; }
+    else if (index == 2) { data = BinaryData::envelopes_xml; size = BinaryData::envelopes_xmlSize; }
+    else if (index == 3) { data = BinaryData::rising_xml; size = BinaryData::rising_xmlSize; }
+    else if (index == 4) { data = BinaryData::waves_xml; size = BinaryData::waves_xmlSize; }
+    else if (index == 5) { data = BinaryData::offbeat_xml; size = BinaryData::offbeat_xmlSize; }
+    else if (index == 6) { data = BinaryData::bunker_xml; size = BinaryData::bunker_xmlSize; }
+    else if (index == 7) { data = BinaryData::gated1_xml; size = BinaryData::gated1_xmlSize; }
+    else if (index == 8) { data = BinaryData::gated2_xml; size = BinaryData::gated2_xmlSize; }
+    else if (index == 9) { data = BinaryData::gated3_xml; size = BinaryData::gated3_xmlSize; }
+    else if (index == 10) { data = BinaryData::gated4_xml; size = BinaryData::gated4_xmlSize; }
 
-    updateReverbFromPattern();
-    updateSendFromPattern();
-    setUIMode(UIMode::Normal);
-    sendChangeMessage(); // UI Repaint
+    setStateInformation(data, size);
 }
 
 const juce::String REEVRAudioProcessor::getProgramName (int index)
 {
-    static const std::array<juce::String, 40> progNames = {
-        "Init",
-        "Load Patterns 01-12", "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5", "Basic 6", "Basic 7", "Basic 8", "Basic 9", "Basic 10", "Basic 11", "Basic 12",
-        "Load Patterns 13-25", "Gate 1", "Gate 2", "Gate 3", "Gate 4", "Gate 5", "Gate 6", "Gate 7", "Gate 8", "Gate 9", "Gate 10", "Gate 11", "Gate 12",
-        "Load Patterns 26-38", "Waves 1", "Waves 2", "Waves 3", "Waves 4", "Waves 5", "Waves 6", "FX 1", "FX 2", "FX 3", "FX 4", "FX 5", "FX 6"
+    static const std::array<juce::String, 11> progNames = {
+        "Init", "Clear Tails", "Envelopes", "Rising", "Waves", "Offbeat", "Bunker", "Gated 1", "Gated 2", "Gated 3", "Gated 4"
     };
     return progNames.at(index);
 }
@@ -541,6 +513,7 @@ void REEVRAudioProcessor::changeProgramName (int index, const juce::String& newN
 void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     warmer.setSize(2, (int)std::ceil(sampleRate)); // 1 second of warmup samples
+    warmer.clear();
     convolver->prepare(samplesPerBlock);
     loadConvolver->prepare(samplesPerBlock);
     yrevBuffer.resize(samplesPerBlock, 0.0f);
@@ -1530,7 +1503,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     // IR load state machine
     // if loadstate is idle and there is an update reload the IR into the load convolver
-    if (irDirty && loadState.load() == kIdle && loadCooldown <= 0) {
+    if (irDirty && loadState.load() == kIdle && loadCooldown <= 0 && !isLoadingPluginState) {
         loadCooldown = (int)(CONV_LOAD_COOLDOWN / 1000.0 * srate);
         irDirty = false;
         loadState.store(kLoading);
@@ -1836,6 +1809,12 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
     }
 
     std::unique_ptr<juce::XmlElement>xmlState (getXmlFromBinary (data, sizeInBytes));
+
+    if (xmlState == nullptr) { // Fallback to plain text parsing, used for loading programs
+        auto xmlString = juce::String::fromUTF8(static_cast<const char*>(data), sizeInBytes);
+        xmlState = juce::parseXML(xmlString);
+    }
+
     if (!xmlState) return;
     auto state = ValueTree::fromXml (*xmlState);
     if (!state.isValid()) return;
@@ -1929,24 +1908,8 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
     }
 
     setUIMode(Normal);
-
-    // load impulse instantly
     updateImpulse();
-    if (irDirty || impulse->path != irFile.toStdString()) {
-        if (impulse->path != irFile.toStdString()) {
-            impulse->load(irFile);
-            irFile = String(impulse->path);
-        }
-        else if (impulse->bufferL.empty()) {
-            impulse->load(""); // load default IR, Fixes setStateInformation called before prepareToPlay()
-        }
-        else {
-            impulse->recalcImpulse();
-        }
-        sendChangeMessage();
-        convolver->loadImpulse(*impulse);
-        irDirty = false;
-    }
+    irDirty = true;
 }
 
 //==============================================================================

@@ -259,5 +259,5 @@ void EnvelopeWidget::layoutComponents()
     autoRelBtn.setToggleState((isSendenv && audioProcessor.resenvAutoRel) || (!isSendenv && audioProcessor.revenvAutoRel), dontSendNotification);
     MessageManager::callAsync([this] {
         repaint();
-    })
+    });
 }

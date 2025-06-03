@@ -176,6 +176,7 @@ public:
     AudioBuffer<float> sendBuffer;
     AudioBuffer<float> delayBuffer;
     int delaypos = 0;
+    bool isLoadingPluginState = false; // used to load impulse while preventing concurrent load
 
 
     // Convolver state

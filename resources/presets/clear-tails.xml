@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PluginState version="0.1.0" currentProgram="-1" alwaysPlaying="0" dualSmooth="1"
+             dualTension="0" triggerChn="9" useSidechain="0" outputCC="0"
+             outputCCChan="0" outputCV="0" outputATMIDI="0" bipolarCC="0"
+             paintTool="0" paintPage="0" pointMode="1" audioIgnoreHitsWhilePlaying="0"
+             revenvSidechain="0" revenvAutoRel="1" sendenvSidechain="0" sendenvAutoRel="1"
+             linkSeqToGrid="1" currpattern="1" currsendpattern="1" irfile=""
+             pattern0="0.0625 0 0.376 1 0 0.125 1 -0.388 1 1 0.1875 0 0 1 0 0.3125 0 0.478 1 0 0.375 1 -0.418 1 1 0.4375 0 0 1 0 0.5625 0 0.432 1 0 0.625 1 -0.444 1 1 0.6875 0 0 1 0 0.8125 0 0.382 1 0 0.875 1 -0.444 1 1 0.9375 0 0 1 0 0.9375 0 0 1 0 "
+             sendpattern0="0 0 0.556 1 0 " pattern1="0 0 0 1 0 " sendpattern1="0 0 0 1 0 "
+             pattern2="0 0 0 1 0 " sendpattern2="0 0 0 1 0 " pattern3="0 0 0 1 0 "
+             sendpattern3="0 0 0 1 0 " pattern4="0 0 0 1 0 " sendpattern4="0 0 0 1 0 "
+             pattern5="0 0 0 1 0 " sendpattern5="0 0 0 1 0 " pattern6="0 0 0 1 0 "
+             sendpattern6="0 0 0 1 0 " pattern7="0 0 0 1 0 " sendpattern7="0 0 0 1 0 "
+             pattern8="0 0 0 1 0 " sendpattern8="0 0 0 1 0 " pattern9="0 0 0 1 0 "
+             sendpattern9="0 0 0 1 0 " pattern10="0 0 0 1 0 " sendpattern10="0 0 0 1 0 "
+             pattern11="0 0 0 1 0 " sendpattern11="0 0 0 1 0 " seqcells="">
+  <PARAMETERS>
+    <PARAM id="algo" value="0.0"/>
+    <PARAM id="attack" value="0.0"/>
+    <PARAM id="drywet" value="0.4974997639656067"/>
+    <PARAM id="grid" value="2.0"/>
+    <PARAM id="highcut" value="20000.0"/>
+    <PARAM id="irattack" value="0.0"/>
+    <PARAM id="irdecay" value="0.0"/>
+    <PARAM id="irhighcut" value="20000.0"/>
+    <PARAM id="irhighcutslope" value="0.0"/>
+    <PARAM id="irlowcut" value="239.9999847412109"/>
+    <PARAM id="irlowcutslope" value="0.0"/>
+    <PARAM id="irreverse" value="0.0"/>
+    <PARAM id="irstretch" value="0.0"/>
+    <PARAM id="irtrimleft" value="0.0"/>
+    <PARAM id="irtrimright" value="0.0"/>
+    <PARAM id="lowcut" value="20.0"/>
+    <PARAM id="max" value="1.0"/>
+    <PARAM id="min" value="0.0"/>
+    <PARAM id="offset" value="0.0"/>
+    <PARAM id="patsync" value="0.0"/>
+    <PARAM id="pattern" value="1.0"/>
+    <PARAM id="phase" value="0.0"/>
+    <PARAM id="predelay" value="0.0"/>
+    <PARAM id="predelaysync" value="2.0"/>
+    <PARAM id="predelayusesync" value="1.0"/>
+    <PARAM id="rate" value="0.9999999403953552"/>
+    <PARAM id="release" value="0.0"/>
+    <PARAM id="revenvamt" value="0.0"/>
+    <PARAM id="revenvatk" value="0.004999999888241291"/>
+    <PARAM id="revenvhighcut" value="20000.0"/>
+    <PARAM id="revenvhold" value="0.0"/>
+    <PARAM id="revenvlowcut" value="20.0"/>
+    <PARAM id="revenvon" value="0.0"/>
+    <PARAM id="revenvrel" value="0.04999999701976776"/>
+    <PARAM id="revenvthresh" value="0.0"/>
+    <PARAM id="reverb" value="0.692307710647583"/>
+    <PARAM id="revoffset" value="0.0"/>
+    <PARAM id="send" value="1.0"/>
+    <PARAM id="sendenvamt" value="0.0"/>
+    <PARAM id="sendenvatk" value="0.004999999888241291"/>
+    <PARAM id="sendenvhighcut" value="20000.0"/>
+    <PARAM id="sendenvhold" value="0.0"/>
+    <PARAM id="sendenvlowcut" value="20.0"/>
+    <PARAM id="sendenvon" value="0.0"/>
+    <PARAM id="sendenvrel" value="0.04999999701976776"/>
+    <PARAM id="sendenvthresh" value="0.0"/>
+    <PARAM id="sendoffset" value="0.0"/>
+    <PARAM id="sense" value="0.5"/>
+    <PARAM id="seqstep" value="2.0"/>
+    <PARAM id="smooth" value="0.0"/>
+    <PARAM id="snap" value="1.0"/>
+    <PARAM id="sync" value="5.0"/>
+    <PARAM id="tension" value="0.0"/>
+    <PARAM id="tensionatk" value="0.0"/>
+    <PARAM id="tensionrel" value="0.0"/>
+    <PARAM id="threshold" value="0.5"/>
+    <PARAM id="trigger" value="0.0"/>
+    <PARAM id="width" value="1.0"/>
+  </PARAMETERS>
+</PluginState>
