@@ -834,6 +834,7 @@ void REEVRAudioProcessor::onPlay()
     clearLatencyBuffers();
     sendenv.clear();
     revenv.clear();
+    warmer.clear();
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     double ratehz = (double)params.getRawParameterValue("rate")->load();
     double phase = (double)params.getRawParameterValue("phase")->load();
@@ -1556,6 +1557,20 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         AudioBuffer<float> chunk;
         chunk.setSize(2, convolver->size);
 
+        // prepare warmer filters
+        auto irlowcut = params.getRawParameterValue("irlowcut")->load();
+        auto irhighcut = params.getRawParameterValue("irhighcut")->load();
+        auto irlowcutSlope = (int)params.getRawParameterValue("irlowcutslope")->load();
+        auto irhighcutSlope = (int)params.getRawParameterValue("irhighcutslope")->load();
+        warmerLowcutL.setSlope((FilterSlope)irlowcutSlope); warmerLowcutL.reset(0.0f);
+        warmerLowcutR.setSlope((FilterSlope)irlowcutSlope); warmerLowcutR.reset(0.0f);
+        warmerHighcutL.setSlope((FilterSlope)irhighcutSlope); warmerHighcutL.reset(0.0f);
+        warmerHighcutR.setSlope((FilterSlope)irhighcutSlope); warmerHighcutR.reset(0.0f);
+        warmerLowcutL.init((float)srate, irlowcut, irLowcutL.slope == k24dB ? 0.0765f : 0.2929f);
+        warmerLowcutR.init((float)srate, irlowcut, irLowcutR.slope == k24dB ? 0.0765f : 0.2929f);
+        warmerHighcutL.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
+        warmerHighcutR.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
+
         // copy warmup buffer in chunks into the new convolver
         for (int i = 0; i < numBlocks; ++i) {
             int end = (start + convolver->size) % warmer.getNumSamples();
@@ -1571,6 +1586,21 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 chunk.copyFrom(1, 0, warmer, 1, start, toEnd);
                 chunk.copyFrom(0, toEnd, warmer, 0, 0, remaining);
                 chunk.copyFrom(1, toEnd, warmer, 1, 0, remaining);
+            }
+
+            for (int spl = 0; spl < convolver->size; ++spl) {
+                auto lspl = chunk.getSample(0, spl);
+                auto rspl = chunk.getSample(1, spl);
+                if (irlowcut > 20.f) {
+                    lspl = warmerLowcutL.eval(lspl);
+                    rspl = warmerLowcutR.eval(rspl);
+                }
+                if (irhighcut < 20000.f) {
+                    lspl = warmerHighcutL.eval(lspl);
+                    rspl = warmerHighcutR.eval(rspl);
+                }
+                chunk.setSample(0, spl, lspl);
+                chunk.setSample(1, spl, rspl);
             }
 
             loadConvolver->process(chunk.getReadPointer(0, 0), chunk.getReadPointer(1, 0), convolver->size);

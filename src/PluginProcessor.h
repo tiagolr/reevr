@@ -230,6 +230,10 @@ public:
     Filter irHighcutR{FilterSlope::k6dB, FilterMode::LP};
     Filter irLowcutL{FilterSlope::k6dB, FilterMode::HP};
     Filter irLowcutR{FilterSlope::k6dB, FilterMode::HP};
+    Filter warmerHighcutL{FilterSlope::k6dB, FilterMode::LP};
+    Filter warmerHighcutR{FilterSlope::k6dB, FilterMode::LP};
+    Filter warmerLowcutL{FilterSlope::k6dB, FilterMode::HP};
+    Filter warmerLowcutR{FilterSlope::k6dB, FilterMode::HP};
 
     // PlayHead state
     bool playing = false;

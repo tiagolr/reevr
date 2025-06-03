@@ -19,7 +19,7 @@
 
 </div>
 
-**REEV-R** is a cross-platform convolution reverb modulator where both the pre/send and post reverb signals can be modulated using MSEGs. It's a very close implementation to ShaperBox reverb module, see notes below.
+**REEV-R** is a cross-platform convolution reverb with MSEG modulation for both pre/send and post/volume signals.
 
 <div align="center">
 
@@ -38,7 +38,7 @@ Also check other plugins from this collection:
   * High performance Convolution Reverb thanks to KlangFalter library
   * IR manipulations like stretch, trim, reverse, attack and decay
   * Pre/send and post/reverb MSEG modulation
-  * 12 patterns triggered by midi notes
+  * 12 patterns for send and reverb triggered by midi notes
   * Paint mode with user defined shapes
   * Point type - hold, curve, s-curve, stairs ..
   * Built-in sequencer and randomizer
@@ -57,7 +57,7 @@ Also check other plugins from this collection:
 
 ## Install
 
-REEV does not come with impulse response files (IRs) other than the default one, you should either install convolution IRs on the plugin impulses folder or change the plugin IR directory to another  folder containing IRs.
+REEV does not come with impulse response files (IRs) other than the default one, you should  install convolution IRs into the plugin impulses folder or change the plugin IR directory to  an existing folder containing the impulses.
 
 Here are some links to download reverb IRs:
 
@@ -66,7 +66,7 @@ Here are some links to download reverb IRs:
 * [Reaper Stash](https://stash.reaper.fm/tag/Reverb-Impulses)
 * [Open Air](https://www.openair.hosted.york.ac.uk/?page_id=36)
 
-These links may be broken, search for reverb IR files to find free ones on the internet.
+These links may be broken, search for reverb IR files to find free or paid ones on the internet.
 
 
 ## About
@@ -79,9 +79,9 @@ REEV supports IR manipulation like stretching, reversing, trimming, attack and d
 
 ### A note on ShaperBox
 
-This plugin, more so than the others, is feature-by-feature almost a copy of ShaperBox - from the send/reverb modulations to the envelope followers to the knobs that move the average of the points.. this was not intentional or planned, there are not many references and I didn't want to stay behind some very well thought features of CableGuys plugins so I ended replicating them.
+This plugin, more so than the others, is feature-by-feature almost a re-implementation of ShaperBox - from the send/reverb modulations to the envelope followers to the knobs that move the average of the points.. this was not intentional or planned, there are not many references and I didn't want to lag on some very well thought features of CableGuys plugins so I ended replicating them.
 
-If you like this plugin consider checking ShaperBox Reverb, it's probably more studio grade, more polished, the reverb sounds a bit more defined on the low-end and the price tag is still affordable.
+If you like this plugin consider checking ShaperBox Reverb, it's probably more studio grade, more polished, the reverb sounds a bit more defined on the low-end and the price tag is affordable.
 
 ### Features
 
