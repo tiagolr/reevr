@@ -135,8 +135,6 @@ REEVRAudioProcessor::REEVRAudioProcessor()
     revvalue = new RCSmoother();
     sendvalue = new RCSmoother();
 
-    updateReverbFromPattern();
-    updateSendFromPattern();
     loadSettings();
 }
 

@@ -28,8 +28,8 @@ void Pattern::incrementVersion()
 
 void Pattern::sortPoints()
 {
-    std::sort(points.begin(), points.end(), [](const PPoint& a, const PPoint& b) { 
-        return a.x < b.x; 
+    std::sort(points.begin(), points.end(), [](const PPoint& a, const PPoint& b) {
+        return a.x < b.x;
     });
 }
 
@@ -153,7 +153,7 @@ void Pattern::doublePattern()
 {
     std::lock_guard<std::mutex> lock(pointsmtx);
     clearTransform();
-    
+
     auto pts = points;
     for (auto& p : pts) {
         insertPointUnsafe(p.x + 1.0, p.y, p.tension, p.type, false);
@@ -172,7 +172,7 @@ void Pattern::rotate(double x) {
     if (x > 1.0) x = 1.0;
     if (x < -1.0) x = -1.0;
     for (auto p = points.begin(); p != points.end(); ++p) {
-        if (p->x == 0.0) p->x += 1e-9; // FIX - distinguish 1.0 and 0.0 points 
+        if (p->x == 0.0) p->x += 1e-9; // FIX - distinguish 1.0 and 0.0 points
         if (p->x == 1.0) p->x -= 1e-9; //
         p->x += x;
         if (p->x < 0.0) p->x += 1.0;
@@ -187,7 +187,7 @@ void Pattern::rotateUnsafe(double x) {
     if (x > 1.0) x = 1.0;
     if (x < -1.0) x = -1.0;
     for (auto p = points.begin(); p != points.end(); ++p) {
-        if (p->x == 0.0) p->x += 1e-9; // FIX - distinguish 1.0 and 0.0 points 
+        if (p->x == 0.0) p->x += 1e-9; // FIX - distinguish 1.0 and 0.0 points
         if (p->x == 1.0) p->x -= 1e-9; //
         p->x += x;
         if (p->x < 0.0) p->x += 1.0;
@@ -217,7 +217,7 @@ void Pattern::buildSegments()
 {
     std::vector<PPoint> pts;
     {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::lock_guard<std::mutex> lock(pointsmtx);
         pts = points;
     }
     // add ghost points outside the 0..1 boundary
@@ -311,33 +311,34 @@ void Pattern::paste()
 
 void Pattern::transform(double midy)
 {
-    std::lock_guard<std::mutex> lock(pointsmtx);
-    midy = 1.0 - midy; // y coordinates are inverted
-    clearY = midy;
-    if (rawpoints.empty()) rawpoints = points;
-    if (!rawpoints.size()) {
-        buildSegments();
-        return;
-    }
+    {
+        std::lock_guard<std::mutex> lock(pointsmtx);
+        midy = 1.0 - midy; // y coordinates are inverted
+        clearY = midy;
 
-    double avg = 0.0;
-    for (auto& p : rawpoints) {
-        avg += p.y;
-    }
-    avg /= points.size();
+        if (rawpoints.empty()) 
+            rawpoints = points;
+        if (!rawpoints.empty()) {
+            double avg = 0.0;
+            for (auto& p : rawpoints) {
+                avg += p.y;
+            }
+            avg /= points.size();
 
-    if (avg <= midy) {
-        if (avg == 1.0) avg -= 1e-10;
-        double alpha = (midy - avg) / (1.0 - avg);
-        for (int i = 0; i < points.size(); i++) {
-            points[i].y = rawpoints[i].y + alpha * (1 - rawpoints[i].y);
-        }
-    }
-    else {
-        if (avg == 0.0) avg += 1e-10;
-        double beta = (avg - midy) / avg;
-        for (int i = 0; i < points.size(); i++) {
-            points[i].y = (1.0 - beta) * rawpoints[i].y;
+            if (avg <= midy) {
+                if (avg == 1.0) avg -= 1e-10;
+                double alpha = (midy - avg) / (1.0 - avg);
+                for (int i = 0; i < points.size(); i++) {
+                    points[i].y = rawpoints[i].y + alpha * (1 - rawpoints[i].y);
+                }
+            }
+            else {
+                if (avg == 0.0) avg += 1e-10;
+                double beta = (avg - midy) / avg;
+                for (int i = 0; i < points.size(); i++) {
+                    points[i].y = (1.0 - beta) * rawpoints[i].y;
+                }
+            }
         }
     }
 
@@ -559,12 +560,14 @@ void Pattern::undo()
     if (undoStack.empty())
         return;
 
-    std::lock_guard<std::mutex> lock(pointsmtx);
-    clearTransform();
+    {
+        std::lock_guard<std::mutex> lock(pointsmtx);
+        clearTransform();
 
-    redoStack.push_back(points);
-    points = undoStack.back();
-    undoStack.pop_back();
+        redoStack.push_back(points);
+        points = undoStack.back();
+        undoStack.pop_back();
+    }
 
     incrementVersion();
     buildSegments();
@@ -572,17 +575,20 @@ void Pattern::undo()
 
 void Pattern::redo()
 {
-    if (redoStack.empty()) 
+    if (redoStack.empty())
         return;
 
-    std::lock_guard<std::mutex> lock(pointsmtx);
-    clearTransform();
+    {
+        std::lock_guard<std::mutex> lock(pointsmtx);
+        clearTransform();
 
-    undoStack.push_back(points);
-    points = redoStack.back();
-    redoStack.pop_back();
+        undoStack.push_back(points);
+        points = redoStack.back();
+        redoStack.pop_back();
 
-    incrementVersion();
+        incrementVersion();
+    }
+
     buildSegments();
 }
 
