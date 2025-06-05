@@ -19,7 +19,7 @@
 
 </div>
 
-**REEV-R** is a cross-platform convolution reverb with MSEG modulation for both pre/send and post/volume signals.
+**REEV-R** is a cross-platform convolution reverb with modulation for pre/send and post/volume signals.
 
 <div align="center">
 
@@ -58,7 +58,7 @@ Also check other plugins from this collection:
 
 ## Install
 
-REEV does not come with impulse response files (IRs) other than the default one, you should  install convolution IRs into the plugin impulses folder or change the plugin IR directory to  an existing folder containing impulses.
+REEV does not come with impulse response files (IRs) other than the default one, you should  convolution IRs need to be installed on the plugin default impulses folder or the plugin IR folder changed to an existing folder containing impulses.
 
 Here are some links to download reverb IRs:
 
@@ -68,7 +68,7 @@ Here are some links to download reverb IRs:
 * [Open Air](https://www.openair.hosted.york.ac.uk/?page_id=36)
 * [FL Studio demo](https://www.image-line.com/) comes with many impulses, only they need to be converted to `*.wav`.
 
-These links may be broken, search for reverb IR files to find free or paid ones on the internet.
+These links may be broken, search for reverb IR files on the internet, plenty can be found both paid and free.
 
 
 ## About
@@ -77,11 +77,11 @@ REEV-R is a convolution reverb with modulation capabilities, it is possible than
 
 ### How it works
 
-REEV supports IR manipulation like stretching, reversing, trimming, attack and decay. Because loading IRs is expensive this plugin uses two reverbs, one active and one idle, and loads the modified impulses on the idle reverb on a separate thread. Once the secondary reverb is ready it warms it with one second of buffered audio, so that it achieves the same state as the main reverb, finally both reverbs are cross-faded for a smooth transition before swapping the two.
+REEV supports IR manipulation like stretching, reversing, trimming, attack and decay. Because loading IRs is expensive this plugin uses two reverbs, one active and one idle, and loads the modified impulses on the idle reverb on a separate thread. Once the secondary reverb is ready it warms it with one second of buffered audio so that it achieves the same state as the main reverb, finally both reverbs are cross-faded for a smooth transition before swapping the two.
 
 ### A note on ShaperBox
 
-This plugin, more so than the others, is feature-by-feature almost a re-implementation of ShaperBox - from the send/reverb modulations to the envelope followers to the knobs that move the average of the points.. this was not intentional or planned, there are not many references and I didn't want to lag on some very well thought features of CableGuys plugins so I ended replicating them.
+This plugin, more so than the others, is feature-by-feature almost a re-implementation of ShaperBox - from the send/reverb modulations to the envelope followers to the knobs that move the average of the points.. this was not intentional, there are not many references and I didn't want to lag on some very well thought features of CableGuys plugins so I ended replicating them.
 
 If you like this plugin consider checking ShaperBox Reverb, it's probably more studio grade, more polished, the reverb sounds a bit more defined on the low-end and the price tag is affordable.
 
@@ -158,7 +158,7 @@ Reverb tails can be cleared on any point of the reverb pattern, to do so, `Right
 
 Big thanks to KlangFalter creator for his wonderful convolution library, without it this plugin would not be possible, maybe there are other solutions out there but this one really fits.
 
-CableGuys for ShaperBox, this plugin re-implements many of its features, they are very well thought and it would be difficult to miss out on them, including the self repeating patterns, envelope followers, average points manipulation and many others.
+CableGuys for the ShaperBox reference and original idea, this plugin re-implements many of its features, including the self repeating patterns, envelope followers, average points manipulation and many others.
 
 ## MacOS
 
