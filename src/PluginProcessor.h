@@ -150,6 +150,8 @@ public:
     int64_t queuedPatternCountdown = 0; // samples counter until queued pattern is applied
     int queuedResPattern = 0; // queued pat index, 0 = off
     int64_t queuedResPatternCountdown = 0; // samples counter until queued pattern is applied
+    int midiTriggerChn = 0;
+    bool queuedMidiTrigger = false;
     double xpos = 0.0; // envelope x pos (0..1)
     double yrev = 0.0; // envelope y pos (0..1)
     double ysend = 0.0; // send envelope y pos
@@ -289,6 +291,7 @@ public:
     void restorePaintPatterns();
     void setSendEditMode(bool isSend);
     int getPredelaySync();
+    void startMidiTrigger();
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;

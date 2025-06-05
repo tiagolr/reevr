@@ -327,6 +327,17 @@ int REEVRAudioProcessor::getPredelaySync()
     return static_cast<int>(samplesPerBeat * noteLength);
 }
 
+void REEVRAudioProcessor::startMidiTrigger()
+{
+    double phase = (double)params.getRawParameterValue("phase")->load();
+    clearWaveBuffers();
+    midiTrigger = !alwaysPlaying;
+    trigpos = 0.0;
+    trigphase = phase;
+    restartEnv(true);
+}
+
+
 void REEVRAudioProcessor::setUIMode(UIMode mode)
 {
     MessageManager::callAsync([this, mode]() {
@@ -1271,12 +1282,13 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                         auto patidx = msg.note % 12;
                         queuePattern(patidx + 1);
                     }
-                    else if (trigger == Trigger::MIDI) {
-                        clearWaveBuffers();
-                        midiTrigger = !alwaysPlaying;
-                        trigpos = 0.0;
-                        trigphase = phase;
-                        restartEnv(true);
+                    if (trigger == Trigger::MIDI && (msg.channel == midiTriggerChn || midiTriggerChn == 16)) {
+                        if (queuedPattern) {
+                            queuedMidiTrigger = true;
+                        }
+                        else {
+                            startMidiTrigger();
+                        }
                     }
                 }
             }
@@ -1306,6 +1318,10 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 updateSendFromPattern();
                 MessageManager::callAsync([this]() { sendChangeMessage();});
                 queuedPattern = 0;
+                if (queuedMidiTrigger) {
+                    queuedMidiTrigger = false;
+                    startMidiTrigger();
+                }
             }
             if (queuedPatternCountdown > 0) {
                 queuedPatternCountdown -= 1;
@@ -1766,6 +1782,7 @@ void REEVRAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty("currpattern", pattern->index + 1, nullptr);
     state.setProperty("currsendpattern", sendpattern->index - 12 + 1, nullptr);
     state.setProperty("irfile", irFile, nullptr);
+    state.setProperty("midiTriggerChn", midiTriggerChn, nullptr);
 
     for (int i = 0; i < 12; ++i) {
         std::ostringstream oss;
@@ -1852,6 +1869,7 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
         revenvAutoRel = (bool)state.getProperty("revenvAutoRel");
         sendenvSidechain = (bool)state.getProperty("sendenvSidechain");
         resenvAutoRel = (bool)state.getProperty("sendenvAutoRel");
+        midiTriggerChn = (int)state.getProperty("midiTriggerChn");
         linkSeqToGrid = state.hasProperty("linkSeqToGrid") ? (bool)state.getProperty("linkSeqToGrid") : true;
         if (state.hasProperty("irfile")) irFile = state.getProperty("irfile");
 
