@@ -305,7 +305,7 @@ public:
     void onSlider ();
     void updateImpulse();
     void updatePatternFromReverb();
-    void updateSendPatternFromSend();
+    void updatePatternFromSend();
     void updateReverbFromPattern();
     void updateSendFromPattern();
     void onTensionChange();

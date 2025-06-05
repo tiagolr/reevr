@@ -135,6 +135,11 @@ REEVRAudioProcessor::REEVRAudioProcessor()
     revvalue = new RCSmoother();
     sendvalue = new RCSmoother();
 
+    // these are called in multiple starting places like prepareToPlay, setProgramState and here
+    // the goal is to trick Logics AU validation to pass without the ERROR: Parameter did not retain set value when Initialized
+    updatePatternFromReverb();
+    updatePatternFromSend();
+
     loadSettings();
 }
 
@@ -534,6 +539,9 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     delayBuffer.setSize(2, int(2.0f * sampleRate));
     delayBuffer.clear();
 
+    updatePatternFromReverb();
+    updatePatternFromSend();
+
     revenvBuffer.resize(samplesPerBlock, 0.f);
     sendenvBuffer.resize(samplesPerBlock, 0.f);
     audioHighcutL.reset(0.0f);
@@ -654,16 +662,22 @@ void REEVRAudioProcessor::onSlider()
 
     if (reverbDirty) {
         float avg = (float)pattern->getavgY();
-        params.getParameter("reverb")->setValueNotifyingHost(avg);
-        lreverb = (double)params.getRawParameterValue("reverb")->load();
+        float rev = params.getParameter("reverb")->getValue(); 
+        if (avg != rev) {
+            params.getParameter("reverb")->setValueNotifyingHost(avg);
+            lreverb = (double)params.getRawParameterValue("reverb")->load();
+        }
         reverbDirty = false;
         reverbDirtyCooldown = 5; // ignore reverb updates for 5 blocks
     }
 
     if (sendDirty) {
         float avg = (float)sendpattern->getavgY();
-        params.getParameter("send")->setValueNotifyingHost(avg);
-        lsend = (double)params.getRawParameterValue("send")->load();
+        float snd = params.getParameter("send")->getValue();
+        if (avg != snd) {
+            params.getParameter("send")->setValueNotifyingHost(avg);
+            lsend = (double)params.getRawParameterValue("send")->load();
+        }
         sendDirty = false;
         sendDirtyCooldown = 5;
     }
@@ -685,7 +699,7 @@ void REEVRAudioProcessor::onSlider()
         lsend = send;
     }
     else if (send != lsend) {
-        updateSendPatternFromSend();
+        updatePatternFromSend();
         lsend = send;
     }
 
@@ -764,7 +778,7 @@ void REEVRAudioProcessor::updatePatternFromReverb()
     pattern->transform(revnorm);
 }
 
-void REEVRAudioProcessor::updateSendPatternFromSend()
+void REEVRAudioProcessor::updatePatternFromSend()
 {
     float sendnorm = params.getParameter("send")->getValue();
     sendpattern->transform(sendnorm);
@@ -1885,8 +1899,8 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
             sendpatterns[i]->buildSegments();
         }
 
-        updateReverbFromPattern();
-        updateSendFromPattern();
+        updatePatternFromReverb();
+        updatePatternFromSend();
 
         if (state.hasProperty("seqcells")) {
             auto str = state.getProperty("seqcells").toString().toStdString();

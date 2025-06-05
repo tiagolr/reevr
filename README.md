@@ -150,6 +150,7 @@ Reverb tails can be cleared on any point of the reverb pattern, to do so, `Right
 - `Mouse wheel` on view changes grid size
 - `Right click` points changes point type.
 - `Alt + drag` selection handles skews selected points.
+- `Alt + click` to insert new points.
 - `Right click + drag` in paint mode changes paint tool tension.
 - `Shift + mouse wheel` on sequencer to change step size.
 
