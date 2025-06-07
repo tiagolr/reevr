@@ -673,7 +673,7 @@ void REEVRAudioProcessor::onSlider()
 
     if (reverbDirty) {
         float avg = (float)pattern->getavgY();
-        float rev = params.getParameter("reverb")->getValue(); 
+        float rev = params.getParameter("reverb")->getValue();
         if (avg != rev) {
             params.getParameter("reverb")->setValueNotifyingHost(avg);
             lreverb = (double)params.getRawParameterValue("reverb")->load();
@@ -1209,21 +1209,6 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    // process convolver warmer
-    // warmer is a simple circular buffer that stores the last second of audio
-    int spaceToEnd = warmer.getNumSamples() - warmwritepos;
-    if (numSamples <= spaceToEnd) {
-        warmer.copyFrom(0, warmwritepos, buffer, 0, 0, numSamples);
-        warmer.copyFrom(1, warmwritepos, buffer, audioInputs > 1 ? 1 : 0, 0, numSamples);
-    }
-    else {
-        warmer.copyFrom(0, warmwritepos, buffer, 0, 0, spaceToEnd);
-        warmer.copyFrom(0, 0, buffer, 0, spaceToEnd, numSamples - spaceToEnd);
-        warmer.copyFrom(1, warmwritepos, buffer, audioInputs > 1 ? 1 : 0, 0, spaceToEnd);
-        warmer.copyFrom(1, 0, buffer, audioInputs > 1 ? 1 : 0, spaceToEnd, numSamples - spaceToEnd);
-    }
-    warmwritepos = (warmwritepos + numSamples) %  warmer.getNumSamples();
-
     std::fill(revenvBuffer.begin(), revenvBuffer.end(), 0.0f);
     std::fill(sendenvBuffer.begin(), sendenvBuffer.end(), 0.0f);
     std::fill(yrevBuffer.begin(), yrevBuffer.end(), 0.0f);
@@ -1526,6 +1511,22 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         sendBuffer.setSample(0, sample, lin);
         sendBuffer.setSample(1, sample, rin);
     }
+
+    // process convolver warmer
+    // warmer is a simple circular buffer that stores the last second of audio
+    int spaceToEnd = warmer.getNumSamples() - warmwritepos;
+    if (numSamples <= spaceToEnd) {
+        warmer.copyFrom(0, warmwritepos, sendBuffer, 0, 0, numSamples);
+        warmer.copyFrom(1, warmwritepos, sendBuffer, audioInputs > 1 ? 1 : 0, 0, numSamples);
+    }
+    else {
+        warmer.copyFrom(0, warmwritepos, sendBuffer, 0, 0, spaceToEnd);
+        warmer.copyFrom(0, 0, sendBuffer, 0, spaceToEnd, numSamples - spaceToEnd);
+        warmer.copyFrom(1, warmwritepos, sendBuffer, audioInputs > 1 ? 1 : 0, 0, spaceToEnd);
+        warmer.copyFrom(1, 0, sendBuffer, audioInputs > 1 ? 1 : 0, spaceToEnd, numSamples - spaceToEnd);
+    }
+    warmwritepos = (warmwritepos + numSamples) %  warmer.getNumSamples();
+
 
     // process convolver
 
