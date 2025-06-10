@@ -146,19 +146,10 @@ jobs:
           zip -r reevr-macos-${TAG_NAME}.zip reevr-macos
           zip -r reevr-linux-${TAG_NAME}.zip reevr-linux
 
-      - name: Use Node.js 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         with:
+          artifacts: "artifacts/reevr-win-*.zip,artifacts/reevr-macos-*.zip,artifacts/reevr-linux-*.zip"
+          tag: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           draft: true
-          tag_name: ${{ github.ref_name }}
-          files: |
-            artifacts/reevr-win-*.zip
-            artifacts/reevr-macos-*.zip
-            artifacts/reevr-linux-*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
