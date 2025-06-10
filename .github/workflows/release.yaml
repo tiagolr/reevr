@@ -146,6 +146,11 @@ jobs:
           zip -r reevr-macos-${TAG_NAME}.zip reevr-macos
           zip -r reevr-linux-${TAG_NAME}.zip reevr-linux
 
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
