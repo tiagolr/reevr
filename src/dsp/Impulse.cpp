@@ -1,4 +1,4 @@
-#include "impulse.h"
+#include "Impulse.h"
 
 class VectorAudioSource : public AudioSource
 {
