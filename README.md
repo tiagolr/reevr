@@ -73,7 +73,7 @@ These links may be broken, search for reverb IR files on the internet, plenty ca
 
 ## About
 
-REEV-R is a convolution reverb with modulation capabilities, it is possible thanks to [KlangFalter](https://github.com/HiFi-LoFi/KlangFalter) FFT Convolution library, JUCE stock reverb was consuming 20% CPU usage on debug builds while this one takes less than 1%, this was the only library I found that perfectly fits this plugin.
+REEV-R is a convolution reverb with modulation capabilities, it is possible thanks to [KlangFalter](https://github.com/HiFi-LoFi/KlangFalter) FFT Convolution library, JUCE stock convolution was consuming 20% CPU usage on debug builds while this one takes less than 1%, this was the only library I found that perfectly fits this plugin.
 
 ### How it works
 
@@ -81,9 +81,9 @@ REEV supports IR manipulation like stretching, reversing, trimming, attack and d
 
 ### A note on ShaperBox
 
-This plugin, more so than the others, is feature-by-feature almost a re-implementation of ShaperBox - from the send/reverb modulations to the envelope followers to the knobs that move the average of the points.. this was not intentional, there are not many references and I didn't want to lag on some very well thought features of CableGuys plugins so I ended replicating them.
+This plugin, more so than the others, is feature-by-feature almost a re-implementation of ShaperBox - this was not intentional or planned, there are not many references and I didn't want to miss some very well thought features so I ended replicating most of them.
 
-If you like this plugin consider checking ShaperBox Reverb, it's probably more studio grade, more polished, the reverb sounds a bit more defined on the low-end and the price tag is affordable.
+If you like this plugin consider checking ShaperBox Reverb, it's probably more studio grade, more polished and the price tag is affordable.
 
 ### Features
 
@@ -167,9 +167,9 @@ MacOS builds are untested and unsigned, please let me know of any issues by open
 Because the builds are unsigned you may have to run the following commands:
 
 ```bash
-sudo xattr -dr com.apple.quarantine /path/to/your/plugins/reevr.component
-sudo xattr -dr com.apple.quarantine /path/to/your/plugins/reevr.vst3
-sudo xattr -dr com.apple.quarantine /path/to/your/plugins/reevr.lv3
+sudo xattr -dr com.apple.quarantine /path/to/your/plugins/REEV-R.component
+sudo xattr -dr com.apple.quarantine /path/to/your/plugins/REEV-R.vst3
+sudo xattr -dr com.apple.quarantine /path/to/your/plugins/REEV-R.lv2
 ```
 
 The commands above will recursively remove the quarantine flag from the plugins.
