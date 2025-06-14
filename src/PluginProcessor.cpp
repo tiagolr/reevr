@@ -1943,6 +1943,27 @@ void REEVRAudioProcessor::setStateInformation (const void* data, int sizeInBytes
     irDirty = true;
 }
 
+void REEVRAudioProcessor::importPatterns()
+{
+    if (sequencer->isOpen)
+        sequencer->close();
+
+    auto tensionParams = TensionParameters((double)params.getRawParameterValue("tension")->load(),
+                             (double)params.getRawParameterValue("tensionatk")->load(),
+                             (double)params.getRawParameterValue("tensionrel")->load(), dualTension);
+
+    patternManager.importPatterns(patterns, sendpatterns, tensionParams);
+    setUIMode(UIMode::Normal);
+}
+
+void REEVRAudioProcessor::exportPatterns()
+{
+    if (sequencer->isOpen)
+        sequencer->close();
+    patternManager.exportPatterns(patterns, sendpatterns);
+    setUIMode(UIMode::Normal);
+}
+
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

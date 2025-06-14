@@ -2,7 +2,7 @@
 #include "../PluginProcessor.h"
 #include "../Globals.h"
 
-void SettingsButton::paint(Graphics& g) 
+void SettingsButton::paint(Graphics& g)
 {
 	auto r = 1.5f;
 	auto bounds = getLocalBounds().expanded(-2,-4).toFloat();
@@ -109,8 +109,10 @@ void SettingsButton::mouseDown(const juce::MouseEvent& e)
 
 	load.addSubMenu("Presets", presets);
 	load.addSeparator();
+	load.addItem(1001, "Import Pats");
+	load.addItem(1002, "Export Pats");
 	load.addSubMenu("Other", loadOther);
-	
+
 
 	PopupMenu menu;
 	auto menuPos = localPointToGlobal(getLocalBounds().getBottomRight());
@@ -240,7 +242,7 @@ void SettingsButton::mouseDown(const juce::MouseEvent& e)
 				audioProcessor.outputATMIDI = result - 500;
 			}
 			// output options
-			else if (result == 700) { 
+			else if (result == 700) {
 				audioProcessor.outputCV = !audioProcessor.outputCV;
 			}
 			else if (result == 701) {
@@ -248,6 +250,16 @@ void SettingsButton::mouseDown(const juce::MouseEvent& e)
 			}
 			else if (result == 1000) {
 				toggleAbout();
+			}
+			else if (result == 1001) {
+				MessageManager::callAsync([this] {
+					audioProcessor.importPatterns();
+				});
+			}
+			else if (result == 1002) {
+				MessageManager::callAsync([this] {
+					audioProcessor.exportPatterns();
+				});
 			}
 		}
 	);

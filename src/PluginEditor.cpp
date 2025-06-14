@@ -19,6 +19,9 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     audioProcessor.params.addParameterListener("trigger", this);
     audioProcessor.params.addParameterListener("revenvon", this);
     audioProcessor.params.addParameterListener("sendenvon", this);
+    audioProcessor.params.addParameterListener("irlowcutslope", this);
+    audioProcessor.params.addParameterListener("irhighcutslope", this);
+    audioProcessor.params.addParameterListener("predelayusesync", this);
 
     auto col = PLUG_PADDING;
     auto row = PLUG_PADDING;
@@ -631,6 +634,9 @@ REEVRAudioProcessorEditor::~REEVRAudioProcessorEditor()
     audioProcessor.params.removeParameterListener("trigger", this);
     audioProcessor.params.removeParameterListener("revenvon", this);
     audioProcessor.params.removeParameterListener("sendenvon", this);
+    audioProcessor.params.removeParameterListener("irlowcutslope", this);
+    audioProcessor.params.removeParameterListener("irhighcutslope", this);
+    audioProcessor.params.removeParameterListener("predelayusesync", this);
     audioProcessor.removeChangeListener(this);
 }
 
