@@ -12,7 +12,7 @@ void StereoConvolver::prepare(int samplesPerBlock)
 	while (headBlockSize < static_cast<size_t>(samplesPerBlock)) {
 		headBlockSize *= 2;
 	}
-	tailBlockSize = std::min(size_t(8192), 2 * headBlockSize);
+	tailBlockSize = std::max(size_t(8192), 2 * headBlockSize);
 	bufferL.resize(samplesPerBlock, 0.0f);
 	bufferR.resize(samplesPerBlock, 0.0f);
 }
