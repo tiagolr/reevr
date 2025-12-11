@@ -42,6 +42,40 @@ void IRDisplay::timerCallback()
 	}
 }
 
+bool IRDisplay::isInterestedInFileDrag(const juce::StringArray& files)
+{
+	// Return true if you want to accept these files (e.g., check extensions)
+	for (const auto& file : files)
+	{
+		auto f = File(file);
+		auto ext = f.getFileExtension().substring(1).toLowerCase();
+		AudioFormatManager manager;
+		manager.registerBasicFormats();
+		if (manager.findFormatForFileExtension(ext)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void IRDisplay::filesDropped(const juce::StringArray& files, int x, int y)
+{
+	(void)x;
+	(void)y;
+
+	for (const auto& file : files)
+	{
+		AudioFormatManager mgr;
+		auto f = File(file);
+		auto ext = f.getFileExtension().substring(1).toLowerCase();
+		mgr.registerBasicFormats();
+		if (mgr.findFormatForFileExtension(ext)) {
+			audioProcessor.loadImpulse(file);
+			return;
+		}
+	}
+}
+
 void IRDisplay::parameterChanged(const juce::String& parameterID, float newValue)
 {
 	if (parameterID == "irattack") attack = newValue;

@@ -6,7 +6,12 @@
 using namespace globals;
 class REEVRAudioProcessor;
 
-class IRDisplay : public juce::Component, private juce::Timer, private juce::AudioProcessorValueTreeState::Listener {
+class IRDisplay 
+    : public juce::Component
+    , private juce::Timer
+    , private juce::AudioProcessorValueTreeState::Listener 
+    , public juce::FileDragAndDropTarget
+{
 public:
     IRDisplay(REEVRAudioProcessor& p);
     ~IRDisplay() override;
@@ -21,6 +26,9 @@ public:
     void mouseDrag(const juce::MouseEvent& e) override;
     void mouseEnter(const MouseEvent& e) override;
     void mouseExit(const MouseEvent& e) override;
+
+    bool isInterestedInFileDrag(const juce::StringArray& files) override;
+    void filesDropped(const juce::StringArray& files, int x, int y) override;
 
     unsigned long int impulseVersion = 0;
     float attack = 0.0;
