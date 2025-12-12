@@ -526,7 +526,7 @@ void REEVRAudioProcessor::changeProgramName (int index, const juce::String& newN
 void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     srate = sampleRate;
-    warmer.setSize(2, (int)std::ceil(sampleRate) / 2); // 0.5 seconds of warmup samples
+    warmer.setSize(2, (int)std::ceil(sampleRate) / 4); // 0.25 seconds of warmup samples
     warmer.clear();
     convolver->prepare(samplesPerBlock);
     loadConvolver->prepare(samplesPerBlock);
