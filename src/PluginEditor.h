@@ -42,6 +42,7 @@ public:
     void drawGear(Graphics&g, Rectangle<int> bounds, float radius, int segs, Colour color, Colour bg);
     void drawUndoButton(Graphics& g, juce::Rectangle<float> area, bool invertx, Colour color);
     void drawPowerButton(Graphics& g, Rectangle<float> area, Colour color);
+    void drawTriangle(Graphics& g, Rectangle<float> bounds, int direction, Colour c);
 
 private:
     bool init = false;
@@ -103,6 +104,7 @@ private:
     TextButton sendEnvButton;
     TextButton sendEnvOnButton;
     TextButton nudgeRightButton;
+    TextButton toggleViewportButton;
     Label nudgeLabel;
     TextButton nudgeLeftButton;
     TextButton undoButton;

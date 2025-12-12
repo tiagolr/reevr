@@ -15,6 +15,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     setScaleFactor(audioProcessor.scale);
 
     audioProcessor.addChangeListener(this);
+    audioProcessor.params.addParameterListener("showviewport", this);
     audioProcessor.params.addParameterListener("sync", this);
     audioProcessor.params.addParameterListener("trigger", this);
     audioProcessor.params.addParameterListener("revenvon", this);
@@ -153,6 +154,14 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     settingsButton->toggleUIComponents = [this]() { toggleUIComponents(); };
     settingsButton->toggleAbout = [this]() { about.get()->setVisible(true); };
     settingsButton->setBounds(col-20,row,25,25);
+
+    addAndMakeVisible(toggleViewportButton);
+    toggleViewportButton.setAlpha(0.f);
+    toggleViewportButton.onClick = [this]
+        {
+            auto param = audioProcessor.params.getParameter("showviewport");
+            param->setValueNotifyingHost(param->getValue() > 0.f ? 0.f : 1.f);
+        };
 
     col -= 25;
 
@@ -642,6 +651,7 @@ REEVRAudioProcessorEditor::~REEVRAudioProcessorEditor()
     audioProcessor.saveSettings(); // save paint patterns to disk
     setLookAndFeel(nullptr);
     delete customLookAndFeel;
+    audioProcessor.params.removeParameterListener("showviewport", this);
     audioProcessor.params.removeParameterListener("sync", this);
     audioProcessor.params.removeParameterListener("trigger", this);
     audioProcessor.params.removeParameterListener("revenvon", this);
@@ -802,6 +812,19 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     text += String(", ") + String(audioProcessor.impulse->numChans) + "ch";
     fileInfo.setText(text, dontSendNotification);
 
+    bool showviewport = (bool)audioProcessor.params.getRawParameterValue("showviewport")->load();
+    if (!showviewport && uimode == UIMode::Normal && !fileSelector->isVisible()) {
+        view->setVisible(false);
+        int height = snapButton.getBottom() + PLUG_PADDING;
+        setResizeLimits(PLUG_WIDTH, height, MAX_PLUG_WIDTH, height);
+        setSize(getWidth(), height);
+    }
+    else {
+        view->setVisible(true);
+        setResizeLimits(PLUG_WIDTH, PLUG_HEIGHT, MAX_PLUG_WIDTH, MAX_PLUG_HEIGHT);
+        setSize(getWidth(), getHeight() >= PLUG_HEIGHT ? getHeight() : PLUG_HEIGHT);
+    }
+
     MessageManager::callAsync([this] {
         repaint();
     });
@@ -823,8 +846,10 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
         bounds.getBottomLeft(),
         false
     );
-    g.setGradientFill(grad);
-    g.fillRect(bounds);
+    if (getHeight() >= PLUG_HEIGHT) {
+        g.setGradientFill(grad);
+        g.fillRect(bounds);
+    }
 
     // draw point mode icon
     g.setColour(Colour(COLOR_NEUTRAL));
@@ -959,6 +984,9 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
     g.setFont(FontOptions(18.f));
     g.drawFittedText(audioProcessor.impulse->name, bounds.expanded(-3, 0).toNearestInt(), Justification::centred, 2, 1.f);
+
+    bool showview = (bool)audioProcessor.params.getRawParameterValue("showviewport")->load();
+    drawTriangle(g, toggleViewportButton.getBounds().reduced(7).toFloat(), showview ? 2 : 0, Colour(COLOR_ACTIVE));
 }
 
 void REEVRAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)
@@ -1045,6 +1073,7 @@ void REEVRAudioProcessorEditor::resized()
     auto col = getWidth() - PLUG_PADDING;
     auto bounds = settingsButton->getBounds();
     settingsButton->setBounds(bounds.withX(col - bounds.getWidth()));
+    toggleViewportButton.setBounds(settingsButton->getBounds().translated(-settingsButton->getWidth() - 10, 0));
 
     audioWidget->setBounds(audioWidget->getBounds().withRight(getWidth() - PLUG_PADDING));
 
@@ -1086,4 +1115,32 @@ void REEVRAudioProcessorEditor::resized()
 
     audioProcessor.plugWidth = getWidth();
     audioProcessor.plugHeight = getHeight();
+}
+
+void REEVRAudioProcessorEditor::drawTriangle(Graphics& g, Rectangle<float> bounds, int direction, Colour c)
+{
+    g.setColour(c);
+    Path p;
+    if (direction == 0) { // top
+        p.startNewSubPath(bounds.getBottomLeft());
+        p.lineTo({ bounds.getCentreX(), bounds.getY() });
+        p.lineTo(bounds.getBottomRight());
+    }
+    else if (direction == 1) { // right
+        p.startNewSubPath(bounds.getTopLeft());
+        p.lineTo({ bounds.getRight(), bounds.getCentreY() });
+        p.lineTo(bounds.getBottomLeft());
+    }
+    else if (direction == 2) { // bottom
+        p.startNewSubPath(bounds.getTopLeft());
+        p.lineTo({ bounds.getCentreX(), bounds.getBottom() });
+        p.lineTo(bounds.getTopRight());
+    }
+    else { // right
+        p.startNewSubPath(bounds.getTopRight());
+        p.lineTo({ bounds.getX(), bounds.getCentreY() });
+        p.lineTo(bounds.getBottomRight());
+    }
+    p.closeSubPath();
+    g.fillPath(p);
 }

@@ -16,6 +16,7 @@ REEVRAudioProcessor::REEVRAudioProcessor()
     , loadConvolver(new StereoConvolver())
     , impulse(new Impulse())
     , params(*this, &undoManager, "PARAMETERS", {
+        std::make_unique<juce::AudioParameterBool>("showviewport", "Show Viewport", true),
         std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1),
         std::make_unique<juce::AudioParameterChoice>("patsync", "Pattern Sync", StringArray { "Off", "1/4 Beat", "1/2 Beat", "1 Beat", "2 Beats", "4 Beats"}, 0),
         std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray { "Sync", "MIDI", "Audio" }, 0),
