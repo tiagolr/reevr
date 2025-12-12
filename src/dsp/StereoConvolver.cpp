@@ -30,12 +30,12 @@ void StereoConvolver::loadImpulse(Impulse imp)
 	}
 }
 
-void StereoConvolver::process(const float* dataL, const float* dataR, size_t nsamples)
+void StereoConvolver::process(const float* dataL, const float* dataR, size_t nsamples, bool force2Chans)
 {
 	convolverLL->process(dataL, bufferLL.data(), nsamples);
 	convolverRR->process(dataR, bufferRR.data(), nsamples);
 
-	if (isQuad) {
+	if (isQuad && !force2Chans) {
 		convolverLR->process(dataL, bufferLR.data(), nsamples);
 		convolverRL->process(dataR, bufferRL.data(), nsamples);
 	}

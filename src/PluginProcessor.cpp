@@ -526,7 +526,7 @@ void REEVRAudioProcessor::changeProgramName (int index, const juce::String& newN
 void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     srate = sampleRate;
-    warmer.setSize(2, (int)std::ceil(sampleRate)); // 1 second of warmup samples
+    warmer.setSize(2, (int)std::ceil(sampleRate) / 2); // 0.5 seconds of warmup samples
     warmer.clear();
     convolver->prepare(samplesPerBlock);
     loadConvolver->prepare(samplesPerBlock);
@@ -1609,7 +1609,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 chunk.setSample(1, spl, rspl);
             }
 
-            loadConvolver->process(chunk.getReadPointer(0, 0), chunk.getReadPointer(1, 0), convolver->size);
+            loadConvolver->process(chunk.getReadPointer(0, 0), chunk.getReadPointer(1, 0), convolver->size, true);
             start = (start + convolver->size) % warmer.getNumSamples();
         }
 
@@ -1665,7 +1665,8 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         loadConvolver->process(
             sendBuffer.getReadPointer(0),
             sendBuffer.getReadPointer(1),
-            numSamples
+            numSamples,
+            true
         );
 
         for (int i = 0; i < convolver->bufferLL.size(); ++i) {
@@ -1680,11 +1681,6 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 convolver->bufferRL[i] *= 1.f - alpha;
             }
 
-            if (loadConvolver->isQuad) {
-                loadConvolver->bufferLR[i] *= alpha;
-                loadConvolver->bufferRL[i] *= alpha;
-            }
-
             xfade--;
         }
 
@@ -1695,11 +1691,6 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
         wetBuffer.addFrom(0, 0, loadConvolver->bufferLL.data(), numSamples, 1.f);
         wetBuffer.addFrom(1, 0, loadConvolver->bufferRR.data(), numSamples, 1.f);
-
-        if (loadConvolver->isQuad) {
-            wetBuffer.addFrom(0, 0, loadConvolver->bufferRL.data(), numSamples, 1.f);
-            wetBuffer.addFrom(1, 0, loadConvolver->bufferLR.data(), numSamples, 1.f);
-        }
     }
 
     // apply the convolver to the wet buffer (after crossfade)

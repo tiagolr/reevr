@@ -19,7 +19,7 @@ public:
     
     void loadImpulse(Impulse imp);
     void prepare(int samplesPerBlock);
-    void process(const float* data0, const float* data1, size_t nsamples);
+    void process(const float* data0, const float* data1, size_t nsamples, bool force2Chans = false);
     void reset();
     void clear();
     bool finishedLoading();
