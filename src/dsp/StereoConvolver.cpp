@@ -2,7 +2,7 @@
 
 bool StereoConvolver::finishedLoading()
 {
-	return convolverL->isFinished();
+	return convolverLL->isFinished();
 }
 
 void StereoConvolver::prepare(int samplesPerBlock)
@@ -13,32 +13,50 @@ void StereoConvolver::prepare(int samplesPerBlock)
 		headBlockSize *= 2;
 	}
 	tailBlockSize = std::max(size_t(8192), 2 * headBlockSize);
-	bufferL.resize(samplesPerBlock, 0.0f);
-	bufferR.resize(samplesPerBlock, 0.0f);
+	bufferLL.resize(samplesPerBlock, 0.0f);
+	bufferRR.resize(samplesPerBlock, 0.0f);
+	bufferLR.resize(samplesPerBlock, 0.0f);
+	bufferRL.resize(samplesPerBlock, 0.0f);
 }
 
 void StereoConvolver::loadImpulse(Impulse imp)
 {
-	convolverL->init(headBlockSize, tailBlockSize, imp.bufferL.data(), imp.bufferL.size());
-	convolverR->init(headBlockSize, tailBlockSize, imp.bufferR.data(), imp.bufferR.size());
+	convolverLL->init(headBlockSize, tailBlockSize, imp.bufferLL.data(), imp.bufferLL.size());
+	convolverRR->init(headBlockSize, tailBlockSize, imp.bufferRR.data(), imp.bufferRR.size());
+	isQuad = imp.isQuad;
+	if (isQuad) {
+		convolverLR->init(headBlockSize, tailBlockSize, imp.bufferLR.data(), imp.bufferLR.size());
+		convolverRL->init(headBlockSize, tailBlockSize, imp.bufferRL.data(), imp.bufferRL.size());
+	}
 }
 
 void StereoConvolver::process(const float* dataL, const float* dataR, size_t nsamples)
 {
-	convolverL->process(dataL, bufferL.data(), nsamples);
-	convolverR->process(dataR, bufferR.data(), nsamples);
+	convolverLL->process(dataL, bufferLL.data(), nsamples);
+	convolverRR->process(dataR, bufferRR.data(), nsamples);
+
+	if (isQuad) {
+		convolverLR->process(dataL, bufferLR.data(), nsamples);
+		convolverRL->process(dataR, bufferRL.data(), nsamples);
+	}
 }
 
 void StereoConvolver::reset()
 {
-	convolverL->reset();
-	convolverR->reset();
-	bufferL.clear();
-	bufferR.clear();
+	convolverLL->reset();
+	convolverRR->reset();
+	convolverLR->reset();
+	convolverRL->reset();
+	bufferLL.clear();
+	bufferRR.clear();
+	bufferLR.clear();
+	bufferRL.clear();
 }
 
 void StereoConvolver::clear()
 {
-	convolverL->clear();
-	convolverR->clear();
+	convolverLL->clear();
+	convolverRR->clear();
+	convolverLR->clear();
+	convolverRL->clear();
 }

@@ -9,7 +9,12 @@
 class StereoConvolver
 {
 public:
-    StereoConvolver() : convolverL(new Convolver()), convolverR(new Convolver()) {}
+    StereoConvolver() 
+        : convolverLL(new Convolver())
+        , convolverRR(new Convolver()) 
+        , convolverLR(new Convolver())
+        , convolverRL(new Convolver())
+        {}
     ~StereoConvolver() {}
     
     void loadImpulse(Impulse imp);
@@ -19,15 +24,20 @@ public:
     void clear();
     bool finishedLoading();
 
-    std::vector<float> bufferL = {};
-    std::vector<float> bufferR = {};
+    std::vector<float> bufferLL = {};
+    std::vector<float> bufferRR = {};
+    std::vector<float> bufferLR = {};
+    std::vector<float> bufferRL = {};
     int size = 0;
+    bool isQuad = false;
 
 protected:
     size_t headBlockSize = 0;
     size_t tailBlockSize = 0;
 
 private:
-    std::unique_ptr<Convolver> convolverL;
-    std::unique_ptr<Convolver> convolverR;
+    std::unique_ptr<Convolver> convolverLL;
+    std::unique_ptr<Convolver> convolverRR;
+    std::unique_ptr<Convolver> convolverLR;
+    std::unique_ptr<Convolver> convolverRL;
 };

@@ -87,8 +87,8 @@ void IRDisplay::parameterChanged(const juce::String& parameterID, float newValue
 
 void IRDisplay::recalcWave()
 {
-	auto bufl = audioProcessor.impulse->bufferL;
-	auto bufr = audioProcessor.impulse->bufferR;
+	auto bufl = audioProcessor.impulse->bufferLL;
+	auto bufr = audioProcessor.impulse->bufferRR;
 	int trimLeftSamples = audioProcessor.impulse->trimLeftSamples;
 	int trimRightSamples = audioProcessor.impulse->trimRightSamples;
 

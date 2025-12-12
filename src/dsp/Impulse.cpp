@@ -53,6 +53,8 @@ private:
     int position;
 };
 
+// ==============================================
+
 void Impulse::load(String filepath)
 {
     AudioFormatManager manager;
@@ -62,8 +64,8 @@ void Impulse::load(String filepath)
     
     if (isDefault) {
         inputStream = std::make_unique<juce::MemoryInputStream>(
-            BinaryData::Hall_Stereo_wav, 
-            BinaryData::Hall_Stereo_wavSize, 
+            BinaryData::Hall_Quad_flac, 
+            BinaryData::Hall_Quad_flacSize, 
             false
         );
         name = "Default";
@@ -91,24 +93,43 @@ void Impulse::load(String filepath)
         AudioBuffer<float> buf ((int)(reader->numChannels), (int)(reader->lengthInSamples));
         reader->read (buf.getArrayOfWritePointers(), buf.getNumChannels(), 0, buf.getNumSamples());
         srate = reader->sampleRate;
-        bool isStereo = buf.getNumChannels() > 1;
+        auto nchans = buf.getNumChannels();
         int nsamps = buf.getNumSamples();
+        if (nsamps == 0) throw "Load default impulse";
 
         // trim IR tail silence
-        int tailStart = std::max(
-            getTailStart(buf.getReadPointer(0), nsamps), 
-            getTailStart(buf.getReadPointer(isStereo ? 1 : 0), nsamps)
-        );
+        int tailStart = 0;
+        for (int i = 0; i < nchans; ++i) {
+            tailStart = std::max(tailStart, getTailStart(buf.getReadPointer(i), nsamps));
+        }
 
+        isQuad = nchans >= 4;
         const float* data = buf.getReadPointer(0);
-        rawBufferL.assign(data, data + tailStart);
+        rawBufferLL.assign(data, data + tailStart);
 
-        data = buf.getReadPointer(isStereo ? 1 : 0);
-        rawBufferR.assign(data, data + tailStart);
+        if (isQuad) {
+            data = buf.getReadPointer(1);
+            rawBufferLR.assign(data, data + tailStart);
+
+            data = buf.getReadPointer(2);
+            rawBufferRL.assign(data, data + tailStart);
+
+            data = buf.getReadPointer(3);
+            rawBufferRR.assign(data, data + tailStart);
+        }
+        else if (nchans == 2) {
+            data = buf.getReadPointer(1);
+            rawBufferRR.assign(data, data + tailStart);
+        }
+        else {
+            data = buf.getReadPointer(0);
+            rawBufferRR.assign(data, data + tailStart);
+        }
 
         recalcImpulse();
     }
     catch (...) {
+        isQuad = false;
         if (isDefault)
             throw std::runtime_error("Failed to load default IR");
         else 
@@ -118,51 +139,69 @@ void Impulse::load(String filepath)
 
 void Impulse::recalcImpulse()
 {
-    bufferL = rawBufferL;
-    bufferR = rawBufferR;
+    bufferLL = rawBufferLL;
+    bufferRR = rawBufferRR;
 
-    if (bufferL.size() == 0 || bufferR.size() == 0) {
+    if (isQuad) {
+        bufferLR = rawBufferLR;
+        bufferRL = rawBufferRL;
+    }
+
+    if (bufferLL.size() == 0 || bufferRR.size() == 0) {
         jassertfalse;
         return;
     }
 
-    size_t numSamples = rawBufferL.size();
-    float autoGain = calculateAutoGain(bufferL, bufferR);
+    size_t numSamples = rawBufferLL.size();
+    float autoGain = calculateAutoGain(bufferLL, bufferRR);
 
     peak = 0.f;
     for (int i = 0; i < numSamples; ++i) {
-        bufferL[i] *= autoGain;
-        bufferR[i] *= autoGain;
-        peak = std::max(std::max(peak, std::fabs(bufferL[i])), std::fabs(bufferR[i]));
+        bufferLL[i] *= autoGain;
+        bufferRR[i] *= autoGain;
+        peak = std::max(std::max(peak, std::fabs(bufferLL[i])), std::fabs(bufferRR[i]));
+
+        if (isQuad) {
+            bufferLR[i] *= autoGain;
+            bufferRL[i] *= autoGain;
+            peak = std::max(std::max(peak, std::fabs(bufferLR[i])), std::fabs(bufferRL[i]));
+        }
     }
 
     if (reverse) {
-        std::reverse(bufferL.begin(), bufferL.end());
-        std::reverse(bufferR.begin(), bufferR.end());
+        std::reverse(bufferLL.begin(), bufferLL.end());
+        std::reverse(bufferRR.begin(), bufferRR.end());
+
+        if (isQuad) {
+            std::reverse(bufferLR.begin(), bufferLR.end());
+            std::reverse(bufferRL.begin(), bufferRL.end());
+        }
     }
 
-    applyStretch();
+    applyStretch(bufferLL, bufferRR);
+    if (isQuad) applyStretch(bufferLR, bufferRL);
+
     applyTrim();
     applyEnvelope();
 
     version += 1;
 }
 
-void Impulse::applyStretch()
+void Impulse::applyStretch(std::vector<float>& bufL, std::vector<float>& bufR)
 {
-    if (stretch == 0.f || !bufferL.size()) return;
+    if (stretch == 0.f || !bufL.size()) return;
     stretchsrate = std::pow(2, stretch) * srate;
 
     if (std::fabs(stretchsrate-srate) < 1e-6 || stretchsrate < 1.0 || srate < 1.0) 
         return;
 
     double ratio = srate / stretchsrate;
-    VectorAudioSource source(bufferL, bufferR);
+    VectorAudioSource source(bufL, bufR);
     ResamplingAudioSource resampler(&source, false);
     resampler.setResamplingRatio(ratio);
 
     const int blockSize = 8192;
-    int inputLength = (int)bufferL.size();
+    int inputLength = (int)bufL.size();
     int outputLength = (int)std::ceil(inputLength * stretchsrate / srate);
 
     resampler.prepareToPlay(blockSize, stretchsrate);
@@ -186,37 +225,50 @@ void Impulse::applyStretch()
 
     resampler.releaseResources();
 
-    bufferL.assign(outputBuffer.getReadPointer(0), outputBuffer.getReadPointer(0) + outputLength);
-    bufferR.assign(outputBuffer.getReadPointer(1), outputBuffer.getReadPointer(1) + outputLength);
+    bufL.assign(outputBuffer.getReadPointer(0), outputBuffer.getReadPointer(0) + outputLength);
+    bufR.assign(outputBuffer.getReadPointer(1), outputBuffer.getReadPointer(1) + outputLength);
 }
 
 void Impulse::applyTrim()
 {
     trimLeftSamples = 0;
     trimRightSamples = 0;
-    size_t totalSamples = bufferL.size();
+    size_t totalSamples = bufferLL.size();
     size_t start = static_cast<size_t>(trimLeft * totalSamples);
     size_t end = totalSamples - static_cast<size_t>(trimRight * totalSamples);
 
     if (start >= end || start >= totalSamples || end > totalSamples) {
-        bufferL.clear();
-        bufferR.clear();
+        bufferLL.clear();
+        bufferRR.clear();
+        if (isQuad) {
+            bufferLR.clear();
+            bufferRL.clear();
+        }
+
         return;
     }
 
     trimLeftSamples = (int)start;
     trimRightSamples = (int)(totalSamples - end);
 
-    bufferL.erase(bufferL.begin() + end, bufferL.end());
-    bufferL.erase(bufferL.begin(), bufferL.begin() + start);
+    bufferLL.erase(bufferLL.begin() + end, bufferLL.end());
+    bufferLL.erase(bufferLL.begin(), bufferLL.begin() + start);
 
-    bufferR.erase(bufferR.begin() + end, bufferR.end());
-    bufferR.erase(bufferR.begin(), bufferR.begin() + start);
+    bufferRR.erase(bufferRR.begin() + end, bufferRR.end());
+    bufferRR.erase(bufferRR.begin(), bufferRR.begin() + start);
+
+    if (isQuad) {
+        bufferLR.erase(bufferLR.begin() + end, bufferLR.end());
+        bufferLR.erase(bufferLR.begin(), bufferLR.begin() + start);
+
+        bufferRL.erase(bufferRL.begin() + end, bufferRL.end());
+        bufferRL.erase(bufferRL.begin(), bufferRL.begin() + start);
+    }
 }
 
 void Impulse::applyEnvelope()
 {
-    auto size = (int)bufferL.size();
+    auto size = (int)bufferLL.size();
     if (!size) return;
 
     int attackSize = int(attack * size);
@@ -224,15 +276,24 @@ void Impulse::applyEnvelope()
 
     for (int i = 0; i < attackSize; ++i) {
         float gain = static_cast<float>(i) / static_cast<float>(attackSize);
-        bufferL[i] *= gain;
-        bufferR[i] *= gain;
+        bufferLL[i] *= gain;
+        bufferRR[i] *= gain;
+        if (isQuad) {
+            bufferLR[i] *= gain;
+            bufferRL[i] *= gain;
+        }
     }
 
     for (int i = 0; i < decaySize; ++i) {
         float t = static_cast<float>(i) / static_cast<float>(decaySize);
         float gain = 1.0f - (float)std::pow(t, 0.5);  // reverse exponential
-        bufferL[size - decaySize + i] *= gain;
-        bufferR[size - decaySize + i] *= gain;
+        auto idx = size - decaySize + i;
+        bufferLL[idx] *= gain;
+        bufferRR[idx] *= gain;
+        if (isQuad) {
+            bufferLR[idx] *= gain;
+            bufferRL[idx] *= gain;
+        }
     }
 }
 

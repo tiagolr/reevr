@@ -468,7 +468,7 @@ double REEVRAudioProcessor::getTailLengthSeconds() const
 {
     auto srate = getSampleRate();
     if (srate <= 0.0) return 0.0;
-    return (double)impulse->bufferL.size() / getSampleRate();
+    return (double)impulse->bufferLL.size() / getSampleRate();
 }
 
 int REEVRAudioProcessor::getNumPrograms()
@@ -1668,12 +1668,23 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             numSamples
         );
 
-        for (int i = 0; i < convolver->bufferL.size(); ++i) {
+        for (int i = 0; i < convolver->bufferLL.size(); ++i) {
             float alpha = std::clamp((1.f - (float)xfade / (float)xfadelen), 0.f, 1.f);
-            convolver->bufferL[i] *= 1.f - alpha;
-            convolver->bufferR[i] *= 1.f - alpha;
-            loadConvolver->bufferL[i] *= alpha;
-            loadConvolver->bufferR[i] *= alpha;
+            convolver->bufferLL[i] *= 1.f - alpha;
+            convolver->bufferRR[i] *= 1.f - alpha;
+            loadConvolver->bufferLL[i] *= alpha;
+            loadConvolver->bufferRR[i] *= alpha;
+
+            if (convolver->isQuad) {
+                convolver->bufferLR[i] *= 1.f - alpha;
+                convolver->bufferRL[i] *= 1.f - alpha;
+            }
+
+            if (loadConvolver->isQuad) {
+                loadConvolver->bufferLR[i] *= alpha;
+                loadConvolver->bufferRL[i] *= alpha;
+            }
+
             xfade--;
         }
 
@@ -1682,13 +1693,22 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             std::swap(loadConvolver, convolver);
         }
 
-        wetBuffer.addFrom(0, 0, loadConvolver->bufferL.data(), numSamples, 1.f);
-        wetBuffer.addFrom(1, 0, loadConvolver->bufferR.data(), numSamples, 1.f);
+        wetBuffer.addFrom(0, 0, loadConvolver->bufferLL.data(), numSamples, 1.f);
+        wetBuffer.addFrom(1, 0, loadConvolver->bufferRR.data(), numSamples, 1.f);
+
+        if (loadConvolver->isQuad) {
+            wetBuffer.addFrom(0, 0, loadConvolver->bufferRL.data(), numSamples, 1.f);
+            wetBuffer.addFrom(1, 0, loadConvolver->bufferLR.data(), numSamples, 1.f);
+        }
     }
 
     // apply the convolver to the wet buffer (after crossfade)
-    wetBuffer.addFrom(0, 0, convolver->bufferL.data(), numSamples, 1.f);
-    wetBuffer.addFrom(1, 0, convolver->bufferR.data(), numSamples, 1.f);
+    wetBuffer.addFrom(0, 0, convolver->bufferLL.data(), numSamples, 1.f);
+    wetBuffer.addFrom(1, 0, convolver->bufferRR.data(), numSamples, 1.f);
+    if (convolver->isQuad) {
+        wetBuffer.addFrom(0, 0, convolver->bufferRL.data(), numSamples, 1.f);
+        wetBuffer.addFrom(1, 0, convolver->bufferLR.data(), numSamples, 1.f);
+    }
 
     // apply reverb envelope and stereo width to the wet buffer
     lchannel = wetBuffer.getReadPointer(0);
