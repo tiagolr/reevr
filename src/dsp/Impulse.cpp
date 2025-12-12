@@ -55,6 +55,11 @@ private:
 
 // ==============================================
 
+void Impulse::prepare(double _srate)
+{
+    srate = _srate;
+}
+
 void Impulse::load(String filepath)
 {
     AudioFormatManager manager;
@@ -92,7 +97,7 @@ void Impulse::load(String filepath)
     try {
         AudioBuffer<float> buf ((int)(reader->numChannels), (int)(reader->lengthInSamples));
         reader->read (buf.getArrayOfWritePointers(), buf.getNumChannels(), 0, buf.getNumSamples());
-        srate = reader->sampleRate;
+        irsrate = reader->sampleRate;
         auto nchans = buf.getNumChannels();
         int nsamps = buf.getNumSamples();
         if (nsamps == 0) throw "Load default impulse";
@@ -178,6 +183,9 @@ void Impulse::recalcImpulse()
         }
     }
 
+    resampleIRToProjectRate(bufferLL, bufferRR);
+    if (isQuad) resampleIRToProjectRate(bufferLR, bufferRL);
+
     applyStretch(bufferLL, bufferRR);
     if (isQuad) applyStretch(bufferLR, bufferRL);
 
@@ -185,6 +193,30 @@ void Impulse::recalcImpulse()
     applyEnvelope();
 
     version += 1;
+}
+
+void Impulse::resampleIRToProjectRate(std::vector<float>& bufL, std::vector<float>& bufR) const
+{
+    if (fabs(irsrate - srate) < 1e-6) return;
+
+    double ratio = irsrate / srate;  // source / dest
+
+    VectorAudioSource source(bufL, bufR);
+    ResamplingAudioSource resampler(&source, false);
+    resampler.setResamplingRatio(ratio);
+
+    const int inputLength = (int)bufL.size();
+    const int outputLength = (int)std::ceil(inputLength / ratio);
+
+    AudioBuffer<float> out(2, outputLength);
+    AudioSourceChannelInfo info(out);
+
+    resampler.prepareToPlay(4096, srate);
+    resampler.getNextAudioBlock(info);
+    resampler.releaseResources();
+
+    bufL.assign(out.getReadPointer(0), out.getReadPointer(0) + outputLength);
+    bufR.assign(out.getReadPointer(1), out.getReadPointer(1) + outputLength);
 }
 
 void Impulse::applyStretch(std::vector<float>& bufL, std::vector<float>& bufR)

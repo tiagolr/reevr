@@ -466,9 +466,8 @@ bool REEVRAudioProcessor::isMidiEffect() const
 
 double REEVRAudioProcessor::getTailLengthSeconds() const
 {
-    auto srate = getSampleRate();
     if (srate <= 0.0) return 0.0;
-    return (double)impulse->bufferLL.size() / getSampleRate();
+    return (double)impulse->bufferLL.size() / srate;
 }
 
 int REEVRAudioProcessor::getNumPrograms()
@@ -526,6 +525,7 @@ void REEVRAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    srate = sampleRate;
     warmer.setSize(2, (int)std::ceil(sampleRate)); // 1 second of warmup samples
     warmer.clear();
     convolver->prepare(samplesPerBlock);
@@ -536,6 +536,7 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     wetBuffer.setSize(2, samplesPerBlock);
     sendBuffer.setSize(2, samplesPerBlock);
 
+    impulse->prepare(sampleRate);
     if (!init) {
         impulse->attack = params.getRawParameterValue("irattack")->load();
         impulse->decay = params.getRawParameterValue("irdecay")->load();
@@ -543,6 +544,9 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
         impulse->stretch = params.getRawParameterValue("irstretch")->load();
         impulse->load(irFile);
+    } 
+    else {
+        impulse->load(irFile); // reload IR file
     }
 
     convolver->loadImpulse(*impulse);
@@ -606,7 +610,6 @@ bool REEVRAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 void REEVRAudioProcessor::onSlider()
 {
     onSmoothChange();
-    auto srate = getSampleRate();
 
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     if (trigger != ltrigger) {
@@ -860,7 +863,6 @@ void REEVRAudioProcessor::onPlay()
     trigphase = phase;
 
     audioTriggerCountdown = -1;
-    double srate = getSampleRate();
     transDetectorL.clear(srate);
     transDetectorR.clear(srate);
 
@@ -932,7 +934,6 @@ double inline REEVRAudioProcessor::getYSend(double x, double min, double max, do
 
 void REEVRAudioProcessor::onSmoothChange()
 {
-    auto srate = getSampleRate();
     if (dualSmooth) {
         double attack = (double)params.getRawParameterValue("attack")->load();
         double release = (double)params.getRawParameterValue("release")->load();
@@ -977,7 +978,6 @@ bool REEVRAudioProcessor::supportsDoublePrecisionProcessing() const
 void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals disableDenormals;
-    double srate = getSampleRate();
     int samplesPerBlock = getBlockSize();
     bool looping = false;
     double loopStart = 0.0;

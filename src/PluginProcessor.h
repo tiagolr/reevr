@@ -259,6 +259,7 @@ public:
     double beatsPerSecond = 1.0;
     int samplesPerBeat = 44100;
     double secondsPerBeat = 0.1;
+    double srate = 44100.0;
 
     // UI State
     std::vector<float> preSamples; // used by view to draw pre audio
