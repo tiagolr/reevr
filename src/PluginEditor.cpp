@@ -333,12 +333,19 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     col = PLUG_PADDING;
 
     addAndMakeVisible(currentFile);
-    currentFile.setBounds(col, row + 35, 75*2+10, 25);
+    currentFile.setBounds(col, row + 42, 75*2+10, 25);
     currentFile.setAlpha(0.f);
     currentFile.onClick = [this] {
         audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
         toggleUIComponents();
     };
+
+    addAndMakeVisible(fileInfo);
+    fileInfo.setFont(FontOptions(11.f));
+    fileInfo.setJustificationType(Justification::centred);
+    fileInfo.setColour(Label::ColourIds::textColourId, Colour(COLOR_NEUTRAL_LIGHT));
+    fileInfo.setText("1 File, 44.1k->88k, 2.3s, 4ch", dontSendNotification);
+    fileInfo.setBounds(currentFile.getBounds().translated(0, -16).withHeight(16));
 
     col = PLUG_PADDING + 75*2+10;
 
@@ -770,6 +777,28 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     sendenv->layoutComponents();
 
     fileSelector->setVisible(audioProcessor.showFileSelector);
+
+    auto formatNumber = [](double value)
+        {
+            double rounded = std::round(value * 10.0) / 10.0;  // one-decimal rounding
+            bool isWhole = (std::fmod(rounded, 1.0) == 0.0);
+
+            return isWhole ? String(rounded, 0)
+                : String(rounded, 1);
+        };
+
+    auto nfiles = audioProcessor.impulse->nfiles;
+    auto text = String(nfiles) + (nfiles > 1 ? " files" : " file");
+    auto duration = (double)audioProcessor.impulse->rawBufferLL.size() / audioProcessor.impulse->srate;
+    text += String(", ") + formatNumber(duration) + "s";
+    auto irsrate = audioProcessor.impulse->irsrate;
+    auto srate = audioProcessor.impulse->srate;
+    text += String(", ") + formatNumber(irsrate / 1000.0) + "k";
+    if (irsrate != srate) {
+        text += String("->") + formatNumber(srate / 1000.0) + "k";
+    }
+    text += String(", ") + String(audioProcessor.impulse->numChans) + "ch";
+    fileInfo.setText(text, dontSendNotification);
 
     MessageManager::callAsync([this] {
         repaint();

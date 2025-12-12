@@ -7,6 +7,12 @@
 class Impulse
 {
 public:
+	struct TSMatch
+	{
+		String path;
+		bool swapChannels;
+	};
+
 	Impulse() {}
 	~Impulse() {}
 
@@ -30,10 +36,11 @@ public:
 	int trimLeftSamples = 0; // used for drawing
 	int trimRightSamples = 0; // used for drawing
 
-	double projSampleRate;
 	double srate = 0.0;
 	double stretchsrate = 0.0; // stretch samplerate
 	double irsrate = 0.0;
+	int nfiles = 2;
+	int numChans = 1;
 	float attack = 0.0f;
 	float decay = 1.0;
 	float trimLeft = 0.0;
@@ -50,4 +57,12 @@ private:
 	void applyStretch(std::vector<float>& bufL, std::vector<float>& bufR);
 	void applyTrim();
 	void applyEnvelope();
+	TSMatch findTrueStereoPair(String path, int nsamples, double _irsrate) const;
+	File findPair(const juce::String& fileNameBody,
+		const String& fileNameExt,
+		const File& directory,
+		const String& pattern,
+		const String& replacement,
+		const size_t sampleCount,
+		const double sampleRate) const;
 };

@@ -53,6 +53,7 @@ private:
     TextButton prevFile;
     TextButton nextFile;
     TextButton currentFile;
+    Label fileInfo;
 
     std::vector<std::unique_ptr<TextButton>> patterns;
 
