@@ -190,6 +190,9 @@ public:
     AudioBuffer<float> delayBuffer;
     int delaypos = 0;
     bool isLoadingPluginState = false; // used to load impulse while preventing concurrent load
+    float ldrywet = -1.f;
+    float drygain = 1.f;
+    float wetgain = 1.f;
 
 
     // Convolver state

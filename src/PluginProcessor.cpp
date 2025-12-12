@@ -1049,6 +1049,13 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         ? getPredelaySync()
         : (int)(params.getRawParameterValue("predelay")->load() / 1000.f * srate);
 
+    if (ldrywet != drywet) {
+        ldrywet = drywet;
+        float theta = drywet * MathConstants<float>::halfPi;
+        drygain = std::cos(theta);
+        wetgain = std::sin(theta);
+    }
+
     if (predelay > delayBuffer.getNumSamples()) {
         delayBuffer.setSize(2, predelay * 2);
         delayBuffer.clear();
@@ -1721,18 +1728,8 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     // mix the dry and wet signals
     if (!revenvMonitor && !sendenvMonitor && !useMonitor) {
-        float dryGain, wetGain;
-
-        if (drywet <= 0.5f) {
-            dryGain = 1.0f;
-            wetGain = drywet * 2.0f;
-        } else {
-            dryGain = (1.0f - drywet) * 2.0f;
-            wetGain = 1.0f;
-        }
-
-        buffer.applyGain(dryGain);
-        wetBuffer.applyGain(wetGain);
+        buffer.applyGain(drygain);
+        wetBuffer.applyGain(wetgain);
 
         // process display samples
         auto lpre = buffer.getReadPointer(0);

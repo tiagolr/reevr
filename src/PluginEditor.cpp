@@ -787,10 +787,12 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
                 : String(rounded, 1);
         };
 
+    String text = "";
     auto nfiles = audioProcessor.impulse->nfiles;
-    auto text = String(nfiles) + (nfiles > 1 ? " files" : " file");
+    if (nfiles > 1)
+        text += String(nfiles) + " files";
     auto duration = (double)audioProcessor.impulse->rawBufferLL.size() / audioProcessor.impulse->srate;
-    text += String(", ") + formatNumber(duration) + "s";
+    text += (nfiles > 1 ? String(", ") : "") + formatNumber(duration) + "s";
     auto irsrate = audioProcessor.impulse->irsrate;
     auto srate = audioProcessor.impulse->srate;
     text += String(", ") + formatNumber(irsrate / 1000.0) + "k";
