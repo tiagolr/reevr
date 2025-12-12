@@ -1,6 +1,34 @@
 #include "IRDisplay.h"
 #include "../PluginProcessor.h"
 
+static void drawTriangle(Graphics& g, Rectangle<float> bounds, int direction, Colour c)
+{
+	g.setColour(c);
+	Path p;
+	if (direction == 0) { // top
+		p.startNewSubPath(bounds.getBottomLeft());
+		p.lineTo({ bounds.getCentreX(), bounds.getY() });
+		p.lineTo(bounds.getBottomRight());
+	}
+	else if (direction == 1) { // right
+		p.startNewSubPath(bounds.getTopLeft());
+		p.lineTo({ bounds.getRight(), bounds.getCentreY() });
+		p.lineTo(bounds.getBottomLeft());
+	}
+	else if (direction == 2) { // bottom
+		p.startNewSubPath(bounds.getTopLeft());
+		p.lineTo({ bounds.getCentreX(), bounds.getBottom() });
+		p.lineTo(bounds.getTopRight());
+	}
+	else { // right
+		p.startNewSubPath(bounds.getTopRight());
+		p.lineTo({ bounds.getX(), bounds.getCentreY() });
+		p.lineTo(bounds.getBottomRight());
+	}
+	p.closeSubPath();
+	g.fillPath(p);
+}
+
 IRDisplay::IRDisplay(REEVRAudioProcessor& p) : audioProcessor(p)
 {
 	startTimerHz(15);
@@ -14,9 +42,17 @@ IRDisplay::IRDisplay(REEVRAudioProcessor& p) : audioProcessor(p)
 	audioProcessor.params.addParameterListener("irtrimleft", this);
 	audioProcessor.params.addParameterListener("irtrimright", this);
 
+	addAndMakeVisible(menuButton);
+	menuButton.setAlpha(0.f);
+	menuButton.setBounds(getLocalBounds().getRight() - 25, getLocalBounds().getY() + 5, 20, 20);
+	menuButton.onClick = [this]
+		{
+			showIRMenu();
+		};
+
 	addAndMakeVisible(reverseButton);
 	reverseButton.setTooltip("Reverse IR");
-	reverseButton.setBounds(getLocalBounds().getRight()-25, getLocalBounds().getY() + 5, 20, 20);
+	reverseButton.setBounds(menuButton.getBounds().translated(-menuButton.getWidth(), 0));
 	reverseButton.setAlpha(0.f);
 	reverseButton.onClick = [this] {
 		bool reverse = (bool)audioProcessor.params.getRawParameterValue("irreverse")->load();
@@ -87,8 +123,8 @@ void IRDisplay::parameterChanged(const juce::String& parameterID, float newValue
 
 void IRDisplay::recalcWave()
 {
-	auto bufl = audioProcessor.impulse->bufferLL;
-	auto bufr = audioProcessor.impulse->bufferRR;
+	std::vector<float> bufl = audioProcessor.impulse->bufferLL;
+	std::vector<float> bufr = audioProcessor.impulse->bufferRR;
 	int trimLeftSamples = audioProcessor.impulse->trimLeftSamples;
 	int trimRightSamples = audioProcessor.impulse->trimRightSamples;
 
@@ -123,7 +159,8 @@ void IRDisplay::resized()
 	auto bounds = getDisplayBounds();
 	waveLeft.resize(bounds.getWidth(), 0.0);
 	waveRight.resize(bounds.getWidth(), 0.0);
-	reverseButton.setBounds(reverseButton.getBounds().withRightX(bounds.getRight() - 5).withY(bounds.getY() + 5));
+	menuButton.setBounds(menuButton.getBounds().withRightX(bounds.getRight() - 5).withY(bounds.getY() + 5));
+	reverseButton.setBounds(reverseButton.getBounds().withRightX(menuButton.getX()).withY(bounds.getY() + 5));
 	recalcWave();
 }
 
@@ -208,6 +245,8 @@ void IRDisplay::paint(juce::Graphics& g)
 	arrows.lineTo(bounds.getRight()-rr, bounds.getCentreY() + 4 + rr);
 
 	g.strokePath(arrows, PathStrokeType(1.f));
+
+	drawTriangle(g, menuButton.getBounds().reduced(5).toFloat(), 2, Colour(COLOR_NEUTRAL));
 }
 
 void IRDisplay::mouseDown(const juce::MouseEvent& e)
@@ -323,4 +362,48 @@ Rectangle<int> IRDisplay::getDecayBounds()
 	auto w = bounds.getWidth() - trimLeft * bounds.getWidth() - trimRight * bounds.getWidth();
 	auto pt = bounds.getTopRight().translated(-r/2, -r/2).translated((int)(-trimRight * bounds.getWidth() - decay * w), 0);
 	return Rectangle<int>(pt.x, pt.y, r, r);
+}
+
+void IRDisplay::showIRMenu()
+{
+	PopupMenu menu;
+	PopupMenu trimMenu;
+	trimMenu.addItem(5, "Reset");
+	trimMenu.addItem(1, "Trim to 1 Beat");
+	trimMenu.addItem(2, "Trim to 2 Beats");
+	trimMenu.addItem(3, "Trim to 3 Beats");
+	trimMenu.addItem(4, "Trim to 4 Beats");
+	menu.addSubMenu("Trim", trimMenu);
+
+	auto menuPos = localPointToGlobal(menuButton.getBounds().getBottomLeft());
+	menu.showMenuAsync(PopupMenu::Options()
+		.withTargetComponent(*this)
+		.withTargetScreenArea({ menuPos.getX(), menuPos.getY(), 1, 1 }),
+		[this](int result) {
+			if (result == 0) return;
+			if (result >= 1 && result <= 4) {
+				double beatMultiplier = (double)result;
+				double srate = audioProcessor.impulse->srate;
+				double irduration = (double)audioProcessor.impulse->rawBufferLL.size() / srate;
+				double targetDuration = beatMultiplier / audioProcessor.beatsPerSecond;
+				double trimRight = 1.0 - targetDuration / irduration;
+				trimRight = std::clamp(trimRight, 0.0, 1.0); 
+
+				audioProcessor.params.getParameter("irstretch")->setValueNotifyingHost(0.5f);
+				audioProcessor.params.getParameter("irattack")->setValueNotifyingHost(0.f);
+				audioProcessor.params.getParameter("irtrimleft")->setValueNotifyingHost(0.f);
+				audioProcessor.params.getParameter("irtrimright")->setValueNotifyingHost((float)trimRight);
+
+				auto irdecay = audioProcessor.params.getParameter("irdecay");
+				if (irdecay->getValue() < 0.01f) {
+					irdecay->setValueNotifyingHost(0.25f);
+				}
+			}
+			if (result == 5) {
+				audioProcessor.params.getParameter("irdecay")->setValueNotifyingHost(0.f);
+				audioProcessor.params.getParameter("irattack")->setValueNotifyingHost(0.f);
+				audioProcessor.params.getParameter("irtrimleft")->setValueNotifyingHost(0.f);
+				audioProcessor.params.getParameter("irtrimright")->setValueNotifyingHost(0.f);
+			}
+		});
 }

@@ -325,7 +325,7 @@ void Impulse::recalcImpulse()
 
     resampleIRToProjectRate(bufferLL, bufferRR);
     if (isQuad) resampleIRToProjectRate(bufferLR, bufferRL);
-
+    
     applyStretch(bufferLL, bufferRR);
     if (isQuad) applyStretch(bufferLR, bufferRL);
 
@@ -416,7 +416,6 @@ void Impulse::applyTrim()
             bufferLR.clear();
             bufferRL.clear();
         }
-
         return;
     }
 

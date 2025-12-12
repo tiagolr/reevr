@@ -26,6 +26,7 @@ public:
     void mouseDrag(const juce::MouseEvent& e) override;
     void mouseEnter(const MouseEvent& e) override;
     void mouseExit(const MouseEvent& e) override;
+    void showIRMenu();
 
     bool isInterestedInFileDrag(const juce::StringArray& files) override;
     void filesDropped(const juce::StringArray& files, int x, int y) override;
@@ -46,6 +47,7 @@ private:
     REEVRAudioProcessor& audioProcessor;
 
     TextButton reverseButton;
+    TextButton menuButton;
     
     Rectangle<int> getDisplayBounds();
     Rectangle<int> getTrimLeftBounds();
