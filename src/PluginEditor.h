@@ -22,6 +22,8 @@
 #include "ui/SequencerWidget.h"
 #include "ui/EnvelopeWidget.h"
 #include "ui/AudioWidget.h"
+#include "ui/EQWidget.h"
+#include "ui/DecayWidget.h"
 #include "ui/IRDisplay.h"
 #include "ui/FileSelector.h"
 
@@ -44,9 +46,9 @@ public:
     void drawPowerButton(Graphics& g, Rectangle<float> area, Colour color);
     void drawTriangle(Graphics& g, Rectangle<float> bounds, int direction, Colour c);
 
+    REEVRAudioProcessor& audioProcessor;
 private:
     bool init = false;
-    REEVRAudioProcessor& audioProcessor;
     CustomLookAndFeel* customLookAndFeel = nullptr;
     std::unique_ptr<About> about;
     std::unique_ptr<IRDisplay> irDisplay;
@@ -90,9 +92,11 @@ private:
     std::unique_ptr<Rotary> tension;
     std::unique_ptr<Rotary> tensionatk;
     std::unique_ptr<Rotary> tensionrel;
-    
+
     Slider irgainSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> irgainAttachment;
+    TextButton eqButton;
+    TextButton decayButton;
 
     std::unique_ptr<AudioWidget> audioWidget;
     ComboBox algoMenu;
@@ -126,6 +130,8 @@ private:
     Label latencyWarning;
     std::unique_ptr<PaintToolWidget> paintWidget;
     std::unique_ptr<SequencerWidget> seqWidget;
+    std::unique_ptr<EQWidget> eqWidget;
+    std::unique_ptr<DecayWidget> decayWidget;
 
     TooltipWindow tooltipWindow;
 

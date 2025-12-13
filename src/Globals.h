@@ -1,6 +1,8 @@
 #pragma once
 
 namespace globals {
+	constexpr float DB2LOG = 0.11512925464970228420089957273422f;
+
 	// convolver
 	inline unsigned int CONV_XFADE = 50;
 	inline unsigned int CONV_LOAD_COOLDOWN = 250;
@@ -29,6 +31,8 @@ namespace globals {
 	inline unsigned int COLOR_SEQ_TENR = 0xffffB950;
 	inline unsigned int COLOR_SEQ_SKEW = 0xffffB950;
 
+	inline const int EQ_BANDS = 4;
+	inline const float EQ_MAX_GAIN = 24.f;
 	inline const int LATENCY_MILLIS = 4;
 	inline const int AUDIO_COOLDOWN_MILLIS = 50;
 	inline const int AUDIO_DRUMSBUF_MILLIS = 20;

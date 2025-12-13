@@ -283,6 +283,7 @@ public:
     bool sendEditMode = false;
     bool showEnvelopeKnobs = false;
     bool showFileSelector = false;
+    int eqtab = 0; // 0 = off, 1 = eq, 2 = decay tab
 
     //==============================================================================
     REEVRAudioProcessor();

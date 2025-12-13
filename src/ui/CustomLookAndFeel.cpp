@@ -101,11 +101,11 @@ void CustomLookAndFeel::drawButtonBackground (Graphics& g, Button& button, const
     auto bounds = button.getLocalBounds().toFloat();
     auto cornerSize = 3.0f;
 
-    if (tag == "button" || tag == "small") {
+    if (tag == "button" || tag == "small" || tag == "button-noborder") {
         g.setColour(backgroundColour);
         if (button.getToggleState())
             g.fillRoundedRectangle(bounds, cornerSize);
-        else
+        else if (tag != "button-noborder")
             g.drawRoundedRectangle(bounds.reduced(0.5, 0.5), cornerSize, 1.0f);
 
         return;

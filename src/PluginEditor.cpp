@@ -221,7 +221,6 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
 
     addAndMakeVisible(irgainSlider);
     irgainSlider.setComponentID("symmetric_vertical");
-    irgainSlider.setTooltip("Frequency range of the envelope input signal");
     irgainSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
     irgainSlider.setPopupDisplayEnabled(true, true, this);
     irgainSlider.setTextBoxStyle(Slider::NoTextBox, false, 80, 20);
@@ -235,13 +234,33 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
             return "IR Gain: " + juce::String(v, 1) + " dB";
         };
 
+    addAndMakeVisible(eqButton);
+    eqButton.setButtonText("EQ");
+    eqButton.setComponentID("button-noborder");
+    eqButton.setBounds(col+20, row + 130, 60, 25);
+    eqButton.onClick = [this]
+        {
+            audioProcessor.eqtab = audioProcessor.eqtab == 1 ? 0 : 1;
+            toggleUIComponents();
+        };
+
+    addAndMakeVisible(decayButton);
+    decayButton.setButtonText("Decay");
+    decayButton.setComponentID("button-noborder");
+    decayButton.setBounds(eqButton.getBounds().translated(70, 0));
+    decayButton.onClick = [this]
+        {
+            audioProcessor.eqtab = audioProcessor.eqtab == 2 ? 0 : 2;
+            toggleUIComponents();
+        };
 
     addAndMakeVisible(currentFile);
-    currentFile.setBounds(col, row + 200 - 10, 75 * 2 + 50 + 10, 25);
+    currentFile.setBounds(col, row + 200 - 10, 75 * 2 + 20+20-10-3, 25);
     currentFile.setAlpha(0.f);
-    currentFile.onClick = [this] {
-        audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
-        toggleUIComponents();
+    currentFile.onClick = [this] 
+        {
+            audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
+            toggleUIComponents();
         };
 
     addAndMakeVisible(fileInfo);
@@ -660,6 +679,20 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     about->setBounds(getBounds());
     about->setVisible(false);
 
+    // EQ widgets 
+    eqWidget = std::make_unique<EQWidget>(*this);
+    addChildComponent(eqWidget.get());
+    eqWidget->setBounds(PLUG_PADDING, lowcut->getY(), highcut->getRight() - PLUG_PADDING, reverb->getBottom() - highcut->getY());
+
+    decayWidget = std::make_unique<DecayWidget>(*this);
+    addChildComponent(decayWidget.get());
+    decayWidget->setBounds(eqWidget->getBounds());
+
+    eqButton.toFront(false);
+    decayButton.toFront(false);
+    revenv->toFront(false);
+    sendenv->toFront(false);
+
     customLookAndFeel = new CustomLookAndFeel();
     setLookAndFeel(customLookAndFeel);
 
@@ -847,6 +880,18 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
         setSize(getWidth(), getHeight() >= PLUG_HEIGHT ? getHeight() : PLUG_HEIGHT);
     }
 
+    eqWidget->setVisible(audioProcessor.eqtab == 1);
+    decayWidget->setVisible(audioProcessor.eqtab == 2);
+    eqButton.setToggleState(audioProcessor.eqtab == 1, dontSendNotification);
+    decayButton.setToggleState(audioProcessor.eqtab == 2, dontSendNotification);
+    auto noeq = audioProcessor.eqtab == 0;
+    lowcut->setVisible(noeq);
+    highcut->setVisible(noeq);
+    send->setVisible(noeq);
+    reverb->setVisible(noeq);
+    irDisplay->setVisible(noeq);
+    highcutSlope.setVisible(noeq);
+
     MessageManager::callAsync([this] {
         repaint();
     });
@@ -881,7 +926,8 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     bounds = audioProcessor.sendEditMode ? send->getBounds().toFloat() : reverb->getBounds().toFloat();
     bounds.removeFromTop(50.f);
     g.setColour((audioProcessor.sendEditMode ? Colour(COLOR_ACTIVE) : Colours::white).withAlpha(0.3f));
-    g.fillRoundedRectangle(bounds.toFloat().expanded(-8.f, 2.f).translated(0.5f, 0.5f), 3.f);
+    if (audioProcessor.eqtab == 0)
+        g.fillRoundedRectangle(bounds.toFloat().expanded(-8.f, 2.f).translated(0.5f, 0.5f), 3.f);
 
     // draw loop play button
     auto trigger = (int)audioProcessor.params.getRawParameterValue("trigger")->load();
@@ -988,7 +1034,8 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     String lowslopeLabel = lowcutslope == 0 ? "6dB" : lowcutslope == 1 ? "12dB" : "24dB";
     String highslopeLabel = highcutslope == 0 ? "6dB" : highcutslope == 1 ? "12dB" : "24dB";
     g.drawFittedText(lowslopeLabel, lowcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
-    g.drawFittedText(highslopeLabel, highcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
+    if (highcutSlope.isVisible())
+        g.drawFittedText(highslopeLabel, highcutSlope.getBounds().translated(2,0), Justification::centredLeft, 1, 1.f);
 
     // draw predelay useSync
     bool useSync = (bool)audioProcessor.params.getRawParameterValue("predelayusesync")->load();
@@ -1001,7 +1048,7 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     bounds = currentFile.getBounds().toFloat();
     if (audioProcessor.showFileSelector) {
         g.setColour(Colour(COLOR_ACTIVE));
-        g.fillRect(bounds);
+        g.fillRoundedRectangle(bounds, 3.f);
     }
     g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
     g.setFont(FontOptions(18.f));
