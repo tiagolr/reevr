@@ -51,8 +51,6 @@ private:
     std::unique_ptr<About> about;
     std::unique_ptr<IRDisplay> irDisplay;
     std::unique_ptr<FileSelector> fileSelector;
-    TextButton prevFile;
-    TextButton nextFile;
     TextButton currentFile;
     Label fileInfo;
 
@@ -93,6 +91,9 @@ private:
     std::unique_ptr<Rotary> tensionatk;
     std::unique_ptr<Rotary> tensionrel;
     
+    Slider irgainSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> irgainAttachment;
+
     std::unique_ptr<AudioWidget> audioWidget;
     ComboBox algoMenu;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> algoAttachment;

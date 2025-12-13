@@ -36,9 +36,9 @@ public:
 	int trimLeftSamples = 0; // used for drawing
 	int trimRightSamples = 0; // used for drawing
 
-	double srate = 0.0;
-	double stretchsrate = 0.0; // stretch samplerate
-	double irsrate = 0.0;
+	double srate = 44100.0;
+	double stretchsrate = 44100.0; // stretch samplerate
+	double irsrate = 44100.0;
 	int nfiles = 2;
 	int numChans = 1;
 	float attack = 0.0f;

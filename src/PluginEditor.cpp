@@ -209,69 +209,51 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     patSyncMenu.setBounds(col, row, 75, 25);
     patSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.params, "patsync", patSyncMenu);
 
-    // SECOND ROW RIGHT
-    col = getWidth() - PLUG_PADDING;
-    addAndMakeVisible(revEnvButton);
-    revEnvButton.setButtonText("Envelope");
-    revEnvButton.setComponentID("button");
-    revEnvButton.setColour(TextButton::buttonColourId, Colours::white);
-    revEnvButton.setColour(TextButton::buttonOnColourId, Colours::white);
-    revEnvButton.setColour(TextButton::textColourOnId, Colour(COLOR_BG));
-    revEnvButton.setColour(TextButton::textColourOffId, Colours::white);
-    revEnvButton.setBounds(col-90, row, 90, 25);
-    revEnvButton.onClick = [this]() {
-        audioProcessor.showEnvelopeKnobs = !audioProcessor.showEnvelopeKnobs;
-        if (audioProcessor.showEnvelopeKnobs && audioProcessor.showAudioKnobs) {
-            audioProcessor.showAudioKnobs = false;
-        }
-        toggleUIComponents();
-    };
-
-    addAndMakeVisible(sendEnvButton);
-    sendEnvButton.setButtonText("Envelope");
-    sendEnvButton.setComponentID("button");
-    sendEnvButton.setBounds(col-90, row, 90, 25);
-    sendEnvButton.onClick = [this]() {
-        audioProcessor.showEnvelopeKnobs = !audioProcessor.showEnvelopeKnobs;
-        if (audioProcessor.showEnvelopeKnobs && audioProcessor.showAudioKnobs) {
-            audioProcessor.showAudioKnobs = false;
-        }
-        toggleUIComponents();
-    };
-    col -= 100;
-
-    addAndMakeVisible(revEnvOnButton);
-    revEnvOnButton.setBounds(col-25, row, 25, 25);
-    revEnvOnButton.setAlpha(0.f);
-    revEnvOnButton.onClick = [this]() {
-        MessageManager::callAsync([this] {
-            bool on = (bool)audioProcessor.params.getRawParameterValue("revenvon")->load();
-            audioProcessor.params.getParameter("revenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
-            toggleUIComponents();
-            });
-    };
-
-    addAndMakeVisible(sendEnvOnButton);
-    sendEnvOnButton.setBounds(col-25, row, 25, 25);
-    sendEnvOnButton.setAlpha(0.f);
-    sendEnvOnButton.onClick = [this]() {
-        MessageManager::callAsync([this] {
-            bool on = (bool)audioProcessor.params.getRawParameterValue("sendenvon")->load();
-            audioProcessor.params.getParameter("sendenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
-            toggleUIComponents();
-            });
-    };
-
     // KNOBS ROW
 
     row += 35;
     col = PLUG_PADDING;
 
+    // IR DISPLAY COLUMN
     irDisplay = std::make_unique<IRDisplay>(p);
     addAndMakeVisible(*irDisplay);
-    irDisplay->setBounds(col-5,row,75*2+10+5+5,(int)(65*1.5));
+    irDisplay->setBounds(col-5,row,75*2+10+5+5+20,120);
 
-    col += 75*2+10;
+    addAndMakeVisible(irgainSlider);
+    irgainSlider.setComponentID("symmetric_vertical");
+    irgainSlider.setTooltip("Frequency range of the envelope input signal");
+    irgainSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
+    irgainSlider.setPopupDisplayEnabled(true, true, this);
+    irgainSlider.setTextBoxStyle(Slider::NoTextBox, false, 80, 20);
+    irgainSlider.setBounds(col+75*2+20+20+3,row,20,120);
+    irgainSlider.setColour(Slider::backgroundColourId, Colour(COLOR_BG).brighter(0.1f));
+    irgainSlider.setColour(Slider::trackColourId, Colour(COLOR_ACTIVE).darker(0.5f));
+    irgainSlider.setColour(Slider::thumbColourId, Colour(COLOR_ACTIVE));
+    irgainAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params,"irgain",irgainSlider);
+    irgainSlider.textFromValueFunction = [](double v)
+        {
+            return "IR Gain: " + juce::String(v, 1) + " dB";
+        };
+
+
+    addAndMakeVisible(currentFile);
+    currentFile.setBounds(col, row + 200 - 10, 75 * 2 + 50 + 10, 25);
+    currentFile.setAlpha(0.f);
+    currentFile.onClick = [this] {
+        audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
+        toggleUIComponents();
+        };
+
+    addAndMakeVisible(fileInfo);
+    fileInfo.setFont(FontOptions(11.f));
+    fileInfo.setJustificationType(Justification::centred);
+    fileInfo.setColour(Label::ColourIds::textColourId, Colour(COLOR_NEUTRAL_LIGHT));
+    fileInfo.setText("1 File, 44.1k->88k, 2.3s, 4ch", dontSendNotification);
+    fileInfo.setBounds(currentFile.getBounds().translated(0, -20).withHeight(16));
+
+    //
+
+    col += 75*2+10+50;
     lowcut = std::make_unique<Rotary>(p, "irlowcut", "Lowcut", RotaryLabel::hzHp);
     addAndMakeVisible(*lowcut);
     lowcut->setBounds(col,row,80,65);
@@ -304,7 +286,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
 
     col += 75;
 
-    drywet = std::make_unique<Rotary>(p, "drywet", "Dry/Wet", RotaryLabel::dryWet, true);
+    drywet = std::make_unique<Rotary>(p, "drywet", "Mix", RotaryLabel::dryWet, true);
     addAndMakeVisible(*drywet);
     drywet->setBounds(col,row,80,65);
     col += 75;
@@ -339,24 +321,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
 
     // KNOBS 2ND ROW
     row += 75;
-    col = PLUG_PADDING;
-
-    addAndMakeVisible(currentFile);
-    currentFile.setBounds(col, row + 42, 75*2+10, 25);
-    currentFile.setAlpha(0.f);
-    currentFile.onClick = [this] {
-        audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
-        toggleUIComponents();
-    };
-
-    addAndMakeVisible(fileInfo);
-    fileInfo.setFont(FontOptions(11.f));
-    fileInfo.setJustificationType(Justification::centred);
-    fileInfo.setColour(Label::ColourIds::textColourId, Colour(COLOR_NEUTRAL_LIGHT));
-    fileInfo.setText("1 File, 44.1k->88k, 2.3s, 4ch", dontSendNotification);
-    fileInfo.setBounds(currentFile.getBounds().translated(0, -16).withHeight(16));
-
-    col = PLUG_PADDING + 75*2+10;
+    col = PLUG_PADDING + 75*2+10+50;
 
     send = std::make_unique<Rotary>(p, "send", "Send", RotaryLabel::percx100, false, COLOR_ACTIVE, ResKnob);
     addAndMakeVisible(*send);
@@ -423,10 +388,10 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     // AUDIO WIDGET
     audioWidget = std::make_unique<AudioWidget>(p);
     addAndMakeVisible(*audioWidget);
-    audioWidget->setBounds(PLUG_PADDING+75*2+10, row-75, PLUG_WIDTH - PLUG_PADDING*2 - 75*2 - 10, 75*2);
+    audioWidget->setBounds(PLUG_PADDING+75*2+10+50, row-75, PLUG_WIDTH - PLUG_PADDING*2 - 75*2 - 10, 75*2);
 
     // ENVELOPE WIDGETS
-    auto b = Rectangle<int>(PLUG_PADDING +75*4-15, row-75, PLUG_WIDTH - PLUG_PADDING*2 - 75*4+15, 75*2-5);
+    auto b = Rectangle<int>(PLUG_PADDING +75*4-15, row-75, PLUG_WIDTH - PLUG_PADDING*2 - 75*4+15 - 50, 75*2-5);
     revenv = std::make_unique<EnvelopeWidget>(p, false, b.getWidth());
     addAndMakeVisible(*revenv);
     revenv->setBounds(b.expanded(0,4));
@@ -436,7 +401,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     sendenv->setBounds(b.expanded(0,5));
 
     // 3RD ROW
-    col = PLUG_PADDING;
+    col = PLUG_PADDING + 75 * 2 + 10 + 50 + 10;
     row += 80;
 
     addAndMakeVisible(paintButton);
@@ -465,13 +430,13 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
             audioProcessor.toggleSequencerMode();
         }
     };
-
     col += 85;
+
     addAndMakeVisible(pointLabel);
     pointLabel.setText("p", dontSendNotification);
-    pointLabel.setBounds(col-2,row,25,25);
+    pointLabel.setBounds(col - 2, row, 25, 25);
     pointLabel.setVisible(false);
-    col += 35-4;
+    col += 35 - 4;
 
     addAndMakeVisible(pointMenu);
     pointMenu.setTooltip("Point mode\nRight click points to change mode");
@@ -490,8 +455,8 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     pointMenu.onChange = [this]() {
         MessageManager::callAsync([this]() {
             audioProcessor.pointMode = pointMenu.getSelectedId() - 1;
-        });
-    };
+            });
+        };
     col += 85;
 
     addAndMakeVisible(loopButton);
@@ -503,9 +468,66 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
         MessageManager::callAsync([this] {
             audioProcessor.alwaysPlaying = !audioProcessor.alwaysPlaying;
             repaint();
-        });
-    };
+            });
+        };
     col += 35;
+
+    // 3RD ROW RIGHT
+    col = getWidth() - PLUG_PADDING;
+    addAndMakeVisible(revEnvButton);
+    revEnvButton.setButtonText("Envelope");
+    revEnvButton.setComponentID("button");
+    revEnvButton.setColour(TextButton::buttonColourId, Colours::white);
+    revEnvButton.setColour(TextButton::buttonOnColourId, Colours::white);
+    revEnvButton.setColour(TextButton::textColourOnId, Colour(COLOR_BG));
+    revEnvButton.setColour(TextButton::textColourOffId, Colours::white);
+    revEnvButton.setBounds(col - 90, row, 90, 25);
+    revEnvButton.onClick = [this]() {
+        audioProcessor.showEnvelopeKnobs = !audioProcessor.showEnvelopeKnobs;
+        if (audioProcessor.showEnvelopeKnobs && audioProcessor.showAudioKnobs) {
+            audioProcessor.showAudioKnobs = false;
+        }
+        toggleUIComponents();
+        };
+
+    addAndMakeVisible(sendEnvButton);
+    sendEnvButton.setButtonText("Envelope");
+    sendEnvButton.setComponentID("button");
+    sendEnvButton.setBounds(col - 90, row, 90, 25);
+    sendEnvButton.onClick = [this]() {
+        audioProcessor.showEnvelopeKnobs = !audioProcessor.showEnvelopeKnobs;
+        if (audioProcessor.showEnvelopeKnobs && audioProcessor.showAudioKnobs) {
+            audioProcessor.showAudioKnobs = false;
+        }
+        toggleUIComponents();
+        };
+    col -= 100;
+
+    addAndMakeVisible(revEnvOnButton);
+    revEnvOnButton.setBounds(col - 25, row, 25, 25);
+    revEnvOnButton.setAlpha(0.f);
+    revEnvOnButton.onClick = [this]() {
+        MessageManager::callAsync([this] {
+            bool on = (bool)audioProcessor.params.getRawParameterValue("revenvon")->load();
+            audioProcessor.params.getParameter("revenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
+            toggleUIComponents();
+            });
+        };
+
+    addAndMakeVisible(sendEnvOnButton);
+    sendEnvOnButton.setBounds(col - 25, row, 25, 25);
+    sendEnvOnButton.setAlpha(0.f);
+    sendEnvOnButton.onClick = [this]() {
+        MessageManager::callAsync([this] {
+            bool on = (bool)audioProcessor.params.getRawParameterValue("sendenvon")->load();
+            audioProcessor.params.getParameter("sendenvon")->setValueNotifyingHost(on ? 0.f : 1.f);
+            toggleUIComponents();
+            });
+        };
+
+    // 4TH ROW
+    row += 25 + 10;
+    col = PLUG_PADDING + 75 * 2 + 10 + 50;
 
     // 4TH ROW RIGHT
     col = getWidth() - PLUG_PADDING - 60;
@@ -934,7 +956,7 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     // draw envelope button extension
     if (audioProcessor.showEnvelopeKnobs) {
         g.setColour(Colour(isSendMode ? COLOR_ACTIVE : 0xffffffff));
-        g.fillRect(revEnvButton.getBounds().expanded(0, 20).translated(0, 30));
+        g.fillRect(revEnvButton.getBounds().expanded(0, 20).translated(0, -30));
     }
 
     if (!isSendMode) {
