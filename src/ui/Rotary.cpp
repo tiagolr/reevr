@@ -44,7 +44,7 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
     auto text = String(name);
     std::stringstream ss;
 
-    if (mouse_down) {
+    if (mouse_down || forceLabelShowValue) {
         if (format == RotaryLabel::percx100) text = std::to_string((int)std::round((slider_val * 100))) + " %";
         if (format == RotaryLabel::intx100) text = std::to_string((int)std::round((slider_val * 100)));
         else if (format == RotaryLabel::hz) {

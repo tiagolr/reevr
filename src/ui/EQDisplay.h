@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <JuceHeader.h>
 #include "../dsp/SVF.h"
 #include "../Globals.h"
@@ -32,13 +33,18 @@ public:
 
 	void updateEQCurve();
 
+	std::function<void(int band)> onMouseDownBand;
+	std::function<void()> onMouseUp;
+	std::function<void()> onMouseDrag;
+
+	std::array<SVF, EQ_BANDS> bandFilters{};
 private:
 	EQType type;
+	String prel;
 	int selband = 0;
 	int dragband = -1;
 	Rectangle<float> viewBounds{};
 	std::array<Rectangle<float>, EQ_BANDS> bandBounds{};
-	std::array<SVF, EQ_BANDS> bandFilters{};
 
 	bool mouse_down = false;
 	float cur_freq_normed_value = 0.f;

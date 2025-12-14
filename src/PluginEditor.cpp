@@ -650,7 +650,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     col = PLUG_PADDING;
     seqWidget = std::make_unique<SequencerWidget>(p);
     addAndMakeVisible(*seqWidget);
-    seqWidget->setBounds(col,row,PLUG_WIDTH - PLUG_PADDING*2, 25*2+10);
+    seqWidget->setBounds(col-5,row,PLUG_WIDTH - PLUG_PADDING*2 + 5, 25*2+10);
 
     // VIEW
     col = 0;
@@ -680,11 +680,11 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     about->setVisible(false);
 
     // EQ widgets 
-    eqWidget = std::make_unique<EQWidget>(*this);
+    eqWidget = std::make_unique<EQWidget>(*this, EQDisplay::PostEQ);
     addChildComponent(eqWidget.get());
     eqWidget->setBounds(PLUG_PADDING, lowcut->getY(), highcut->getRight() - PLUG_PADDING, reverb->getBottom() - highcut->getY());
 
-    decayWidget = std::make_unique<DecayWidget>(*this);
+    decayWidget = std::make_unique<EQWidget>(*this, EQDisplay::DecayEQ);
     addChildComponent(decayWidget.get());
     decayWidget->setBounds(eqWidget->getBounds());
 
@@ -692,6 +692,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     decayButton.toFront(false);
     revenv->toFront(false);
     sendenv->toFront(false);
+    irgainSlider.toFront(false);
 
     customLookAndFeel = new CustomLookAndFeel();
     setLookAndFeel(customLookAndFeel);

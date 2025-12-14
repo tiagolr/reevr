@@ -329,7 +329,7 @@ RangedAudioParameter* IRDisplay::getDragParam()
 
 Rectangle<int> IRDisplay::getDisplayBounds()
 {
-	return getLocalBounds().expanded(-8, -8);
+	return getLocalBounds().reduced(8);
 }
 Rectangle<int> IRDisplay::getTrimLeftBounds() 
 {

@@ -4,6 +4,109 @@
 #include "PluginEditor.h"
 #include <ctime>
 
+AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParameterLayout()
+{
+    AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add(std::make_unique<juce::AudioParameterBool>("showviewport", "Show Viewport", true));
+    layout.add(std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("patsync", "Pattern Sync", StringArray{ "Off", "1/4 Beat", "1/2 Beat", "1 Beat", "2 Beats", "4 Beats" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray{ "Sync", "MIDI", "Audio" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("sync", "Sync", StringArray{ "Rate Hz", "1/256", "1/128", "1/64", "1/32", "1/16", "1/8", "1/4", "1/2", "1/1", "2/1", "4/1", "1/16t", "1/8t", "1/4t", "1/2t", "1/1t", "1/16.", "1/8.", "1/4.", "1/2.", "1/1." }, 9));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("rate", "Rate Hz", juce::NormalisableRange<float>(0.01f, 5000.0f, 0.01f, 0.2f), 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("phase", "Phase", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("min", "Min", 0.0f, 1.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("max", "Max", 0.0f, 1.0f, 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("smooth", "Smooth", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("attack", "Attack", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("release", "Release", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("tension", "Tension", -1.0f, 1.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("tensionatk", "Attack Tension", -1.0f, 1.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("tensionrel", "Release Tension", -1.0f, 1.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterBool>("snap", "Snap", false));
+    layout.add(std::make_unique<juce::AudioParameterInt>("grid", "Grid", 0, (int)std::size(GRID_SIZES) - 1, 2));
+    layout.add(std::make_unique<juce::AudioParameterInt>("seqstep", "Sequencer Step", 0, (int)std::size(GRID_SIZES) - 1, 2));
+
+    // reverb params
+    layout.add(std::make_unique<juce::AudioParameterFloat>("reverb", "Send Offset", juce::NormalisableRange<float>(0.0f, 1.0f), 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float>(0.0f, 1.0f), 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 250.f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray{ "Off", "1/16", "1/8", "1/8d", "1/8t", "1/4" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterBool>("predelayusesync", "Pre-Delay Use Sync", false));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irattack", "IR Attack", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irdecay", "IR Decay", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irtrimleft", "IR Trim Left", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irtrimright", "IR Trim Right", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irstretch", "IR Stretch", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irgain", "IR Gain", juce::NormalisableRange<float>(-24.0f, 24.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterBool>("irreverse", "IR Reverse", false));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), 240.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), 20000.f));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray{ "6dB", "12dB", "24dB" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Highcut Slope", StringArray{ "6dB", "12dB", "24dB" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("drywet", "DryWet Mix", juce::NormalisableRange<float>(0.f, 1.0f), 0.25f));
+
+    // audio trigger params
+    layout.add(std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray{ "Simple", "Drums" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("threshold", "Audio Threshold", NormalisableRange<float>(0.0f, 1.0f), 0.5f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sense", "Audio Sensitivity", 0.0f, 1.0f, 0.5f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("lowcut", "Audio LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), 20.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("highcut", "Audio HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), 20000.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("offset", "Audio Offset", -1.0f, 1.0f, 0.0f));
+
+    // envelope follower params
+    layout.add(std::make_unique<juce::AudioParameterBool>("sendenvon", "Send Env ON", false));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvthresh", "Send Env Thresh", NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvamt", "Send Env Amount", NormalisableRange<float>(-5.0f, 5.0f, 0.01f, 0.5, true), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvatk", "Send Env Attack", NormalisableRange<float>(0.f, 1.0f, 0.0001f, 0.75f), 0.005f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvrel", "Send Env Release", NormalisableRange<float>(0.f, 1.0f, 0.0001f, 0.5f), 0.05f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvhold", "Send Env Hold", NormalisableRange<float>(0.f, 1.0f, 0.0001f, 0.75f), 0.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvlowcut", "Send Env Lowcut", NormalisableRange<float>(20.f, 20000.0f, 1.f, 0.3f), 20.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("sendenvhighcut", "Send Env HighCut", NormalisableRange<float>(20.f, 20000.0f, 1.f, 0.3f), 20000.f));
+    layout.add(std::make_unique<juce::AudioParameterBool>("revenvon", "Rev Env ON", false));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvthresh", "Rev Env Threvh", NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvamt", "Rev Env Amount", NormalisableRange<float>(-5.0f, 5.0f, 0.01f, 0.5, true), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvatk", "Rev Env Attack", NormalisableRange<float>(0.f, 1.0f, 0.0001f, 0.75f), 0.005f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvrel", "Rev Env Release", NormalisableRange<float>(0.f, 1.0f, 0.0001f, 0.5f), 0.05f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvhold", "Rev Env Hold", NormalisableRange<float>(0.f, 1.0f, 0.0001f, 0.75f), 0.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvlowcut", "Rev Env LowCut", NormalisableRange<float>(20.f, 20000.0f, 1.f, 0.3f), 20.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("revenvhighcut", "Rev Env HighCut", NormalisableRange<float>(20.f, 20000.0f, 1.f, 0.3f), 20000.f));
+
+    auto getEQBandFreq = [](int band)
+        {
+            return 20.f * 2.f * std::pow(10000.f / 20.f / 2.f, band / (float)(EQ_BANDS - 1));
+        };
+
+    // Post EQ params
+    for (int i = 0; i < EQ_BANDS; ++i) {
+        auto paramPrefix = "posteq_band" + String(i + 1);
+        auto namePrefix = "Post EQ Band" + String(i + 1);
+        if (i == 0 || i == EQ_BANDS - 1) {
+            layout.add(std::make_unique<AudioParameterChoice>(paramPrefix + "_mode", namePrefix + " Mode", StringArray{ "Filter", "Shelf" }, 1));
+        }
+        layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_freq", namePrefix + " Freq", NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), getEQBandFreq(i)));
+        layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_q", namePrefix + " Q", 0.707f, 8.f, 0.707f));
+        layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_gain", namePrefix + " Gain", -EQ_MAX_GAIN, EQ_MAX_GAIN, 0.f));
+    }
+
+    // Decay EQ params
+    for (int i = 0; i < EQ_BANDS; ++i) {
+        auto paramPrefix = "decayeq_band" + String(i + 1);
+        auto namePrefix = "Decay EQ Band" + String(i + 1);
+        if (i == 0 || i == EQ_BANDS - 1) {
+            layout.add(std::make_unique<AudioParameterChoice>(paramPrefix + "_mode", namePrefix + " Mode", StringArray{ "Filter", "Shelf" }, 1));
+        }
+        layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_freq", namePrefix + " Freq", NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), getEQBandFreq(i)));
+        layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_q", namePrefix + " Q", 0.707f, 8.f, 0.707f));
+        layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_gain", namePrefix + " Gain", -EQ_MAX_GAIN, EQ_MAX_GAIN, 0.f));
+    }
+
+    return layout;
+}
+
 REEVRAudioProcessor::REEVRAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
@@ -15,71 +118,7 @@ REEVRAudioProcessor::REEVRAudioProcessor()
     , convolver(new StereoConvolver())
     , loadConvolver(new StereoConvolver())
     , impulse(new Impulse())
-    , params(*this, &undoManager, "PARAMETERS", {
-        std::make_unique<juce::AudioParameterBool>("showviewport", "Show Viewport", true),
-        std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1),
-        std::make_unique<juce::AudioParameterChoice>("patsync", "Pattern Sync", StringArray { "Off", "1/4 Beat", "1/2 Beat", "1 Beat", "2 Beats", "4 Beats"}, 0),
-        std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray { "Sync", "MIDI", "Audio" }, 0),
-        std::make_unique<juce::AudioParameterChoice>("sync", "Sync", StringArray { "Rate Hz", "1/256", "1/128", "1/64", "1/32", "1/16", "1/8", "1/4", "1/2", "1/1", "2/1", "4/1", "1/16t", "1/8t", "1/4t", "1/2t", "1/1t", "1/16.", "1/8.", "1/4.", "1/2.", "1/1." }, 9),
-        std::make_unique<juce::AudioParameterFloat>("rate", "Rate Hz", juce::NormalisableRange<float>(0.01f, 5000.0f, 0.01f, 0.2f), 1.0f),
-        std::make_unique<juce::AudioParameterFloat>("phase", "Phase", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("min", "Min", 0.0f, 1.0f, 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("max", "Max", 0.0f, 1.0f, 1.0f),
-        std::make_unique<juce::AudioParameterFloat>("smooth", "Smooth", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("attack", "Attack", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("release", "Release", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("tension", "Tension", -1.0f, 1.0f, 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("tensionatk", "Attack Tension", -1.0f, 1.0f, 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("tensionrel", "Release Tension", -1.0f, 1.0f, 0.0f),
-        std::make_unique<juce::AudioParameterBool>("snap", "Snap", false),
-        std::make_unique<juce::AudioParameterInt>("grid", "Grid", 0, (int)std::size(GRID_SIZES)-1, 2),
-        std::make_unique<juce::AudioParameterInt>("seqstep", "Sequencer Step", 0, (int)std::size(GRID_SIZES)-1, 2),
-        // reverb params
-        std::make_unique<juce::AudioParameterFloat>("reverb", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
-        std::make_unique<juce::AudioParameterFloat>("send", "Send Offset", juce::NormalisableRange<float> (0.0f, 1.0f), 1.0f),
-        std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 250.f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray { "Off", "1/16", "1/8", "1/8d", "1/8t", "1/4" }, 0),
-        std::make_unique<juce::AudioParameterBool>("predelayusesync", "Pre-Delay Use Sync", false),
-        std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f),
-        std::make_unique<juce::AudioParameterFloat>("irattack", "IR Attack", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("irdecay", "IR Decay", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("irtrimleft", "IR Trim Left", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("irtrimright", "IR Trim Right", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("irstretch", "IR Stretch", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("irgain", "IR Gain", juce::NormalisableRange<float>(-24.0f, 24.0f), 0.0f),
-        std::make_unique<juce::AudioParameterBool>("irreverse", "IR Reverse", false),
-        std::make_unique<juce::AudioParameterFloat>("irlowcut", "IR LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 240.f),
-        std::make_unique<juce::AudioParameterFloat>("irhighcut", "IR HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
-        std::make_unique<juce::AudioParameterChoice>("irlowcutslope", "IR Lowcut Slope", StringArray { "6dB", "12dB", "24dB" }, 0),
-        std::make_unique<juce::AudioParameterChoice>("irhighcutslope", "IR Highcut Slope", StringArray { "6dB", "12dB", "24dB" }, 0),
-        std::make_unique<juce::AudioParameterFloat>("drywet", "DryWet Mix", juce::NormalisableRange<float> (0.f, 1.0f), 0.25f),
-        // audio trigger params
-        std::make_unique<juce::AudioParameterChoice>("algo", "Audio Algorithm", StringArray { "Simple", "Drums" }, 0),
-        std::make_unique<juce::AudioParameterFloat>("threshold", "Audio Threshold", NormalisableRange<float>(0.0f, 1.0f), 0.5f),
-        std::make_unique<juce::AudioParameterFloat>("sense", "Audio Sensitivity", 0.0f, 1.0f, 0.5f),
-        std::make_unique<juce::AudioParameterFloat>("lowcut", "Audio LowCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20.f),
-        std::make_unique<juce::AudioParameterFloat>("highcut", "Audio HighCut", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f) , 20000.f),
-        std::make_unique<juce::AudioParameterFloat>("offset", "Audio Offset", -1.0f, 1.0f, 0.0f),
-        // envelope follower params
-        std::make_unique<juce::AudioParameterBool>("sendenvon", "Send Env ON", false),
-        std::make_unique<juce::AudioParameterFloat>("sendenvthresh", "Send Env Thresh", NormalisableRange<float>( 0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvamt", "Send Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvatk", "Send Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.005f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvrel", "Send Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvhold", "Send Env Hold", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvlowcut", "Send Env Lowcut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
-        std::make_unique<juce::AudioParameterFloat>("sendenvhighcut", "Send Env HighCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20000.f),
-        std::make_unique<juce::AudioParameterBool>("revenvon", "Rev Env ON", false),
-        std::make_unique<juce::AudioParameterFloat>("revenvthresh", "Rev Env Threvh", NormalisableRange<float>( 0.0f, 1.0f), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("revenvamt", "Rev Env Amount", NormalisableRange<float>( -5.0f, 5.0f, 0.01f, 0.5, true), 0.0f),
-        std::make_unique<juce::AudioParameterFloat>("revenvatk", "Rev Env Attack", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.005f),
-        std::make_unique<juce::AudioParameterFloat>("revenvrel", "Rev Env Release", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.5f), 0.05f),
-        std::make_unique<juce::AudioParameterFloat>("revenvhold", "Rev Env Hold", NormalisableRange<float>( 0.f, 1.0f, 0.0001f, 0.75f), 0.f),
-        std::make_unique<juce::AudioParameterFloat>("revenvlowcut", "Rev Env LowCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20.f),
-        std::make_unique<juce::AudioParameterFloat>("revenvhighcut", "Rev Env HighCut", NormalisableRange<float>( 20.f, 20000.0f, 1.f, 0.3f), 20000.f),
-    })
+    , params(*this, &undoManager, "PARAMETERS", createParameterLayout())
 #endif
 {
     srand(static_cast<unsigned int>(time(nullptr))); // seed random generator

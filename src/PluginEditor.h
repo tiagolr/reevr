@@ -23,7 +23,7 @@
 #include "ui/EnvelopeWidget.h"
 #include "ui/AudioWidget.h"
 #include "ui/EQWidget.h"
-#include "ui/DecayWidget.h"
+#include "ui/EQDisplay.h"
 #include "ui/IRDisplay.h"
 #include "ui/FileSelector.h"
 
@@ -131,7 +131,7 @@ private:
     std::unique_ptr<PaintToolWidget> paintWidget;
     std::unique_ptr<SequencerWidget> seqWidget;
     std::unique_ptr<EQWidget> eqWidget;
-    std::unique_ptr<DecayWidget> decayWidget;
+    std::unique_ptr<EQWidget> decayWidget;
 
     TooltipWindow tooltipWindow;
 

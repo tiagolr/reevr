@@ -1,11 +1,13 @@
 #include "EQDisplay.h"
 #include "../PluginEditor.h"
 
-EQDisplay::EQDisplay(REEVRAudioProcessorEditor& e, EQType type)
+EQDisplay::EQDisplay(REEVRAudioProcessorEditor& e, EQType _type)
 	: editor(e)
-	, type(type)
+	, type(_type)
+	, prel(type == PostEQ ? "post" : "decay")
 {
 	startTimerHz(30);
+	updateEQCurve();
 }
 
 EQDisplay::~EQDisplay()
@@ -34,10 +36,11 @@ void EQDisplay::mouseDown(const MouseEvent& e)
 		return;
 
 	selband = dragband;
+	if (onMouseDownBand)
+		onMouseDownBand(selband);
 
 	mouse_down = true;
 	e.source.enableUnboundedMouseMovement(true);
-	String prel = type == PostEQ ? "posteq_" : "decayeq_";
 	auto pre = prel + "eq_band" + String(selband + 1);
 	cur_freq_normed_value = editor.audioProcessor.params.getParameter(pre + "_freq")->getValue();
 	cur_gain_normed_value = editor.audioProcessor.params.getParameter(pre + "_gain")->getValue();
@@ -51,6 +54,8 @@ void EQDisplay::mouseDown(const MouseEvent& e)
 void EQDisplay::mouseUp(const MouseEvent& e)
 {
 	if (!mouse_down) return;
+	if (onMouseUp)
+		onMouseUp();
 
 	mouse_down = false;
 	setMouseCursor(MouseCursor::NormalCursor);
@@ -81,7 +86,6 @@ void EQDisplay::mouseDrag(const MouseEvent& e)
 		cur_gain_normed_value = std::clamp(cur_gain_normed_value, 0.f, 1.f);
 	}
 
-	String prel = type == PostEQ ? "posteq_" : "decayeq_";
 	auto pre = prel + "eq_band" + String(selband + 1);
 	if (e.mods.isCommandDown()) {
 		editor.audioProcessor.params.getParameter(pre + "_q")->setValueNotifyingHost(cur_q_normed_value);
@@ -91,6 +95,9 @@ void EQDisplay::mouseDrag(const MouseEvent& e)
 		editor.audioProcessor.params.getParameter(pre + "_gain")->setValueNotifyingHost(cur_gain_normed_value);
 	}
 
+	if (onMouseDrag) 
+		onMouseDrag();
+
 	repaint();
 }
 
@@ -99,7 +106,6 @@ void EQDisplay::mouseDoubleClick(const MouseEvent& e)
 	for (int i = 0; i < EQ_BANDS; ++i) {
 		auto& bounds = bandBounds[i];
 		if (bounds.contains((float)e.x, (float)e.y)) {
-			String prel = type == PostEQ ? "posteq_" : "decayeq_";
 			auto pre = prel + "eq_band" + String(i + 1);
 			if (e.mods.isCommandDown()) {
 				auto param = editor.audioProcessor.params.getParameter(pre + "_q");
@@ -126,7 +132,6 @@ void EQDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheel
 	for (int i = 0; i < EQ_BANDS; ++i) {
 		auto& bounds = bandBounds[i];
 		if (bounds.contains((float)e.x, (float)e.y)) {
-			String prel = type == PostEQ ? "posteq_" : "decayeq_";
 			auto pre = prel + "eq_band" + String(i + 1);
 			auto param = editor.audioProcessor.params.getParameter(pre + "_q");
 			param->beginChangeGesture();
@@ -145,14 +150,13 @@ void EQDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheel
 void EQDisplay::paint(juce::Graphics& g)
 {
 	g.setColour(Colour(COLOR_NEUTRAL));
-	g.drawRoundedRectangle(viewBounds.expanded(-0.5f), 3.f, 1.f);
+	g.drawRect(viewBounds.expanded(2), 1.f);
 
 	std::array<float, EQ_BANDS> freqs{};
 	std::array<float, EQ_BANDS> gains{};
 	std::array<float, EQ_BANDS> qs{};
 
 	// draw points
-	String prel = type == PostEQ ? "posteq_" : "decayeq_";
 	for (int i = 0; i < EQ_BANDS; ++i) {
 		auto pre = prel + "eq_band" + String(i + 1);
 		auto freq = editor.audioProcessor.params.getRawParameterValue(pre + "_freq")->load();
@@ -206,7 +210,7 @@ void EQDisplay::paint(juce::Graphics& g)
 void EQDisplay::resized()
 {
 	auto b = getLocalBounds();
-	viewBounds = b.toFloat();
+	viewBounds = b.reduced(2).toFloat();
 	toggleUIComponents();
 }
 
@@ -217,13 +221,12 @@ void EQDisplay::toggleUIComponents()
 
 void EQDisplay::updateEQCurve()
 {
-	const int numPoints = (int)viewBounds.getWidth();
+	int numPoints = (int)viewBounds.getWidth();
+	if (numPoints == 0) numPoints = 1; // Allow EQ curve to compute on init before resize
 	const float minFreq = 20.0f;
 	const float maxFreq = 20000.0f;
 
 	magPoints.clear();
-
-	String prel = type == PostEQ ? "posteq_" : "decayeq_";
 
 	auto firstBandMode = (int)editor.audioProcessor.params.getRawParameterValue(prel + "eq_band1_mode")->load();
 	auto lastBandMode = (int)editor.audioProcessor.params.getRawParameterValue(prel + "eq_band" + String(EQ_BANDS) + "_mode")->load();
@@ -235,8 +238,8 @@ void EQDisplay::updateEQCurve()
 		float mag = 1.0f;
 
 		for (int b = 0; b < EQ_BANDS; ++b) {
-			auto pre = prel + "fx_eq_band" + String(b + 1);
-			auto srate = editor.audioProcessor.srate / 2.f;
+			auto pre = prel + "eq_band" + String(b + 1);
+			auto srate = editor.audioProcessor.srate;
 			auto cutoff = editor.audioProcessor.params.getRawParameterValue(pre + "_freq")->load();
 			auto gain = editor.audioProcessor.params.getRawParameterValue(pre + "_gain")->load();
 			gain = exp(gain * DB2LOG);
@@ -247,11 +250,11 @@ void EQDisplay::updateEQCurve()
 				: b == EQ_BANDS - 1 && lastBandMode == 1 ? SVF::HS
 				: SVF::PK;
 
-			if (mode == SVF::LP) bandFilters[b].lp(srate, cutoff, q);
-			else if (mode == SVF::LS) bandFilters[b].ls(srate, cutoff, q, gain);
-			else if (mode == SVF::HP) bandFilters[b].hp(srate, cutoff, q);
-			else if (mode == SVF::HS) bandFilters[b].hs(srate, cutoff, q, gain);
-			else bandFilters[b].pk(srate, cutoff, q, gain);
+			if (mode == SVF::LP) bandFilters[b].lp((float)srate, cutoff, q);
+			else if (mode == SVF::LS) bandFilters[b].ls((float)srate, cutoff, q, gain);
+			else if (mode == SVF::HP) bandFilters[b].hp((float)srate, cutoff, q);
+			else if (mode == SVF::HS) bandFilters[b].hs((float)srate, cutoff, q, gain);
+			else bandFilters[b].pk((float)srate, cutoff, q, gain);
 
 			mag *= bandFilters[b].getMagnitude(freq);
 		}

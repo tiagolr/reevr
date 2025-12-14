@@ -51,6 +51,8 @@ public:
 
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
+    bool forceLabelShowValue = false;
+
 protected:
     juce::String paramId;
     juce::String name;

@@ -285,6 +285,8 @@ public:
     bool showFileSelector = false;
     int eqtab = 0; // 0 = off, 1 = eq, 2 = decay tab
 
+
+    static AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     //==============================================================================
     REEVRAudioProcessor();
     ~REEVRAudioProcessor() override;
