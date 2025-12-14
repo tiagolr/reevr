@@ -3,6 +3,10 @@
 #pragma once
 
 #include "JuceHeader.h"
+#include "SVF.h"
+#include "../Globals.h"
+
+using namespace globals;
 
 class Impulse
 {
@@ -19,6 +23,7 @@ public:
 	void prepare(double _srate);
 	void load(String path);
 	void recalcImpulse();
+	void setDecayEQ(std::vector<SVF::EQBand> eq);
 
 	std::vector<float> bufferLL = {};
 	std::vector<float> bufferLR = {};
@@ -31,6 +36,8 @@ public:
 	
 	std::string name = "";
 	std::string path = "";
+
+	std::vector<SVF::EQBand> decayEQ;
 
 	float peak = 0.0f; // used for drawing the impulse
 	int trimLeftSamples = 0; // used for drawing
@@ -50,6 +57,7 @@ public:
 	bool isQuad = false;
 	unsigned long int version = 1;
 
+
 private:
 	float calculateAutoGain(const std::vector<float>& dataL, const std::vector<float>& dataR);
 	void resampleIRToProjectRate(std::vector<float>& bufL, std::vector<float>& bufR) const;
@@ -57,6 +65,7 @@ private:
 	void applyStretch(std::vector<float>& bufL, std::vector<float>& bufR);
 	void applyTrim();
 	void applyEnvelope();
+	void applyEQ();
 	TSMatch findTrueStereoPair(String path, int nsamples, double _irsrate) const;
 	File findPair(const juce::String& fileNameBody,
 		const String& fileNameExt,

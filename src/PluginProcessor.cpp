@@ -212,6 +212,34 @@ void REEVRAudioProcessor::parameterGestureChanged (int parameterIndex, bool gest
     (void)gestureIsStarting;
 }
 
+std::vector<SVF::EQBand> REEVRAudioProcessor::getEqualizer(SVF::EQType type) const
+{
+    std::vector<SVF::EQBand> bands;
+
+    String pre = type == 0 ? "posteq_" : "decayeq_";
+    for (int i = 0; i < EQ_BANDS; i++) {
+        SVF::EQBand band{};
+        band.mode = SVF::PK;
+        if (i == 0 || i == EQ_BANDS - 1) {
+            auto filterOrShelf = (int)params.getRawParameterValue(pre + "band" + String(i + 1) + "_mode")->load();
+            if (i == 0 && filterOrShelf == 0) band.mode = SVF::HP;
+            else if (i == 0 && filterOrShelf == 1) band.mode = SVF::LS;
+            else if (filterOrShelf == 0) band.mode = SVF::LP;
+            else band.mode = SVF::HS;
+        }
+        band.freq = params.getRawParameterValue(pre + "band" + String(i + 1) + "_freq")->load();
+        band.gain = params.getRawParameterValue(pre + "band" + String(i + 1) + "_gain")->load();
+        band.gain = std::exp(band.gain * DB2LOG);
+        band.q = params.getRawParameterValue(pre + "band" + String(i + 1) + "_q")->load();
+
+        if (band.mode == SVF::LP || band.mode == SVF::HP || std::fabs(band.gain - 1.f) > 1e-6f) {
+            bands.push_back(band);
+        }
+    }
+
+    return bands;
+}
+
 void REEVRAudioProcessor::loadImpulse(String path)
 {
     irFile = path;
@@ -584,9 +612,11 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         impulse->trimLeft = params.getRawParameterValue("irtrimleft")->load();
         impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
         impulse->stretch = params.getRawParameterValue("irstretch")->load();
+        impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
         impulse->load(irFile);
     } 
     else {
+        impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
         impulse->load(irFile); // reload IR file
     }
 
@@ -810,6 +840,22 @@ void REEVRAudioProcessor::updateImpulse()
     float irtrimright = params.getRawParameterValue("irtrimright")->load();
     float irstretch = params.getRawParameterValue("irstretch")->load();
     bool irreverse = (bool)params.getRawParameterValue("irreverse")->load();
+    auto decayEQ = getEqualizer(SVF::DecayEQ);
+
+    auto compareEQs = [this](std::vector<SVF::EQBand> e1, std::vector<SVF::EQBand> e2)
+        {
+            if (e1.size() != e2.size()) return false;
+            for (int i = 0; i < e1.size(); ++i) {
+                if (e1[i].mode != e2[i].mode
+                    || std::fabs(e1[i].freq - e2[i].freq) > 1e-6
+                    || std::fabs(e1[i].gain - e2[i].gain) > 1e-6
+                    || std::fabs(e1[i].q - e2[i].q) > 1e-6
+                    ) {
+                    return false;
+                }
+            }
+            return true;
+        };
 
     if (irtrimleft > 1.0f - irtrimright) {
         params.getParameter("irtrimleft")->setValueNotifyingHost(1.0f-irtrimright);
@@ -820,6 +866,7 @@ void REEVRAudioProcessor::updateImpulse()
         || irtrimright != impulse->trimRight
         || impulse->stretch != irstretch
         || impulse->reverse != irreverse
+        || !compareEQs(decayEQ, impulse->decayEQ)
     ) {
         impulse->attack = irattack;
         impulse->decay = irdecay;
@@ -827,6 +874,7 @@ void REEVRAudioProcessor::updateImpulse()
         impulse->trimRight = irtrimright;
         impulse->stretch = irstretch;
         impulse->reverse = irreverse;
+        impulse->setDecayEQ(decayEQ);
         irDirty = true;
     }
 }
@@ -1591,10 +1639,12 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
         threadPool.addJob([this, numSamples]() {
             if (impulse->path != irFile.toStdString()) {
+                impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
                 impulse->load(irFile);
                 irFile = String(impulse->path);
             }
             else {
+                impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
                 impulse->recalcImpulse();
             }
             sendChangeMessage();

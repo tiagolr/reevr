@@ -30,6 +30,7 @@ public:
     std::vector<float> bufferRL = {};
     int size = 0;
     bool isQuad = false;
+    std::vector<SVF::EQBand> decayEQ;
 
 protected:
     size_t headBlockSize = 0;

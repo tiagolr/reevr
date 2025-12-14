@@ -1,10 +1,10 @@
 #include "EQDisplay.h"
 #include "../PluginEditor.h"
 
-EQDisplay::EQDisplay(REEVRAudioProcessorEditor& e, EQType _type)
+EQDisplay::EQDisplay(REEVRAudioProcessorEditor& e, SVF::EQType _type)
 	: editor(e)
 	, type(_type)
-	, prel(type == PostEQ ? "post" : "decay")
+	, prel(type == SVF::PostEQ ? "post" : "decay")
 {
 	startTimerHz(30);
 	updateEQCurve();
@@ -205,6 +205,13 @@ void EQDisplay::paint(juce::Graphics& g)
 	p.closeSubPath();
 	g.setColour(Colours::white.withAlpha(0.1f));
 	g.fillPath(p);
+
+	// draw point numbers
+	g.setColour(Colour(COLOR_BG));
+	g.setFont(FontOptions(12.f));
+	for (int i = 0; i < bandBounds.size(); ++i) {
+		g.drawText(String(i + 1), bandBounds[i], Justification::centred);
+	}
 }
 
 void EQDisplay::resized()

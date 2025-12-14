@@ -680,11 +680,11 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     about->setVisible(false);
 
     // EQ widgets 
-    eqWidget = std::make_unique<EQWidget>(*this, EQDisplay::PostEQ);
+    eqWidget = std::make_unique<EQWidget>(*this, SVF::PostEQ);
     addChildComponent(eqWidget.get());
     eqWidget->setBounds(PLUG_PADDING, lowcut->getY(), highcut->getRight() - PLUG_PADDING, reverb->getBottom() - highcut->getY());
 
-    decayWidget = std::make_unique<EQWidget>(*this, EQDisplay::DecayEQ);
+    decayWidget = std::make_unique<EQWidget>(*this, SVF::DecayEQ);
     addChildComponent(decayWidget.get());
     decayWidget->setBounds(eqWidget->getBounds());
 

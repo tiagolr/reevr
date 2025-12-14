@@ -23,6 +23,7 @@
 #include "dsp/StereoConvolver.h"
 #include "dsp/Impulse.h"
 #include "dsp/Filter.h"
+#include "dsp/SVF.h"
 #include "utils/PatternManager.h"
 
 using namespace globals;
@@ -292,6 +293,7 @@ public:
     ~REEVRAudioProcessor() override;
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
+    std::vector<SVF::EQBand> getEqualizer(SVF::EQType type) const;
     void loadImpulse(String path);
     void loadSettings();
     void saveSettings();

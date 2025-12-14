@@ -60,6 +60,11 @@ void Impulse::prepare(double _srate)
     srate = _srate;
 }
 
+void Impulse::setDecayEQ(std::vector<SVF::EQBand> eq)
+{
+    decayEQ = eq;
+}
+
 void Impulse::load(String filepath)
 {
     AudioFormatManager manager;
@@ -330,6 +335,7 @@ void Impulse::recalcImpulse()
     if (isQuad) applyStretch(bufferLR, bufferRL);
 
     applyTrim();
+    applyEQ();
     applyEnvelope();
 
     version += 1;
@@ -434,6 +440,35 @@ void Impulse::applyTrim()
 
         bufferRL.erase(bufferRL.begin() + end, bufferRL.end());
         bufferRL.erase(bufferRL.begin(), bufferRL.begin() + start);
+    }
+}
+
+void Impulse::applyEQ()
+{
+    auto size = (int)bufferLL.size();
+    if (!size) return;
+
+    std::vector<SVF> eq;
+    for (auto& band : decayEQ) {
+        SVF svf;
+        if (band.mode == SVF::LP) svf.lp((float)srate, band.freq, band.q);
+        else if (band.mode == SVF::LS) svf.ls((float)srate, band.freq, band.q, band.gain);
+        else if (band.mode == SVF::HP) svf.hp((float)srate, band.freq, band.q);
+        else if (band.mode == SVF::HS) svf.hs((float)srate, band.freq, band.q, band.gain);
+        else svf.pk((float)srate, band.freq, band.q, band.gain);
+        eq.push_back(svf);
+    }
+
+    for (auto& svf : eq) {
+        svf.processBlock(bufferLL.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
+        svf.clear(0.f);
+        svf.processBlock(bufferRR.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
+        if (isQuad) {
+            svf.clear(0.f);
+            svf.processBlock(bufferLR.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
+            svf.clear(0.f);
+            svf.processBlock(bufferRL.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
+        }
     }
 }
 

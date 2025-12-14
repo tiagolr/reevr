@@ -17,6 +17,18 @@ public:
 		Off,
 	};
 
+	enum EQType {
+		PostEQ,
+		DecayEQ
+	};
+
+	struct EQBand {
+		Mode mode;
+		float freq;
+		float q;
+		float gain;
+	};
+
 	SVF() {}
 	~SVF() {}
 

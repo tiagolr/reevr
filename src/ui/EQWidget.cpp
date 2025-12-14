@@ -67,9 +67,9 @@ static void drawLowpass(Graphics& g, Rectangle<float> bounds, Colour c, float sc
 
 // ==============================================================================
 
-EQWidget::EQWidget(REEVRAudioProcessorEditor& e, EQDisplay::EQType type)
+EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType type)
 	: editor(e)
-	, prel(type == EQDisplay::PostEQ ? "post" : "decay")
+	, prel(type == SVF::PostEQ ? "post" : "decay")
 {
 	eq = std::make_unique<EQDisplay>(editor, type);
 	addAndMakeVisible(eq.get());

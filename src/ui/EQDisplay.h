@@ -12,12 +12,8 @@ class EQDisplay
 	, private juce::Timer
 {
 public:
-	enum EQType {
-		PostEQ,
-		DecayEQ
-	};
 
-	EQDisplay(REEVRAudioProcessorEditor& e, EQType type);
+	EQDisplay(REEVRAudioProcessorEditor& e, SVF::EQType type);
 	~EQDisplay();
 
 	void timerCallback();
@@ -39,7 +35,7 @@ public:
 
 	std::array<SVF, EQ_BANDS> bandFilters{};
 private:
-	EQType type;
+	SVF::EQType type;
 	String prel;
 	int selband = 0;
 	int dragband = -1;

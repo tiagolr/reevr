@@ -20,7 +20,7 @@ public:
 
 	TextButton bandBtn;
 
-	EQWidget(REEVRAudioProcessorEditor& e, EQDisplay::EQType type);
+	EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType type);
 	~EQWidget();
 
 	void parameterChanged(const juce::String& parameterID, float newValue) override;
