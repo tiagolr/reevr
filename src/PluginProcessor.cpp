@@ -36,6 +36,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     layout.add(std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray{ "Off", "1/16", "1/8", "1/8d", "1/8t", "1/4" }, 0));
     layout.add(std::make_unique<juce::AudioParameterBool>("predelayusesync", "Pre-Delay Use Sync", false));
     layout.add(std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("irdecayrate", "IR Decay Rate", juce::NormalisableRange<float>(0.0f, 2.0f), 1.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("irattack", "IR Attack", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("irdecay", "IR Decay", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("irtrimleft", "IR Trim Left", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
@@ -612,6 +613,7 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         impulse->trimLeft = params.getRawParameterValue("irtrimleft")->load();
         impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
         impulse->stretch = params.getRawParameterValue("irstretch")->load();
+        impulse->decayRate = params.getRawParameterValue("irdecayrate")->load();
         impulse->paramEQ = getEqualizer(SVF::ParamEQ);
         impulse->decayEQ = getEqualizer(SVF::DecayEQ);
         impulse->load(irFile);
@@ -839,6 +841,7 @@ void REEVRAudioProcessor::updateImpulse()
     float irtrimleft = params.getRawParameterValue("irtrimleft")->load();
     float irtrimright = params.getRawParameterValue("irtrimright")->load();
     float irstretch = params.getRawParameterValue("irstretch")->load();
+    float irdecayrate = params.getRawParameterValue("irdecayrate")->load();
     bool irreverse = (bool)params.getRawParameterValue("irreverse")->load();
     auto decayEQ = getEqualizer(SVF::DecayEQ);
     auto paramEQ = getEqualizer(SVF::ParamEQ);
@@ -867,6 +870,7 @@ void REEVRAudioProcessor::updateImpulse()
         || irtrimright != impulse->trimRight
         || impulse->stretch != irstretch
         || impulse->reverse != irreverse
+        || impulse->decayRate != irdecayrate
         || !compareEQs(decayEQ, impulse->decayEQ)
         || !compareEQs(paramEQ, impulse->paramEQ)
     ) {
@@ -876,6 +880,7 @@ void REEVRAudioProcessor::updateImpulse()
         impulse->trimRight = irtrimright;
         impulse->stretch = irstretch;
         impulse->reverse = irreverse;
+        impulse->decayRate = irdecayrate;
         impulse->paramEQ = paramEQ;
         impulse->decayEQ = decayEQ;
         irDirty = true;

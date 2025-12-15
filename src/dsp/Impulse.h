@@ -59,10 +59,11 @@ public:
 	int nfiles = 2;
 	int numChans = 1;
 	float attack = 0.0f;
-	float decay = 1.0;
-	float trimLeft = 0.0;
-	float trimRight = 0.0;
-	float stretch = 0.0;
+	float decay = 1.0f;
+	float trimLeft = 0.0f;
+	float trimRight = 0.0f;
+	float stretch = 0.0f;
+	float decayRate = 1.0f;
 	bool reverse = false;
 	bool isQuad = false;
 	unsigned long int version = 1;

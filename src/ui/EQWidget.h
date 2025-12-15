@@ -18,6 +18,9 @@ public:
 	std::vector<std::unique_ptr<Rotary>> qknobs;
 	std::vector<std::unique_ptr<Rotary>> gainknobs;
 
+	Slider rateSlider;
+	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> rateSliderAttachment;
+
 	TextButton bandBtn;
 
 	EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType type);
@@ -32,5 +35,6 @@ public:
 private:
 	int selband = 0;
 	String prel;
+	SVF::EQType type;
 	REEVRAudioProcessorEditor& editor;
 };

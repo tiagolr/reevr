@@ -82,7 +82,8 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
         else if (format == RotaryLabel::hz1f) {
             if (slider_val < 1000) {
                 ss << std::fixed << std::setprecision(1) << slider_val << " Hz";
-            } else {
+            }
+            else {
                 ss << std::fixed << std::setprecision(1) << slider_val / 1000.0 << " kHz";
             }
             text = ss.str();
@@ -115,7 +116,7 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
         else if (format == RotaryLabel::audioOffset) {
             ss << std::fixed << std::setprecision(1) << slider_val * LATENCY_MILLIS << " ms";
             text = ss.str();
-        } 
+        }
         else if (format == envatk) {
             auto val = ENV_MIN_ATTACK + (ENV_MAX_ATTACK - ENV_MIN_ATTACK) * slider_val;
             if (val > 1000) {
@@ -162,23 +163,27 @@ void Rotary::draw_label_value(juce::Graphics& g, float slider_val)
         }
         else if (format == exp2Range) {
             text = std::to_string((int)(std::pow(2, slider_val) * 100)) + " %";
-        } 
+        }
         else if (format == dryWet) {
             float dryGain, wetGain;
 
             if (slider_val <= 0.5f) {
                 dryGain = 1.0f;
                 wetGain = slider_val * 2.0f;
-            } else {
+            }
+            else {
                 dryGain = (1.0f - slider_val) * 2.0f;
                 wetGain = 1.0f;
             }
 
             text = std::to_string((int)std::round(dryGain * 100)) + ":" +
                 std::to_string((int)std::round(wetGain * 100));
-        } 
+        }
         else if (format == kChoice) {
             text = audioProcessor.params.getParameter(paramId)->getCurrentValueAsText();
+        }
+        else if (format == eqDecayGain) {
+            text = String(std::round(slider_val / EQ_MAX_GAIN * 100.f)) + " %";
         }
     }
 

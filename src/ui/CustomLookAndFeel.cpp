@@ -39,7 +39,7 @@ void CustomLookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int wi
     const juce::Slider::SliderStyle style, juce::Slider& slider)
 {
     auto tag = slider.getComponentID();
-    if (tag != "symmetric" && tag != "symmetric_vertical") {
+    if (tag != "symmetric" && tag != "symmetric_vertical" && tag != "vertical") {
         LookAndFeel_V4::drawLinearSlider(g, x, y, width, height, sliderPos, minSliderPos, maxSliderPos, style, slider);
         return;
     }
@@ -67,6 +67,38 @@ void CustomLookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int wi
                 sliderPos - center,
                 3.f);
         }
+
+        // Thumb
+        g.setColour(slider.findColour(juce::Slider::thumbColourId));
+        auto thumbSize = slider.getWidth() * 0.6f;
+        g.fillEllipse(x + width / 2.f - thumbSize / 2.f,
+            sliderPos - thumbSize / 2.f,
+            thumbSize,
+            thumbSize);
+        return;
+    }
+
+    else if (tag == "vertical")
+    {
+        juce::Rectangle<float> trackBounds(x + width / 2.f - width / 8.f, (float)y, width / 4.f, (float)height);
+
+        g.setColour(slider.findColour(juce::Slider::backgroundColourId));
+        g.fillRoundedRectangle(trackBounds, 3.f);
+        g.setColour(slider.findColour(juce::Slider::trackColourId));
+
+        const float bottom = trackBounds.getBottom();
+        const float top = sliderPos;
+
+        // Clamp to track bounds (important)
+        const float clampedTop = juce::jlimit(trackBounds.getY(), bottom, top);
+
+        g.fillRoundedRectangle(
+            trackBounds.getX(),
+            clampedTop,
+            trackBounds.getWidth(),
+            bottom - clampedTop,
+            3.f
+        );
 
         // Thumb
         g.setColour(slider.findColour(juce::Slider::thumbColourId));

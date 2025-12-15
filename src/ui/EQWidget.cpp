@@ -67,8 +67,9 @@ static void drawLowpass(Graphics& g, Rectangle<float> bounds, Colour c, float sc
 
 // ==============================================================================
 
-EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType type)
+EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType _type)
 	: editor(e)
+	, type(_type)
 	, prel(type == SVF::ParamEQ ? "post" : "decay")
 {
 	eq = std::make_unique<EQDisplay>(editor, type);
@@ -105,7 +106,9 @@ EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType type)
 		editor.audioProcessor.params.addParameterListener(pre + "_gain", this);
 		auto freq = std::make_unique<Rotary>(editor.audioProcessor, pre + "_freq", "Freq", RotaryLabel::hz);
 		auto q = std::make_unique<Rotary>(editor.audioProcessor, pre + "_q", "Q", RotaryLabel::float1);
-		auto gain = std::make_unique<Rotary>(editor.audioProcessor, pre + "_gain", "Gain", RotaryLabel::dBfloat1, true);
+		auto gain = std::make_unique<Rotary>(editor.audioProcessor, pre + "_gain", "Gain", 
+			type == SVF::DecayEQ ? RotaryLabel::eqDecayGain : RotaryLabel::dBfloat1, true
+		);
 		addChildComponent(freq.get());
 		addChildComponent(q.get());
 		addChildComponent(gain.get());
@@ -120,6 +123,21 @@ EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType type)
 		{
 			showBandModeMenu();
 		};
+
+	if (type == SVF::DecayEQ) {
+		addAndMakeVisible(rateSlider);
+		rateSlider.setComponentID("vertical");
+		rateSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
+		rateSlider.setTextBoxStyle(Slider::NoTextBox, false, 80, 20);
+		rateSlider.setColour(Slider::backgroundColourId, Colour(COLOR_BG).brighter(0.1f));
+		rateSlider.setColour(Slider::trackColourId, Colour(COLOR_ACTIVE).darker(0.5f));
+		rateSlider.setColour(Slider::thumbColourId, Colour(COLOR_ACTIVE));
+		rateSliderAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(editor.audioProcessor.params, "irdecayrate", rateSlider);
+		rateSlider.textFromValueFunction = [](double v)
+			{
+				return "Decay Rate: " + juce::String(std::round(v * 100), 0) + " %";
+			};
+	}
 }
 
 EQWidget::~EQWidget()
@@ -156,6 +174,12 @@ void EQWidget::resized()
 	bandBtn.setBounds(Rectangle<int>(30, 30)
 		.withX(freqknobs[0]->getBounds().getCentreX() - 30/2)
 		.withY(qknobs[0]->getY() + 10));
+
+	if (type == SVF::DecayEQ) {
+		rateSlider.setPopupDisplayEnabled(true, true, getParentComponent());
+		auto eqb = eq->getBounds();
+		rateSlider.setBounds(eqb.getRight() + 16, eqb.getY() - 8, 20, 120);
+	}
 
 	toggleUIComponents();
 }

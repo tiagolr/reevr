@@ -528,8 +528,8 @@ void Impulse::applyDecayEQ()
     // create decay LUT table
     double decayPerSecond = 1.0 - EQ_MAX_DECAY_RATE_NEG;
     double growPerSecond = 1.0 + EQ_MAX_DECAY_RATE_POS;
-    double decayPerBlock = std::pow(decayPerSecond, FFT_SIZE / srate);
-    double growPerBlock = std::pow(growPerSecond, FFT_SIZE / srate);
+    double decayPerBlock = std::pow(decayPerSecond, (FFT_SIZE / srate) * decayRate);
+    double growPerBlock = std::pow(growPerSecond, (FFT_SIZE / srate) * decayRate);
     double lnDecay = std::log(decayPerBlock);
     double lnGrow = std::log(growPerBlock);
     for (int i = 0; i < LUTSize; ++i) {

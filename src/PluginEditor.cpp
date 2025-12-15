@@ -892,6 +892,7 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     reverb->setVisible(noeq);
     irDisplay->setVisible(noeq);
     highcutSlope.setVisible(noeq);
+    irgainSlider.setVisible(audioProcessor.eqtab != 2);
 
     MessageManager::callAsync([this] {
         repaint();
