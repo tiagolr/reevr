@@ -76,7 +76,7 @@ private:
 	void applyTrim();
 	void applyEnvelope();
 	void applyEQ();
-	void applyDecay(std::vector<float>& buf, std::vector<float>& magLUT);
+	void applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT);
 	TSMatch findTrueStereoPair(String path, int nsamples, double _irsrate) const;
 	File findPair(const juce::String& fileNameBody,
 		const String& fileNameExt,

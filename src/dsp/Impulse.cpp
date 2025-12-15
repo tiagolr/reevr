@@ -477,33 +477,52 @@ void Impulse::applyEQ()
         return;
 
     const int LUTSize = 4096 / 2 + 1;
-    const float minFreq = 1.f;
-    const float maxFreq = (float)srate * 0.49f;
-    std::vector<float> magLUT;
-    magLUT.resize(LUTSize);
-    std::fill(magLUT.begin(), magLUT.end(), 1.f);
+    std::vector<double> decayLUT;
+    decayLUT.resize(LUTSize);
+    std::fill(decayLUT.begin(), decayLUT.end(), 1.);
 
+    // create decay LUT table
+    double decayPerSecond = 1.0 - EQ_MAX_DECAY_RATE_NEG;
+    double growPerSecond = 1.0 + EQ_MAX_DECAY_RATE_POS;
+    double decayPerBlock = std::pow(decayPerSecond, FFT_SIZE / srate);
+    double growPerBlock = std::pow(growPerSecond, FFT_SIZE / srate);
+    double lnDecay = std::log(decayPerBlock);
+    double lnGrow = std::log(growPerBlock);
     for (int i = 0; i < LUTSize; ++i) {
-        auto freq = minFreq * std::pow(maxFreq / minFreq, (float)i / (LUTSize - 1));
-        for (auto& svf : eq)
-            magLUT[i] *= svf.getMagnitude(freq);
+        float freq = (float)i / (LUTSize - 1) * (float)srate * 0.5f;
+        freq = std::clamp(freq, 20.f, 20000.f); // clamp to max filter range
+        float mag = 1.f;
+        for (auto& svf : eq) {
+            mag *= svf.getMagnitude(freq);
+        }
+        // convert magnitude to decay rate
+        float dB = 20.0f * std::log10(mag);
+        float norm = std::clamp((EQ_MAX_GAIN - dB) / (2.f * EQ_MAX_GAIN), 0.f, 1.f);
+        norm = (norm * 2.f - 1.f) * -1.f;
+        double _decay = 1.0;
+        if (norm > 0.f)
+            _decay = std::exp(norm * lnGrow);
+        else if (norm < 0.f)
+            _decay = std::exp(-norm * lnDecay);
+        decayLUT[i] = _decay;
     }
 
-    applyDecay(bufferLL, magLUT);
-    applyDecay(bufferRR, magLUT);
-    applyDecay(bufferLR, magLUT);
-    applyDecay(bufferRL, magLUT);
+    applyDecay(bufferLL, decayLUT);
+    applyDecay(bufferRR, decayLUT);
+    applyDecay(bufferLR, decayLUT);
+    applyDecay(bufferRL, decayLUT);
 }
 
-void Impulse::applyDecay(std::vector<float>& buf, std::vector<float>& magLUT)
+void Impulse::applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT)
 {
-    (void)magLUT;
+    (void)decayLUT;
     const size_t numBlocks = (buf.size() + HOP_SIZE - 1) / HOP_SIZE;
     if (numBlocks < 1) return;
 
     std::vector<float> output(buf.size(), 0.f);
     std::vector<float> norm(buf.size(), 0.f);
     std::vector<float> block(FFT_SIZE, 0.0f);
+    std::vector<double> decayACC(decayLUT.size(), 1.0);
 
     for (size_t b = 0; b < numBlocks; ++b)
     {
@@ -516,14 +535,14 @@ void Impulse::applyDecay(std::vector<float>& buf, std::vector<float>& magLUT)
 
         _fft.fft(block.data(), re.data(), im.data());
 
-        // Zero middle frequencies
-        size_t lowBin = 400;
-        size_t highBin = 600;
-        size_t maxBin = FFT_SIZE / 2;
-        if (highBin > maxBin - 1) highBin = maxBin - 1;
-        for (size_t k = lowBin; k <= highBin; ++k) {
-            re[k] *= 0.0f;
-            im[k] *= 0.0f;
+        // Apply decay to bins
+        if (b > 3) {
+            for (int k = 1; k < FFT_SIZE / 2 + 1; ++k) {
+                double dec = decayACC[k] * decayLUT[k];
+                decayACC[k] = dec;
+                re[k] *= (float)dec;
+                im[k] *= (float)dec;
+            }
         }
 
         _fft.ifft(block.data(), re.data(), im.data());
@@ -538,7 +557,7 @@ void Impulse::applyDecay(std::vector<float>& buf, std::vector<float>& magLUT)
     }
 
     for (size_t i = 0; i < buf.size(); ++i) {
-        buf[i] = norm[i] > 0.01f ? output[i] / norm[i] : 0.f;
+        buf[i] = norm[i] > 0.0f ? output[i] / norm[i] : 0.f;
     }
 }
 
