@@ -5,6 +5,7 @@
 #include "JuceHeader.h"
 #include "SVF.h"
 #include "../Globals.h"
+#include "AudioFFT.h"
 
 using namespace globals;
 
@@ -17,14 +18,23 @@ public:
 		bool swapChannels;
 	};
 
-	Impulse() {}
+	static constexpr int FFT_SIZE = 4096;
+	static constexpr size_t HOP_SIZE = FFT_SIZE / 2;
+
+	Impulse();
 	~Impulse() {}
+	Impulse(const Impulse&) = delete;
+	Impulse& operator=(const Impulse&) = delete;
 
 	void prepare(double _srate);
 	void load(String path);
 	void recalcImpulse();
 	void setDecayEQ(std::vector<SVF::EQBand> eq);
 
+	audiofft::AudioFFT _fft;
+	std::vector<float> window;
+	std::vector<float> re;
+	std::vector<float> im;
 	std::vector<float> bufferLL = {};
 	std::vector<float> bufferLR = {};
 	std::vector<float> bufferRR = {};
@@ -66,6 +76,7 @@ private:
 	void applyTrim();
 	void applyEnvelope();
 	void applyEQ();
+	void applyDecay(std::vector<float>& buf, std::vector<float>& magLUT);
 	TSMatch findTrueStereoPair(String path, int nsamples, double _irsrate) const;
 	File findPair(const juce::String& fileNameBody,
 		const String& fileNameExt,

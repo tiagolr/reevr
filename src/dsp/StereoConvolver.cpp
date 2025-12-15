@@ -19,7 +19,7 @@ void StereoConvolver::prepare(int samplesPerBlock)
 	bufferRL.resize(samplesPerBlock, 0.0f);
 }
 
-void StereoConvolver::loadImpulse(Impulse imp)
+void StereoConvolver::loadImpulse(Impulse& imp)
 {
 	convolverLL->init(headBlockSize, tailBlockSize, imp.bufferLL.data(), imp.bufferLL.size());
 	convolverRR->init(headBlockSize, tailBlockSize, imp.bufferRR.data(), imp.bufferRR.size());

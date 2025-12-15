@@ -55,6 +55,20 @@ private:
 
 // ==============================================
 
+Impulse::Impulse() : _fft()
+{
+    window.resize(FFT_SIZE);
+    re.resize(FFT_SIZE);
+    im.resize(FFT_SIZE);
+    _fft.init(FFT_SIZE);
+
+    const float w = 2.0f * MathConstants<float>::pi / FFT_SIZE;
+    for (int i = 0; i < FFT_SIZE / 2; ++i)
+        window[i] = 0.42f - 0.50f * std::cos(i * w) + 0.08f * std::cos(2.0f * i * w);
+    for (size_t i = FFT_SIZE / 2 + 1; i < FFT_SIZE; ++i)
+        window[i] = window[FFT_SIZE - 1 - i];
+}
+
 void Impulse::prepare(double _srate)
 {
     srate = _srate;
@@ -459,16 +473,72 @@ void Impulse::applyEQ()
         eq.push_back(svf);
     }
 
-    for (auto& svf : eq) {
-        svf.processBlock(bufferLL.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
-        svf.clear(0.f);
-        svf.processBlock(bufferRR.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
-        if (isQuad) {
-            svf.clear(0.f);
-            svf.processBlock(bufferLR.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
-            svf.clear(0.f);
-            svf.processBlock(bufferRL.data(), size, 0, 0, svf.freq, svf.q, svf.gain);
+    if (eq.empty())
+        return;
+
+    const int LUTSize = 4096 / 2 + 1;
+    const float minFreq = 1.f;
+    const float maxFreq = (float)srate * 0.49f;
+    std::vector<float> magLUT;
+    magLUT.resize(LUTSize);
+    std::fill(magLUT.begin(), magLUT.end(), 1.f);
+
+    for (int i = 0; i < LUTSize; ++i) {
+        auto freq = minFreq * std::pow(maxFreq / minFreq, (float)i / (LUTSize - 1));
+        for (auto& svf : eq)
+            magLUT[i] *= svf.getMagnitude(freq);
+    }
+
+    applyDecay(bufferLL, magLUT);
+    applyDecay(bufferRR, magLUT);
+    applyDecay(bufferLR, magLUT);
+    applyDecay(bufferRL, magLUT);
+}
+
+void Impulse::applyDecay(std::vector<float>& buf, std::vector<float>& magLUT)
+{
+    (void)magLUT;
+    const size_t numBlocks = (buf.size() + HOP_SIZE - 1) / HOP_SIZE;
+    if (numBlocks < 1) return;
+
+    std::vector<float> output(buf.size(), 0.f);
+    std::vector<float> norm(buf.size(), 0.f);
+    std::vector<float> block(FFT_SIZE, 0.0f);
+
+    for (size_t b = 0; b < numBlocks; ++b)
+    {
+        std::fill(block.begin(), block.end(), 0.0f);
+        size_t start = b * HOP_SIZE;
+        size_t blockSize = std::min((size_t)FFT_SIZE, buf.size() - start);
+
+        for (size_t i = 0; i < blockSize; ++i)
+            block[i] = buf[start + i] * window[i];
+
+        _fft.fft(block.data(), re.data(), im.data());
+
+        // Zero middle frequencies
+        size_t lowBin = 400;
+        size_t highBin = 600;
+        size_t maxBin = FFT_SIZE / 2;
+        if (highBin > maxBin - 1) highBin = maxBin - 1;
+        for (size_t k = lowBin; k <= highBin; ++k) {
+            re[k] = 0.0f;
+            im[k] = 0.0f;
         }
+
+        _fft.ifft(block.data(), re.data(), im.data());
+
+        for (size_t i = 0; i < blockSize; ++i) {
+            size_t outPos = start + i;
+            if (outPos < output.size()) {
+                output[outPos] += block[i] * window[i];
+                norm[outPos] += window[i];
+            }
+        }
+    }
+
+    for (size_t i = 0; i < buf.size(); ++i) {
+        buf[i] = norm[i] > 0.f ? output[i] / norm[i] : 0.f;
     }
 }
 
