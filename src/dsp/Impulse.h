@@ -19,7 +19,7 @@ public:
 	};
 
 	static constexpr int FFT_SIZE = 4096;
-	static constexpr size_t HOP_SIZE = FFT_SIZE / 2;
+	static constexpr size_t HOP_SIZE = FFT_SIZE / 4;
 
 	Impulse();
 	~Impulse() {}

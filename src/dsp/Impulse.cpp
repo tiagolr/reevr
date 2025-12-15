@@ -65,7 +65,7 @@ Impulse::Impulse() : _fft()
     const float w = 2.0f * MathConstants<float>::pi / FFT_SIZE;
     for (int i = 0; i < FFT_SIZE / 2; ++i)
         window[i] = 0.42f - 0.50f * std::cos(i * w) + 0.08f * std::cos(2.0f * i * w);
-    for (size_t i = FFT_SIZE / 2 + 1; i < FFT_SIZE; ++i)
+    for (int i = FFT_SIZE / 2; i < FFT_SIZE; ++i)
         window[i] = window[FFT_SIZE - 1 - i];
 }
 
@@ -517,14 +517,14 @@ void Impulse::applyDecay(std::vector<float>& buf, std::vector<float>& magLUT)
         _fft.fft(block.data(), re.data(), im.data());
 
         // Zero middle frequencies
-        size_t lowBin = 400;
-        size_t highBin = 600;
-        size_t maxBin = FFT_SIZE / 2;
-        if (highBin > maxBin - 1) highBin = maxBin - 1;
-        for (size_t k = lowBin; k <= highBin; ++k) {
-            re[k] = 0.0f;
-            im[k] = 0.0f;
-        }
+        //size_t lowBin = 400;
+        //size_t highBin = 600;
+        //size_t maxBin = FFT_SIZE / 2;
+        //if (highBin > maxBin - 1) highBin = maxBin - 1;
+        //for (size_t k = lowBin; k <= highBin; ++k) {
+        //    re[k] = 0.0f;
+        //    im[k] = 0.0f;
+        //}
 
         _fft.ifft(block.data(), re.data(), im.data());
 
@@ -538,7 +538,7 @@ void Impulse::applyDecay(std::vector<float>& buf, std::vector<float>& magLUT)
     }
 
     for (size_t i = 0; i < buf.size(); ++i) {
-        buf[i] = norm[i] > 0.f ? output[i] / norm[i] : 0.f;
+        buf[i] = norm[i] > 0.f ? output[i] / norm[i] * 1.15 : 0.f; // 1.15 hardcoded gain compensation, I couldn't solve
     }
 }
 
