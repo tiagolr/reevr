@@ -31,9 +31,10 @@ namespace globals {
 	inline unsigned int COLOR_SEQ_TENR = 0xffffB950;
 	inline unsigned int COLOR_SEQ_SKEW = 0xffffB950;
 
+	inline const int EARLY_REFLECTIONS_MS = 100;
 	inline const int EQ_BANDS = 4;
 	inline const float EQ_MAX_GAIN = 24.f;
-	inline const float EQ_MAX_DECAY_RATE_POS = 0.1f; // % max 10% a second
+	inline const float EQ_MAX_DECAY_RATE_POS = 0.5f; // % max 50% a second
 	inline const float EQ_MAX_DECAY_RATE_NEG = 0.9f; // % max 90% a second
 	inline const int LATENCY_MILLIS = 4;
 	inline const int AUDIO_COOLDOWN_MILLIS = 50;

@@ -680,7 +680,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     about->setVisible(false);
 
     // EQ widgets 
-    eqWidget = std::make_unique<EQWidget>(*this, SVF::PostEQ);
+    eqWidget = std::make_unique<EQWidget>(*this, SVF::ParamEQ);
     addChildComponent(eqWidget.get());
     eqWidget->setBounds(PLUG_PADDING, lowcut->getY(), highcut->getRight() - PLUG_PADDING, reverb->getBottom() - highcut->getY());
 

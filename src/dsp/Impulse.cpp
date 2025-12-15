@@ -74,11 +74,6 @@ void Impulse::prepare(double _srate)
     srate = _srate;
 }
 
-void Impulse::setDecayEQ(std::vector<SVF::EQBand> eq)
-{
-    decayEQ = eq;
-}
-
 void Impulse::load(String filepath)
 {
     AudioFormatManager manager;
@@ -349,7 +344,9 @@ void Impulse::recalcImpulse()
     if (isQuad) applyStretch(bufferLR, bufferRL);
 
     applyTrim();
-    applyEQ();
+    applyParamEQ();
+    applyDecayEQ();
+    applyClip();
     applyEnvelope();
 
     version += 1;
@@ -457,7 +454,54 @@ void Impulse::applyTrim()
     }
 }
 
-void Impulse::applyEQ()
+void Impulse::applyClip()
+{
+    auto size = bufferLL.size();
+    for (int i = 0; i < size; ++i) {
+        bufferLL[i] = std::clamp(bufferLL[i], -1.f, 1.f);
+        bufferRR[i] = std::clamp(bufferRR[i], -1.f, 1.f);
+    }
+    if (isQuad) {
+        for (int i = 0; i < size; ++i) {
+            bufferLR[i] = std::clamp(bufferLR[i], -1.f, 1.f);
+            bufferRL[i] = std::clamp(bufferRL[i], -1.f, 1.f);
+        }
+    }
+}
+
+void Impulse::applyParamEQ()
+{
+    auto size = (int)bufferLL.size();
+    if (!size) return;
+
+    std::vector<SVF> eq;
+    for (auto& band : paramEQ) {
+        SVF svf;
+        if (band.mode == SVF::LP) svf.lp((float)srate, band.freq, band.q);
+        else if (band.mode == SVF::LS) svf.ls((float)srate, band.freq, band.q, band.gain);
+        else if (band.mode == SVF::HP) svf.hp((float)srate, band.freq, band.q);
+        else if (band.mode == SVF::HS) svf.hs((float)srate, band.freq, band.q, band.gain);
+        else svf.pk((float)srate, band.freq, band.q, band.gain);
+        eq.push_back(svf);
+    }
+
+    if (eq.empty())
+        return;
+
+    for (auto& svf : eq) {
+        svf.processBlock(bufferLL.data(), size, 0, size, svf.freq, svf.q, svf.gain);
+        svf.clear(0.f);
+        svf.processBlock(bufferRR.data(), size, 0, size, svf.freq, svf.q, svf.gain);
+        if (isQuad) {
+            svf.clear(0.f);
+            svf.processBlock(bufferLR.data(), size, 0, size, svf.freq, svf.q, svf.gain);
+            svf.clear(0.f);
+            svf.processBlock(bufferRL.data(), size, 0, size, svf.freq, svf.q, svf.gain);
+        }
+    }
+}
+
+void Impulse::applyDecayEQ()
 {
     auto size = (int)bufferLL.size();
     if (!size) return;
@@ -509,8 +553,10 @@ void Impulse::applyEQ()
 
     applyDecay(bufferLL, decayLUT);
     applyDecay(bufferRR, decayLUT);
-    applyDecay(bufferLR, decayLUT);
-    applyDecay(bufferRL, decayLUT);
+    if (isQuad) {
+        applyDecay(bufferLR, decayLUT);
+        applyDecay(bufferRL, decayLUT);
+    }
 }
 
 void Impulse::applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT)
@@ -524,6 +570,8 @@ void Impulse::applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT)
     std::vector<float> block(FFT_SIZE, 0.0f);
     std::vector<double> decayACC(decayLUT.size(), 1.0);
 
+    int skipBlocks = (int)std::ceil(EARLY_REFLECTIONS_MS * srate / (1000.0 * FFT_SIZE));
+
     for (size_t b = 0; b < numBlocks; ++b)
     {
         std::fill(block.begin(), block.end(), 0.0f);
@@ -536,7 +584,7 @@ void Impulse::applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT)
         _fft.fft(block.data(), re.data(), im.data());
 
         // Apply decay to bins
-        if (b > 3) {
+        if (b > skipBlocks) {
             for (int k = 1; k < FFT_SIZE / 2 + 1; ++k) {
                 double dec = decayACC[k] * decayLUT[k];
                 decayACC[k] = dec;

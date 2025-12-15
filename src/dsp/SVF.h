@@ -18,7 +18,7 @@ public:
 	};
 
 	enum EQType {
-		PostEQ,
+		ParamEQ,
 		DecayEQ
 	};
 

@@ -4,7 +4,7 @@
 EQDisplay::EQDisplay(REEVRAudioProcessorEditor& e, SVF::EQType _type)
 	: editor(e)
 	, type(_type)
-	, prel(type == SVF::PostEQ ? "post" : "decay")
+	, prel(type == SVF::ParamEQ ? "post" : "decay")
 {
 	startTimerHz(30);
 	updateEQCurve();

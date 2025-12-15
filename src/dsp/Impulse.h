@@ -29,7 +29,6 @@ public:
 	void prepare(double _srate);
 	void load(String path);
 	void recalcImpulse();
-	void setDecayEQ(std::vector<SVF::EQBand> eq);
 
 	audiofft::AudioFFT _fft;
 	std::vector<float> window;
@@ -48,6 +47,7 @@ public:
 	std::string path = "";
 
 	std::vector<SVF::EQBand> decayEQ;
+	std::vector<SVF::EQBand> paramEQ;
 
 	float peak = 0.0f; // used for drawing the impulse
 	int trimLeftSamples = 0; // used for drawing
@@ -75,7 +75,9 @@ private:
 	void applyStretch(std::vector<float>& bufL, std::vector<float>& bufR);
 	void applyTrim();
 	void applyEnvelope();
-	void applyEQ();
+	void applyClip();
+	void applyParamEQ();
+	void applyDecayEQ();
 	void applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT);
 	TSMatch findTrueStereoPair(String path, int nsamples, double _irsrate) const;
 	File findPair(const juce::String& fileNameBody,

@@ -612,11 +612,11 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         impulse->trimLeft = params.getRawParameterValue("irtrimleft")->load();
         impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
         impulse->stretch = params.getRawParameterValue("irstretch")->load();
-        impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
+        impulse->paramEQ = getEqualizer(SVF::ParamEQ);
+        impulse->decayEQ = getEqualizer(SVF::DecayEQ);
         impulse->load(irFile);
     } 
     else {
-        impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
         impulse->load(irFile); // reload IR file
     }
 
@@ -841,6 +841,7 @@ void REEVRAudioProcessor::updateImpulse()
     float irstretch = params.getRawParameterValue("irstretch")->load();
     bool irreverse = (bool)params.getRawParameterValue("irreverse")->load();
     auto decayEQ = getEqualizer(SVF::DecayEQ);
+    auto paramEQ = getEqualizer(SVF::ParamEQ);
 
     auto compareEQs = [this](std::vector<SVF::EQBand> e1, std::vector<SVF::EQBand> e2)
         {
@@ -867,6 +868,7 @@ void REEVRAudioProcessor::updateImpulse()
         || impulse->stretch != irstretch
         || impulse->reverse != irreverse
         || !compareEQs(decayEQ, impulse->decayEQ)
+        || !compareEQs(paramEQ, impulse->paramEQ)
     ) {
         impulse->attack = irattack;
         impulse->decay = irdecay;
@@ -874,7 +876,8 @@ void REEVRAudioProcessor::updateImpulse()
         impulse->trimRight = irtrimright;
         impulse->stretch = irstretch;
         impulse->reverse = irreverse;
-        impulse->setDecayEQ(decayEQ);
+        impulse->paramEQ = paramEQ;
+        impulse->decayEQ = decayEQ;
         irDirty = true;
     }
 }
@@ -1639,12 +1642,10 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
         threadPool.addJob([this, numSamples]() {
             if (impulse->path != irFile.toStdString()) {
-                impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
                 impulse->load(irFile);
                 irFile = String(impulse->path);
             }
             else {
-                impulse->setDecayEQ(getEqualizer(SVF::DecayEQ));
                 impulse->recalcImpulse();
             }
             sendChangeMessage();
