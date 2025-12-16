@@ -130,22 +130,19 @@ void EQDisplay::mouseDoubleClick(const MouseEvent& e)
 
 void EQDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
 {
-	if (mouse_down) return;
 	auto speed = (e.mods.isShiftDown() ? 0.01f : 0.05f);
 	auto slider_change = wheel.deltaY > 0 ? speed : wheel.deltaY < 0 ? -speed : 0;
 
 	for (int i = 0; i < EQ_BANDS; ++i) {
 		auto& bounds = bandBounds[i];
-		if (bounds.contains((float)e.x, (float)e.y)) {
+		if ((mouse_down && selband == i) || (!mouse_down && bounds.contains((float)e.x, (float)e.y))) {
 			auto pre = prel + "eq_band" + String(i + 1);
 			auto param = editor.audioProcessor.params.getParameter(pre + "_q");
-			param->beginChangeGesture();
 			param->setValueNotifyingHost(param->getValue() + slider_change);
 			while (wheel.deltaY > 0.0f && param->getValue() == 0.0f) { // FIX wheel not working when value is zero, first step takes more than 0.05%
 				slider_change += 0.05f;
 				param->setValueNotifyingHost(param->getValue() + slider_change);
 			}
-			param->endChangeGesture();
 			repaint();
 			break;
 		}
