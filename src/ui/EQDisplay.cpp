@@ -247,7 +247,7 @@ void EQDisplay::paint(juce::Graphics& g)
 		float mag = magPoints[i];
 		float dB = 20.0f * std::log10(mag);
 		float y = std::clamp((EQ_MAX_GAIN - dB) / (2.f * EQ_MAX_GAIN), 0.f, 1.f);
-		if (isnan(y)) y = 0.f;
+		if (std::isnan(y)) y = 0.f;
 		y = viewBounds.getY() + y * viewBounds.getHeight();
 		float x = viewBounds.getX() + i;
 
