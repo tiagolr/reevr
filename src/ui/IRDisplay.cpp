@@ -368,7 +368,7 @@ void IRDisplay::showIRMenu()
 {
 	PopupMenu menu;
 	PopupMenu trimMenu;
-	trimMenu.addItem(5, "Reset");
+	trimMenu.addItem(99, "Reset");
 	trimMenu.addItem(1, "Trim to 1 Beat");
 	trimMenu.addItem(2, "Trim to 2 Beats");
 	trimMenu.addItem(3, "Trim to 3 Beats");
@@ -384,12 +384,13 @@ void IRDisplay::showIRMenu()
 			if (result >= 1 && result <= 4) {
 				double beatMultiplier = (double)result;
 				double srate = audioProcessor.impulse->srate;
-				double irduration = (double)audioProcessor.impulse->rawBufferLL.size() / srate;
+				double tlsamps = audioProcessor.impulse->trimLeftSamples;
+				double trsamps = audioProcessor.impulse->trimRightSamples;
+				double irduration = (double)(audioProcessor.impulse->bufferLL.size() + tlsamps + trsamps) / srate;
 				double targetDuration = beatMultiplier / audioProcessor.beatsPerSecond;
 				double trimRight = 1.0 - targetDuration / irduration;
 				trimRight = std::clamp(trimRight, 0.0, 1.0); 
 
-				audioProcessor.params.getParameter("irstretch")->setValueNotifyingHost(0.5f);
 				audioProcessor.params.getParameter("irattack")->setValueNotifyingHost(0.f);
 				audioProcessor.params.getParameter("irtrimleft")->setValueNotifyingHost(0.f);
 				audioProcessor.params.getParameter("irtrimright")->setValueNotifyingHost((float)trimRight);
@@ -399,7 +400,7 @@ void IRDisplay::showIRMenu()
 					irdecay->setValueNotifyingHost(0.25f);
 				}
 			}
-			if (result == 5) {
+			if (result == 99) {
 				audioProcessor.params.getParameter("irdecay")->setValueNotifyingHost(0.f);
 				audioProcessor.params.getParameter("irattack")->setValueNotifyingHost(0.f);
 				audioProcessor.params.getParameter("irtrimleft")->setValueNotifyingHost(0.f);

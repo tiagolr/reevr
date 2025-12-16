@@ -74,7 +74,7 @@ private:
 	float calculateAutoGain(const std::vector<float>& dataL, const std::vector<float>& dataR);
 	void resampleIRToProjectRate(std::vector<float>& bufL, std::vector<float>& bufR) const;
 	int getTailStart(const float* data, int nsamples);
-	void applyStretch(std::vector<float>& bufL, std::vector<float>& bufR);
+	void applyStretch(std::vector<float>& bufL, std::vector<float>& bufR, float _stretch);
 	void applyTrim();
 	void applyEnvelope();
 	void applyClip();

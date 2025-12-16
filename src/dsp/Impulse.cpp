@@ -340,8 +340,9 @@ void Impulse::recalcImpulse()
     resampleIRToProjectRate(bufferLL, bufferRR);
     if (isQuad) resampleIRToProjectRate(bufferLR, bufferRL);
     
-    applyStretch(bufferLL, bufferRR);
-    if (isQuad) applyStretch(bufferLR, bufferRL);
+    auto s = stretch;
+    applyStretch(bufferLL, bufferRR, s);
+    if (isQuad) applyStretch(bufferLR, bufferRL, s);
 
     applyTrim();
     applyGain();
@@ -377,13 +378,13 @@ void Impulse::resampleIRToProjectRate(std::vector<float>& bufL, std::vector<floa
     bufR.assign(out.getReadPointer(1), out.getReadPointer(1) + outputLength);
 }
 
-void Impulse::applyStretch(std::vector<float>& bufL, std::vector<float>& bufR)
+void Impulse::applyStretch(std::vector<float>& bufL, std::vector<float>& bufR, float _stretch)
 {
-    if (stretch == 0.f || !bufL.size()) {
+    if (_stretch == 0.f || !bufL.size()) {
         stretchsrate = srate;
         return;
     }
-    stretchsrate = std::pow(2, stretch) * srate;
+    stretchsrate = std::pow(2, _stretch) * srate;
 
     if (std::fabs(stretchsrate-srate) < 1e-6 || stretchsrate < 1.0 || srate < 1.0) 
         return;
@@ -460,15 +461,16 @@ void Impulse::applyTrim()
 
 void Impulse::applyGain()
 {
+    auto g = gain;
     auto size = bufferLL.size();
     for (int i = 0; i < size; ++i) {
-        bufferLL[i] *= gain;
-        bufferRR[i] *= gain;
+        bufferLL[i] *= g;
+        bufferRR[i] *= g;
     }
     if (isQuad) {
         for (int i = 0; i < size; ++i) {
-            bufferLR[i] *= gain;
-            bufferLR[i] *= gain;
+            bufferLR[i] *= g;
+            bufferLR[i] *= g;
         }
     }
 }
