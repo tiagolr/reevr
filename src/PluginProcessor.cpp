@@ -12,9 +12,9 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     layout.add(std::make_unique<juce::AudioParameterBool>("tsenabled", "TrueStereo Enabled", true));
     layout.add(std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1));
     layout.add(std::make_unique<juce::AudioParameterChoice>("patsync", "Pattern Sync", StringArray{ "Off", "1/4 Beat", "1/2 Beat", "1 Beat", "2 Beats", "4 Beats" }, 0));
-    layout.add(std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray{ "Sync", "MIDI", "Audio" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray{ "Sync", "MIDI", "Audio", "Free" }, 0));
     layout.add(std::make_unique<juce::AudioParameterChoice>("sync", "Sync", StringArray{ "Rate Hz", "1/256", "1/128", "1/64", "1/32", "1/16", "1/8", "1/4", "1/2", "1/1", "2/1", "4/1", "1/16t", "1/8t", "1/4t", "1/2t", "1/1t", "1/16.", "1/8.", "1/4.", "1/2.", "1/1." }, 9));
-    layout.add(std::make_unique<juce::AudioParameterFloat>("rate", "Rate Hz", juce::NormalisableRange<float>(0.01f, 5000.0f, 0.01f, 0.2f), 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("rate", "Rate Hz", juce::NormalisableRange<float>(0.01f, 5000.0f, 0.00001f, 0.2f), 1.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("phase", "Phase", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("min", "Min", 0.0f, 1.0f, 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("max", "Max", 0.0f, 1.0f, 1.0f));
@@ -949,6 +949,10 @@ void REEVRAudioProcessor::onPlay()
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     double ratehz = (double)params.getRawParameterValue("rate")->load();
     double phase = (double)params.getRawParameterValue("phase")->load();
+
+    if (trigger == Trigger::Free)
+        return;
+
     irLowcutL.reset(0.0f);
     irLowcutR.reset(0.0f);
     irHighcutL.reset(0.0f);
@@ -1269,7 +1273,11 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     }
 
     // keep beatPos in sync with playhead so plugin can be bypassed and return to its sync pos
-    if (playing) {
+    if (trigger == Trigger::Free) {
+        ratePos += ratehz / srate;
+        beatPos += beatsPerSample;
+    }
+    else if (playing) {
         beatPos = ppqPosition;
         ratePos = beatPos * secondsPerBeat * ratehz;
     }
@@ -1380,7 +1388,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // ================================================= MAIN PROCESSING LOOP
 
     for (int sample = 0; sample < numSamples; ++sample) {
-        if (playing && looping && beatPos >= loopEnd) {
+        if (playing && looping && beatPos >= loopEnd && trigger != Trigger::Free) {
             beatPos = loopStart + (beatPos - loopEnd);
             ratePos = beatPos * secondsPerBeat * ratehz;
         }
@@ -1440,7 +1448,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
 
         // Sync mode
-        if (trigger == Trigger::Sync) {
+        if (trigger == Trigger::Sync || trigger == Trigger::Free) {
             xpos = sync > 0
                 ? beatPos / syncQN + phase
                 : ratePos + phase;

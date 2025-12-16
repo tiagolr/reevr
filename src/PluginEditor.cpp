@@ -119,6 +119,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     triggerMenu.addItem("Sync", 1);
     triggerMenu.addItem("MIDI", 2);
     triggerMenu.addItem("Audio", 3);
+    triggerMenu.addItem("Free", 4);
     triggerMenu.setBounds(col, row, 75, 25);
     triggerAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.params, "trigger", triggerMenu);
     col += 85;
@@ -755,7 +756,7 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     predelaysync->setVisible(useSync);
 
     auto trigger = (int)audioProcessor.params.getRawParameterValue("trigger")->load();
-    auto triggerColor = trigger == 0 ? COLOR_ACTIVE : trigger == 1 ? COLOR_MIDI : COLOR_AUDIO;
+    auto triggerColor = trigger == 0 ? COLOR_ACTIVE : trigger == 1 ? COLOR_MIDI : trigger == 2 ? COLOR_AUDIO : COLOR_ACTIVE;
     triggerMenu.setColour(ComboBox::arrowColourId, Colour(triggerColor));
     triggerMenu.setColour(ComboBox::textColourId, Colour(triggerColor));
     triggerMenu.setColour(ComboBox::outlineColourId, Colour(triggerColor));
@@ -764,7 +765,7 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     if (!audioSettingsButton.isVisible()) {
         audioProcessor.showAudioKnobs = false;
     }
-    loopButton.setVisible(trigger > 0);
+    loopButton.setVisible(trigger > 0 && trigger < 3);
 
     auto sync = (int)audioProcessor.params.getRawParameterValue("sync")->load();
     rateDial->setVisible(sync == 0);
@@ -947,7 +948,7 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
 
     // draw loop play button
     auto trigger = (int)audioProcessor.params.getRawParameterValue("trigger")->load();
-    if (trigger != Trigger::Sync) {
+    if (trigger == Trigger::MIDI || trigger == Trigger::Audio) {
         if (audioProcessor.alwaysPlaying) {
             g.setColour(Colours::yellow);
             auto loopBounds = loopButton.getBounds().expanded(-5);
