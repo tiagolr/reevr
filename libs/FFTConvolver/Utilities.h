@@ -24,10 +24,6 @@
 #include <cstring>
 #include <new>
 
-
-namespace fftconvolver
-{
-
 #if defined(__SSE__) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
   #if !defined(FFTCONVOLVER_USE_SSE) && !defined(FFTCONVOLVER_DONT_USE_SSE)
     #define FFTCONVOLVER_USE_SSE
@@ -39,7 +35,8 @@ namespace fftconvolver
   #include <xmmintrin.h>
 #endif
 
-
+namespace fftconvolver
+{
 #if defined(__GNUC__)
   #define FFTCONVOLVER_RESTRICT __restrict__
 #else
@@ -61,7 +58,7 @@ bool SSEEnabled();
 template<typename T>
 class Buffer
 {
-public:  
+public:
   explicit Buffer(size_t initialSize = 0) :
     _data(0),
     _size(0)
@@ -158,7 +155,7 @@ private:
     return new T[size];
 #endif
   }
-  
+
   void deallocate(T* ptr)
   {
 #if defined(FFTCONVOLVER_USE_SSE)
@@ -200,7 +197,7 @@ typedef Buffer<Sample> SampleBuffer;
 class SplitComplex
 {
 public:
-  explicit SplitComplex(size_t initialSize = 0) : 
+  explicit SplitComplex(size_t initialSize = 0) :
     _size(0),
     _re(),
     _im()
@@ -290,7 +287,7 @@ T NextPowerOf2(const T& val)
   }
   return nextPowerOf2;
 }
-  
+
 
 /**
 * @brief Sums two given sample arrays
@@ -316,7 +313,7 @@ void CopyAndPad(Buffer<T>& dest, const T* src, size_t srcSize)
 {
   assert(dest.size() >= srcSize);
   ::memcpy(dest.data(), src, srcSize * sizeof(T));
-  ::memset(dest.data() + srcSize, 0, (dest.size()-srcSize) * sizeof(T)); 
+  ::memset(dest.data() + srcSize, 0, (dest.size()-srcSize) * sizeof(T));
 }
 
 
@@ -338,14 +335,14 @@ void ComplexMultiplyAccumulate(SplitComplex& result, const SplitComplex& a, cons
 * @param reB The real part of the 2nd factor of the complex product
 * @param imB The imaginary part of the 2nd factor of the complex product
 */
-void ComplexMultiplyAccumulate(Sample* FFTCONVOLVER_RESTRICT re, 
+void ComplexMultiplyAccumulate(Sample* FFTCONVOLVER_RESTRICT re,
                                Sample* FFTCONVOLVER_RESTRICT im,
                                const Sample* FFTCONVOLVER_RESTRICT reA,
                                const Sample* FFTCONVOLVER_RESTRICT imA,
                                const Sample* FFTCONVOLVER_RESTRICT reB,
                                const Sample* FFTCONVOLVER_RESTRICT imB,
                                const size_t len);
-  
+
 } // End of namespace fftconvolver
 
 #endif // Header guard
