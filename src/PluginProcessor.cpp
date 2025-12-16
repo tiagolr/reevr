@@ -1853,22 +1853,27 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 
     auto ch0 = buffer.getReadPointer(0);
     auto ch1 = buffer.getReadPointer(audioOutputs > 1 ? 1 : 0);
-    auto sz = fftData.size();
     for (int i = 0; i < numSamples; ++i) {
-        fftData[fftWriteIndex++] = (ch0[i] + ch1[i]) * 0.5f;
-        if (fftWriteIndex >= sz) {
-            window.multiplyWithWindowingTable(fftData.data(), fftData.size());
-            fft.performFrequencyOnlyForwardTransform(fftData.data(), true);
-            float norm = 1.f / (fftData.size() * 0.5f);
-            for (size_t j = 0; j < 2048 / 2; ++j) {
-                float mag = fftData[j] * norm;
-                fftMagnitudes[j] = mag * 0.8 + fftMagnitudes[j] * 0.2f;
-            }
-
-            fftWriteIndex = 0; // next write position
-            fftReady.store(true, std::memory_order_release);
-        }
+        eqBuffer[eqWriteIndex++] = 0.5f * (ch0[i] + ch1[i]);
+        eqWriteIndex %= eqBuffer.size();
     }
+    eqFFTReady.store(true, std::memory_order_release);
+
+    //for (int i = 0; i < numSamples; ++i) {
+    //    fftData[fftWriteIndex++] = (ch0[i] + ch1[i]) * 0.5f;
+    //    if (fftWriteIndex >= sz) {
+    //        window.multiplyWithWindowingTable(fftData.data(), fftData.size());
+    //        fft.performFrequencyOnlyForwardTransform(fftData.data(), true);
+    //        float norm = 1.f / (fftData.size() * 0.5f);
+    //        for (size_t j = 0; j < 2048 / 2; ++j) {
+    //            float mag = fftData[j] * norm;
+    //            fftMagnitudes[j] = mag * 0.8 + fftMagnitudes[j] * 0.2f;
+    //        }
+    //
+    //        fftWriteIndex = 0; // next write position
+    //        fftReady.store(true, std::memory_order_release);
+    //    }
+    //}
 }
 
 //==============================================================================

@@ -17,9 +17,9 @@ EQDisplay::~EQDisplay()
 void EQDisplay::timerCallback()
 {
 	if (isShowing()) {
-		if (editor.audioProcessor.fftReady.load(std::memory_order_acquire)) {
-			mags = editor.audioProcessor.fftMagnitudes;
-			editor.audioProcessor.fftReady.store(false, std::memory_order_release);
+		if (editor.audioProcessor.eqFFTReady.load(std::memory_order_acquire)) {
+			editor.audioProcessor.eqFFTReady.store(false, std::memory_order_release);
+			recalcFFTMags();
 		}
 
 		repaint();
@@ -223,7 +223,7 @@ void EQDisplay::paint(juce::Graphics& g)
 
 void EQDisplay::drawWaveform(juce::Graphics& g)
 {
-	auto size = mags.size();
+	auto size = fftMagnitudes.size();
 	auto bounds = viewBounds;
 
 	if (size == 0)
@@ -243,7 +243,7 @@ void EQDisplay::drawWaveform(juce::Graphics& g)
 		float logPos = std::log10(freq / minFreq) / std::log10(maxFreq / minFreq);
 		float x = bounds.getX() + logPos * bounds.getWidth();
 
-		float magnitudeDB = juce::Decibels::gainToDecibels(mags[i], minDB);
+		float magnitudeDB = juce::Decibels::gainToDecibels(fftMagnitudes[i], minDB);
 		float y = juce::jmap(magnitudeDB, minDB, maxDB, bounds.getBottom(), bounds.getY());
 
 		if (i == 0)
@@ -258,6 +258,32 @@ void EQDisplay::drawWaveform(juce::Graphics& g)
 	// hide zero values
 	g.setColour(Colour(COLOR_BG));
 	g.fillRect(bounds.toFloat().withHeight(2.f).withBottomY((float)bounds.getBottom()));
+}
+
+void EQDisplay::recalcFFTMags()
+{
+	auto fftSize = 1 << EQ_FFT_ORDER;
+	auto writeIndex = editor.audioProcessor.eqWriteIndex;
+	auto bufferSize = fftData.size();
+	size_t startIndex = (writeIndex + bufferSize - fftSize) % bufferSize;
+
+	if (startIndex + fftSize <= bufferSize) {
+		std::copy_n(&editor.audioProcessor.eqBuffer[startIndex], fftSize, fftData.data());
+	}
+	else {
+		// Wrap-around copy
+		size_t firstPart = bufferSize - startIndex;
+		std::copy_n(&editor.audioProcessor.eqBuffer[startIndex], firstPart, fftData.data());
+		std::copy_n(&editor.audioProcessor.eqBuffer[0], fftSize - firstPart, fftData.data() + firstPart);
+	}
+
+	window.multiplyWithWindowingTable(fftData.data(), fftData.size());
+	fft.performFrequencyOnlyForwardTransform(fftData.data(), true);
+	float norm = 1.f / (fftData.size() * 0.5f);
+	for (size_t j = 0; j < 2048 / 2; ++j) {
+	    float mag = fftData[j] * norm;
+	    fftMagnitudes[j] = mag * 0.8f + fftMagnitudes[j] * 0.2f;
+	}
 }
 
 void EQDisplay::resized()

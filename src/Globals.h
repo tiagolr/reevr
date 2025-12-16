@@ -41,6 +41,7 @@ namespace globals {
 	inline const int AUDIO_DRUMSBUF_MILLIS = 20;
 	inline const int AUDIO_NOTE_LENGTH_MILLIS = 100;
 	inline const int MAX_UNDO = 100;
+	inline const int EQ_FFT_ORDER = 12;
 
 	// view consts
 	inline const int PLUG_WIDTH = 690;
