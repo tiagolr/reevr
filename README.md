@@ -38,6 +38,7 @@ Also check other plugins from this collection:
 
   * High performance Convolution Reverb thanks to KlangFalter library
   * IR manipulations like stretch, trim, reverse, attack and decay
+  * Parametric EQs for IR frequency and frequency decay
   * Pre/send and post/reverb MSEG modulation
   * 12 patterns triggered by midi notes
   * Paint mode with user defined shapes
