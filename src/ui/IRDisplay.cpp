@@ -132,8 +132,8 @@ void IRDisplay::recalcWave()
 	auto peak = audioProcessor.impulse->peak;
 	if (peak > 0.0f) {
 		for (int i = 0; i < bufl.size(); ++i) {
-			bufl[i] /= peak;
-			bufr[i] /= peak;
+			bufl[i] = std::clamp(bufl[i] / peak, -1.f, 1.f);
+			bufr[i] = std::clamp(bufr[i] / peak, -1.f, 1.f);
 		}
 	}
 

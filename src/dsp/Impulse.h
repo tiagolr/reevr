@@ -64,6 +64,7 @@ public:
 	float trimRight = 0.0f;
 	float stretch = 0.0f;
 	float decayRate = 1.0f;
+	float gain = 1.f;
 	bool reverse = false;
 	bool isQuad = false;
 	unsigned long int version = 1;
@@ -79,6 +80,7 @@ private:
 	void applyClip();
 	void applyParamEQ();
 	void applyDecayEQ();
+	void applyGain();
 	void applyDecay(std::vector<float>& buf, std::vector<double>& decayLUT);
 	TSMatch findTrueStereoPair(String path, int nsamples, double _irsrate) const;
 	File findPair(const juce::String& fileNameBody,

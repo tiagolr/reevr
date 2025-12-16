@@ -344,6 +344,7 @@ void Impulse::recalcImpulse()
     if (isQuad) applyStretch(bufferLR, bufferRL);
 
     applyTrim();
+    applyGain();
     applyParamEQ();
     applyDecayEQ();
     applyClip();
@@ -454,6 +455,21 @@ void Impulse::applyTrim()
 
         bufferRL.erase(bufferRL.begin() + end, bufferRL.end());
         bufferRL.erase(bufferRL.begin(), bufferRL.begin() + start);
+    }
+}
+
+void Impulse::applyGain()
+{
+    auto size = bufferLL.size();
+    for (int i = 0; i < size; ++i) {
+        bufferLL[i] *= gain;
+        bufferRR[i] *= gain;
+    }
+    if (isQuad) {
+        for (int i = 0; i < size; ++i) {
+            bufferLR[i] *= gain;
+            bufferLR[i] *= gain;
+        }
     }
 }
 
@@ -621,24 +637,24 @@ void Impulse::applyEnvelope()
     int decaySize = int(decay * size);
 
     for (int i = 0; i < attackSize; ++i) {
-        float gain = static_cast<float>(i) / static_cast<float>(attackSize);
-        bufferLL[i] *= gain;
-        bufferRR[i] *= gain;
+        float envgain = static_cast<float>(i) / static_cast<float>(attackSize);
+        bufferLL[i] *= envgain;
+        bufferRR[i] *= envgain;
         if (isQuad) {
-            bufferLR[i] *= gain;
-            bufferRL[i] *= gain;
+            bufferLR[i] *= envgain;
+            bufferRL[i] *= envgain;
         }
     }
 
     for (int i = 0; i < decaySize; ++i) {
         float t = static_cast<float>(i) / static_cast<float>(decaySize);
-        float gain = 1.0f - (float)std::pow(t, 0.5);  // reverse exponential
+        float envgain = 1.0f - (float)std::pow(t, 0.5);  // reverse exponential
         auto idx = size - decaySize + i;
-        bufferLL[idx] *= gain;
-        bufferRR[idx] *= gain;
+        bufferLL[idx] *= envgain;
+        bufferRR[idx] *= envgain;
         if (isQuad) {
-            bufferLR[idx] *= gain;
-            bufferRL[idx] *= gain;
+            bufferLR[idx] *= envgain;
+            bufferRL[idx] *= envgain;
         }
     }
 }
@@ -664,9 +680,9 @@ float Impulse::calculateAutoGain(const std::vector<float>& dataL, const std::vec
     }
 
     if (energy > 0.0) {
-        double gain = 1.0 / std::sqrt(energy);
-        gain = std::min(gain, 1.0); // only reduce gain, no boost
-        return static_cast<float>(gain);
+        double autogain = 1.0 / std::sqrt(energy);
+        autogain = std::min(autogain, 1.0); // only reduce gain, no boost
+        return static_cast<float>(autogain);
     }
 
     return 1.0f; // Silence or zero energy

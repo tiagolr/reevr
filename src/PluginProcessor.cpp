@@ -615,6 +615,7 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         impulse->trimRight = params.getRawParameterValue("irtrimright")->load();
         impulse->stretch = params.getRawParameterValue("irstretch")->load();
         impulse->decayRate = params.getRawParameterValue("irdecayrate")->load();
+        impulse->gain = exp(params.getRawParameterValue("irgain")->load() * DB2LOG);
         impulse->paramEQ = getEqualizer(SVF::ParamEQ);
         impulse->decayEQ = getEqualizer(SVF::DecayEQ);
         impulse->load(irFile);
@@ -843,6 +844,7 @@ void REEVRAudioProcessor::updateImpulse()
     float irtrimright = params.getRawParameterValue("irtrimright")->load();
     float irstretch = params.getRawParameterValue("irstretch")->load();
     float irdecayrate = params.getRawParameterValue("irdecayrate")->load();
+    float irgain = std::exp(params.getRawParameterValue("irgain")->load() * DB2LOG);
     bool irreverse = (bool)params.getRawParameterValue("irreverse")->load();
     auto decayEQ = getEqualizer(SVF::DecayEQ);
     auto paramEQ = getEqualizer(SVF::ParamEQ);
@@ -872,6 +874,7 @@ void REEVRAudioProcessor::updateImpulse()
         || impulse->stretch != irstretch
         || impulse->reverse != irreverse
         || impulse->decayRate != irdecayrate
+        || impulse->gain != irgain
         || !compareEQs(decayEQ, impulse->decayEQ)
         || !compareEQs(paramEQ, impulse->paramEQ)
     ) {
@@ -884,6 +887,7 @@ void REEVRAudioProcessor::updateImpulse()
         impulse->decayRate = irdecayrate;
         impulse->paramEQ = paramEQ;
         impulse->decayEQ = decayEQ;
+        impulse->gain = irgain;
         irDirty = true;
     }
 }
