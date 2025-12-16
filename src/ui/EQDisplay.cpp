@@ -155,7 +155,44 @@ void EQDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheel
 void EQDisplay::paint(juce::Graphics& g)
 {
 	g.setColour(Colour(COLOR_NEUTRAL));
-	g.drawRect(viewBounds.expanded(2), 1.f);
+	auto expBounds = viewBounds.toFloat().expanded(2.f);
+	g.drawRect(expBounds, 1.f);
+
+	g.setFont(10.f);
+	for (int i = 0; i < 8; ++i) {
+		auto yy = viewBounds.getY() + (i + 1) * viewBounds.getHeight() / 8;
+		g.setColour(Colour(COLOR_NEUTRAL));
+		if (i == 0)
+			g.drawText(type == SVF::ParamEQ ? "+18" : "+75", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
+		else if (i == 1)
+			g.drawText(type == SVF::ParamEQ ? "+12" : "+50", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
+		else if (i == 2)
+			g.drawText(type == SVF::ParamEQ ? "+6" : "+25", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
+		else if (i == 4)
+			g.drawText(type == SVF::ParamEQ ? "-6" : "-25", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
+		else if (i == 5)
+			g.drawText(type == SVF::ParamEQ ? "-12" : "-50", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
+		else if (i == 6)
+			g.drawText(type == SVF::ParamEQ ? "-18" : "-75", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
+
+		g.setColour(Colour(COLOR_NEUTRAL).withAlpha(0.25f));
+		g.drawHorizontalLine((int)yy, expBounds.getX(), expBounds.getRight());
+	}
+
+	const float logMin = std::log(20.f);
+	const float logScale = 1.f / (std::log(20000.f) - logMin);
+
+	std::vector<float> xpos = { 50.f, 200.f, 800.f, 3000.f, 10000.f };
+	for (auto& pos : xpos) {
+		auto xnorm = (std::log(pos) - logMin) * logScale;
+		float xx = viewBounds.getX() + xnorm * viewBounds.getWidth();
+		g.setColour(Colour(COLOR_NEUTRAL).withAlpha(0.25f));
+		g.drawVerticalLine(int(xx), expBounds.getY(), expBounds.getBottom());
+		g.setColour(Colour(COLOR_NEUTRAL));
+
+		String txt = pos >= 1000 ? String(pos / 1000.f, 0) + "k" : String(pos);
+		g.drawText(txt, Rectangle<float>(xx + 1, viewBounds.getBottom() - 20 - 1, 30, 20), Justification::bottomLeft);
+	}
 
 	drawWaveform(g);
 
@@ -174,7 +211,7 @@ void EQDisplay::paint(juce::Graphics& g)
 		gains[i] = gain;
 		qs[i] = q;
 
-		auto xnorm = (log(freq) - log(20.f)) / (log(20000.f) - log(20.f));
+		auto xnorm = (std::log(freq) - logMin) * logScale;
 		auto ynorm = (gain + EQ_MAX_GAIN) / (EQ_MAX_GAIN * 2.f);
 
 		auto r = 6.f;
@@ -257,7 +294,7 @@ void EQDisplay::drawWaveform(juce::Graphics& g)
 
 	// hide zero values
 	g.setColour(Colour(COLOR_BG));
-	g.fillRect(bounds.toFloat().withHeight(2.f).withBottomY((float)bounds.getBottom()));
+	g.fillRect(bounds.toFloat().expanded(1.f).withHeight(2.f).withBottomY((float)bounds.getBottom() + 1));
 }
 
 void EQDisplay::recalcFFTMags()
@@ -280,7 +317,7 @@ void EQDisplay::recalcFFTMags()
 	window.multiplyWithWindowingTable(fftData.data(), fftData.size());
 	fft.performFrequencyOnlyForwardTransform(fftData.data(), true);
 	float norm = 1.f / (fftData.size() * 0.5f);
-	for (size_t j = 0; j < 2048 / 2; ++j) {
+	for (size_t j = 0; j < fftSize / 2; ++j) {
 	    float mag = fftData[j] * norm;
 	    fftMagnitudes[j] = mag * 0.8f + fftMagnitudes[j] * 0.2f;
 	}

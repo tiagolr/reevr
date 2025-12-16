@@ -67,6 +67,7 @@ public:
 	float gain = 1.f;
 	bool reverse = false;
 	bool isQuad = false;
+	double duration = 0.0; // display only value
 	unsigned long int version = 1;
 
 

@@ -167,6 +167,36 @@ void IRDisplay::resized()
 void IRDisplay::paint(juce::Graphics& g)
 {
 	auto bounds = getDisplayBounds().toFloat();
+
+	auto getIRTime = [&](float perc)
+		{
+			auto duration = audioProcessor.impulse->duration;
+			duration *= perc;
+			double rounded = std::round(duration * 100.0) / 100.0;  // two-decimal rounding
+			return String(rounded, 2) + "s";
+		};
+
+	g.setColour(Colour(COLOR_NEUTRAL));
+	g.setFont(FontOptions(10.f));
+	auto xx = (int)(bounds.getX() + bounds.getWidth() * 0.25);
+	g.drawVerticalLine(xx, bounds.getBottom() - 10.f, (float)bounds.getBottom());
+	auto sbounds = Rectangle<float>(xx - 40.f, bounds.getBottom() - 20.f, 40.f, 20.f);
+	g.drawText(getIRTime(0.25f), sbounds.reduced(2.f), Justification::bottomRight);
+
+	xx = (int)(bounds.getX() + bounds.getWidth() * 0.5);
+	g.drawVerticalLine(xx, bounds.getBottom() - 10.f, (float)bounds.getBottom());
+	sbounds = Rectangle<float>(xx - 40.f, bounds.getBottom() - 20.f, 40.f, 20.f);
+	g.drawText(getIRTime(0.5f), sbounds.reduced(2.f), Justification::bottomRight);
+
+	xx = (int)(bounds.getX() + bounds.getWidth() * 0.75);
+	g.drawVerticalLine(xx, bounds.getBottom() - 10.f, (float)bounds.getBottom());
+	sbounds = Rectangle<float>(xx - 40.f, bounds.getBottom() - 20.f, 40.f, 20.f);
+	g.drawText(getIRTime(0.75f), sbounds.reduced(2.f), Justification::bottomRight);
+
+	xx = (int)(bounds.getX() + bounds.getWidth());
+	sbounds = Rectangle<float>(xx - 40.f, bounds.getBottom() - 20.f, 40.f, 20.f);
+	g.drawText(getIRTime(1.f), sbounds.reduced(2.f), Justification::bottomRight);
+
 	auto bright = getTrimRightBounds().toFloat();
 	auto bleft = getTrimLeftBounds().toFloat();
 	auto batk = getAttackBounds().toFloat();
@@ -193,7 +223,6 @@ void IRDisplay::paint(juce::Graphics& g)
 	auto right = (int)bdec.getCentreX();
 	if (left < right && mouseover)
 		g.fillRect(Rectangle<int>(left, (int)batk.getCentreY(), (int)bounds.getWidth(), (int)bounds.getHeight()).withRight(right));
-	
 
 	auto x = bounds.getX();
 	auto cy = (float)std::floor(bounds.getCentreY());
@@ -222,6 +251,28 @@ void IRDisplay::paint(juce::Graphics& g)
 	p.addTriangle(bright.getTopLeft().translated(bright.getWidth() / 2.f, 0.f), bright.getBottomLeft(), bright.getBottomRight());
 	p.addTriangle(bleft.getTopLeft().translated(bleft.getWidth()/2.f, 0.f), bleft.getBottomLeft(), bleft.getBottomRight());
 	g.fillPath(p);
+
+	if (dragging == 1) {
+		float tl = audioProcessor.params.getRawParameterValue("irtrimleft")->load();
+		bool alignRight = tl < 0.5;
+		String time = getIRTime(tl);
+		g.setFont(10.f);
+		if (alignRight)
+			g.drawText(time, bleft.withHeight(10.f).withWidth(40.f).translated(bleft.getWidth() + 2.f, 0.f), Justification::centredLeft);
+		else
+			g.drawText(time, bleft.withHeight(10.f).withWidth(40.f).translated(-42.f, 0.f), Justification::centredRight);
+	}
+
+	if (dragging == 2) {
+		float tr = audioProcessor.params.getRawParameterValue("irtrimright")->load();
+		bool alignRight = tr > 0.5;
+		String time = getIRTime(1.0f - tr);
+		g.setFont(10.f);
+		if (alignRight)
+			g.drawText(time, bright.withHeight(10.f).withWidth(40.f).translated(bright.getWidth() + 2.f, 0.f), Justification::centredLeft);
+		else 
+			g.drawText(time, bright.withHeight(10.f).withWidth(40.f).translated(-42.f, 0.f), Justification::centredRight);
+	}
 
 	g.setColour(Colours::white);
 	g.fillEllipse(batk);
@@ -396,7 +447,7 @@ void IRDisplay::showIRMenu()
 					targetDuration = audioProcessor.secondsPerBar * 2;
 
 				double trimRight = 1.0 - targetDuration / irduration;
-				trimRight = std::clamp(trimRight, 0.0, 1.0); 
+				trimRight = std::clamp(trimRight, 0.0, 1.0);
 
 				audioProcessor.params.getParameter("irattack")->setValueNotifyingHost(0.f);
 				audioProcessor.params.getParameter("irtrimleft")->setValueNotifyingHost(0.f);

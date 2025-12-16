@@ -351,6 +351,7 @@ void Impulse::recalcImpulse()
     applyClip();
     applyEnvelope();
 
+    duration = ((double)bufferLL.size() + trimLeftSamples + trimRightSamples) / srate;
     version += 1;
 }
 
@@ -470,7 +471,7 @@ void Impulse::applyGain()
     if (isQuad) {
         for (int i = 0; i < size; ++i) {
             bufferLR[i] *= g;
-            bufferLR[i] *= g;
+            bufferRL[i] *= g;
         }
     }
 }

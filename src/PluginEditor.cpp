@@ -855,13 +855,13 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
 
     fileSelector->setVisible(audioProcessor.showFileSelector);
 
-    auto formatNumber = [](double value)
+    auto formatNumber = [](double value, int decimals = 2)
         {
             double rounded = std::round(value * 100.0) / 100.0;  // two-decimal rounding
             bool isWhole = (std::fmod(rounded, 1.0) == 0.0);
 
             return isWhole ? String(rounded, 0)
-                : String(rounded, 2);
+                : String(rounded, decimals);
         };
 
     String text = "";
@@ -872,9 +872,9 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     text += (nfiles > 1 ? String(", ") : "") + formatNumber(duration) + "s";
     auto irsrate = audioProcessor.impulse->irsrate;
     auto srate = audioProcessor.impulse->srate;
-    text += String(", ") + formatNumber(irsrate / 1000.0) + "k";
+    text += String(", ") + formatNumber(irsrate / 1000.0, 1) + "k";
     if (irsrate != srate) {
-        text += String("->") + formatNumber(srate / 1000.0) + "k";
+        text += String("->") + formatNumber(srate / 1000.0, 1) + "k";
     }
     text += String(", ") + String(audioProcessor.impulse->numChans) + "ch";
     fileInfo.setText(text, dontSendNotification);
