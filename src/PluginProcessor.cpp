@@ -1098,6 +1098,12 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
                 samplesPerBeat = (int)((60.0 / *tempo) * srate);
                 secondsPerBeat = 60.0 / *tempo;
             }
+            if (auto timeSig = pos->getTimeSignature()) {
+                secondsPerBar = secondsPerBeat * (*timeSig).numerator * (4.0 / (*timeSig).denominator);
+            }
+            else {
+                secondsPerBar = beatsPerSecond * 4;
+            }
             looping = pos->getIsLooping();
             if (auto loopPoints = pos->getLoopPoints()) {
                 loopStart = loopPoints->ppqStart;

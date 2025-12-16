@@ -369,10 +369,12 @@ void IRDisplay::showIRMenu()
 	PopupMenu menu;
 	PopupMenu trimMenu;
 	trimMenu.addItem(99, "Reset");
-	trimMenu.addItem(1, "Trim to 1 Beat");
-	trimMenu.addItem(2, "Trim to 2 Beats");
-	trimMenu.addItem(3, "Trim to 3 Beats");
-	trimMenu.addItem(4, "Trim to 4 Beats");
+	trimMenu.addItem(1, "Trim to 1/4 Beat");
+	trimMenu.addItem(2, "Trim to 1/2 Beat");
+	trimMenu.addItem(3, "Trim to 1 Beat");
+	trimMenu.addItem(4, "Trim to 2 Beats");
+	trimMenu.addItem(5, "Trim to 1 Bar");
+	trimMenu.addItem(6, "Trim to 2 Bars");
 	menu.addSubMenu("Trim", trimMenu);
 
 	auto menuPos = localPointToGlobal(menuButton.getBounds().getBottomLeft());
@@ -381,13 +383,18 @@ void IRDisplay::showIRMenu()
 		.withTargetScreenArea({ menuPos.getX(), menuPos.getY(), 1, 1 }),
 		[this](int result) {
 			if (result == 0) return;
-			if (result >= 1 && result <= 4) {
-				double beatMultiplier = (double)result;
+			if (result >= 1 && result <= 6) {
 				double srate = audioProcessor.impulse->srate;
 				double tlsamps = audioProcessor.impulse->trimLeftSamples;
 				double trsamps = audioProcessor.impulse->trimRightSamples;
 				double irduration = (double)(audioProcessor.impulse->bufferLL.size() + tlsamps + trsamps) / srate;
+				double beatMultiplier = result == 1 ? 0.25 : result == 2 ? 0.5 : result == 3 ? 1.0 : 2.0;
 				double targetDuration = beatMultiplier / audioProcessor.beatsPerSecond;
+				if (result == 5)
+					targetDuration = audioProcessor.secondsPerBar;
+				if (result == 6)
+					targetDuration = audioProcessor.secondsPerBar * 2;
+
 				double trimRight = 1.0 - targetDuration / irduration;
 				trimRight = std::clamp(trimRight, 0.0, 1.0); 
 
