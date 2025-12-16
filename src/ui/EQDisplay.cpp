@@ -17,6 +17,11 @@ EQDisplay::~EQDisplay()
 void EQDisplay::timerCallback()
 {
 	if (isShowing()) {
+		if (editor.audioProcessor.fftReady.load(std::memory_order_acquire)) {
+			mags = editor.audioProcessor.fftMagnitudes;
+			editor.audioProcessor.fftReady.store(false, std::memory_order_release);
+		}
+
 		repaint();
 	}
 }
@@ -152,6 +157,8 @@ void EQDisplay::paint(juce::Graphics& g)
 	g.setColour(Colour(COLOR_NEUTRAL));
 	g.drawRect(viewBounds.expanded(2), 1.f);
 
+	drawWaveform(g);
+
 	std::array<float, EQ_BANDS> freqs{};
 	std::array<float, EQ_BANDS> gains{};
 	std::array<float, EQ_BANDS> qs{};
@@ -212,6 +219,45 @@ void EQDisplay::paint(juce::Graphics& g)
 	for (int i = 0; i < bandBounds.size(); ++i) {
 		g.drawText(String(i + 1), bandBounds[i], Justification::centred);
 	}
+}
+
+void EQDisplay::drawWaveform(juce::Graphics& g)
+{
+	auto size = mags.size();
+	auto bounds = viewBounds;
+
+	if (size == 0)
+		return;
+
+	juce::Path waveformPath;
+
+	const float minDB = -90.0f;
+	const float maxDB = 0.0f;
+	const float minFreq = 20.0f;
+	const float maxFreq = 20000.f;
+	const float srate = static_cast<float>(editor.audioProcessor.srate);
+
+	for (size_t i = 0; i < size; ++i) {
+		float freq = (i * srate) / (2.0f * (size - 1));
+		freq = std::max(freq, minFreq);
+		float logPos = std::log10(freq / minFreq) / std::log10(maxFreq / minFreq);
+		float x = bounds.getX() + logPos * bounds.getWidth();
+
+		float magnitudeDB = juce::Decibels::gainToDecibels(mags[i], minDB);
+		float y = juce::jmap(magnitudeDB, minDB, maxDB, bounds.getBottom(), bounds.getY());
+
+		if (i == 0)
+			waveformPath.startNewSubPath(x, y);
+		else
+			waveformPath.lineTo(x, y);
+	}
+
+	g.setColour(Colour(COLOR_ACTIVE));
+	g.strokePath(waveformPath, juce::PathStrokeType(1.0f));
+
+	// hide zero values
+	g.setColour(Colour(COLOR_BG));
+	g.fillRect(bounds.toFloat().withHeight(2.f).withBottomY((float)bounds.getBottom()));
 }
 
 void EQDisplay::resized()

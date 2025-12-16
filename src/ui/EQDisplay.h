@@ -24,6 +24,7 @@ public:
 	void mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override;
 
     void paint(juce::Graphics& g) override;
+	void drawWaveform(Graphics& g);
 	void resized() override;
 	void toggleUIComponents();
 
@@ -41,6 +42,7 @@ private:
 	int dragband = -1;
 	Rectangle<float> viewBounds{};
 	std::array<Rectangle<float>, EQ_BANDS> bandBounds{};
+	std::array<float, 2048 / 2> mags;
 
 	bool mouse_down = false;
 	float cur_freq_normed_value = 0.f;

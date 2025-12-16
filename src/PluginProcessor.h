@@ -195,6 +195,15 @@ public:
     float drygain = 1.f;
     float wetgain = 1.f;
 
+    // EQ Display FFT
+    juce::dsp::FFT fft{ 11 };
+    juce::dsp::WindowingFunction<float> window{ 2048, juce::dsp::WindowingFunction<float>::blackmanHarris };
+    size_t fftWriteIndex = 0;
+    std::atomic<bool> fftReady{ false };
+    std::array<float, 2048 * 2> fftData;
+    std::array<float, 2048 / 2> fftMagnitudes;
+    size_t hopSize = 2048 / 4;
+
 
     // Convolver state
     Impulse* impulse;

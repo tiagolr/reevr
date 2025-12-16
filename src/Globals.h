@@ -34,8 +34,8 @@ namespace globals {
 	inline const int EARLY_REFLECTIONS_MS = 100;
 	inline const int EQ_BANDS = 4;
 	inline const float EQ_MAX_GAIN = 24.f;
-	inline const float EQ_MAX_DECAY_RATE_POS = 0.5f; // % max 50% a second
-	inline const float EQ_MAX_DECAY_RATE_NEG = 0.9f; // % max 90% a second
+	inline const float EQ_MAX_DECAY_RATE_POS = 2.f; // +100% a second
+	inline const float EQ_MAX_DECAY_RATE_NEG = 0.9f; // -90% a second
 	inline const int LATENCY_MILLIS = 4;
 	inline const int AUDIO_COOLDOWN_MILLIS = 50;
 	inline const int AUDIO_DRUMSBUF_MILLIS = 20;
