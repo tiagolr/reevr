@@ -269,8 +269,9 @@ std::vector<Segment> Pattern::getSegments()
 void Pattern::loadSine() {
     std::lock_guard<std::mutex> lock(pointsmtx);
     clearUnsafe();
-    insertPointUnsafe(0, 1, 0.2, 2);
-    insertPointUnsafe(0.5, 0, 0.2, 2);
+    insertPointUnsafe(0.0, 1, 0, 8);
+    insertPointUnsafe(0.5, 0, 0, 8);
+    insertPointUnsafe(1, 1, 0, 8);
     rotateUnsafe(0.25);
 }
 
