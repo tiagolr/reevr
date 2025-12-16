@@ -34,7 +34,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     layout.add(std::make_unique<juce::AudioParameterFloat>("sendoffset", "Send Offset", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("revoffset", "Reverb Offset", juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("predelay", "Pre-Delay", NormalisableRange<float>(0.0f, 250.f, 1.0f), 0.0f));
-    layout.add(std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray{ "Off", "1/16", "1/8", "1/8d", "1/8t", "1/4" }, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("predelaysync", "Pre-Delay Sync", StringArray{ "Off", "1/64", "1/32", "1/16", "1/8", "1/8T", "1/8.", "1/4" }, 0));
     layout.add(std::make_unique<juce::AudioParameterBool>("predelayusesync", "Pre-Delay Use Sync", false));
     layout.add(std::make_unique<juce::AudioParameterFloat>("width", "Width", 0.f, 2.f, 1.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("irdecayrate", "IR Decay Rate", juce::NormalisableRange<float>(0.0f, 2.0f), 1.0f));
@@ -389,11 +389,13 @@ int REEVRAudioProcessor::getPredelaySync()
 {
     int predelaySync = (int)params.getRawParameterValue("predelaysync")->load();
     double noteLength = 0.0;
-    if (predelaySync == 1) noteLength = 0.25; // 1/16
-    else if (predelaySync == 2) noteLength = 0.5; // 1/8
-    else if (predelaySync == 3) noteLength = 0.75; // 1/8d
-    else if (predelaySync == 4) noteLength = 1/3.0; // 1/8t
-    else if (predelaySync == 5) noteLength = 1.0; // 1/4
+    if (predelaySync == 1) noteLength = 0.0625; // 1/64
+    else if (predelaySync == 2) noteLength = 0.125; // 1/32
+    else if (predelaySync == 3) noteLength = 0.25; // 1/16
+    else if (predelaySync == 4) noteLength = 0.5; // 1/8
+    else if (predelaySync == 5) noteLength = 1/3.0; // 1/8t
+    else if (predelaySync == 6) noteLength = 0.75; // 1/8d
+    else if (predelaySync == 7) noteLength = 1.0; // 1/4
 
     return static_cast<int>(samplesPerBeat * noteLength);
 }
