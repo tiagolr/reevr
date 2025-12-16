@@ -16,6 +16,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
 
     audioProcessor.addChangeListener(this);
     audioProcessor.params.addParameterListener("showviewport", this);
+    audioProcessor.params.addParameterListener("tsenabled", this);
     audioProcessor.params.addParameterListener("sync", this);
     audioProcessor.params.addParameterListener("trigger", this);
     audioProcessor.params.addParameterListener("revenvon", this);
@@ -237,7 +238,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     addAndMakeVisible(eqButton);
     eqButton.setButtonText("EQ");
     eqButton.setComponentID("button-noborder");
-    eqButton.setBounds(col+20, row + 130, 60, 25);
+    eqButton.setBounds(col+20, row + 120, 60, 25);
     eqButton.onClick = [this]
         {
             audioProcessor.eqtab = audioProcessor.eqtab == 1 ? 0 : 1;
@@ -264,11 +265,20 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
         };
 
     addAndMakeVisible(fileInfo);
-    fileInfo.setFont(FontOptions(11.f));
-    fileInfo.setJustificationType(Justification::centred);
+    fileInfo.setFont(FontOptions(13.f));
+    fileInfo.setJustificationType(Justification::centredLeft);
     fileInfo.setColour(Label::ColourIds::textColourId, Colour(COLOR_NEUTRAL_LIGHT));
     fileInfo.setText("1 File, 44.1k->88k, 2.3s, 4ch", dontSendNotification);
-    fileInfo.setBounds(currentFile.getBounds().translated(0, -20).withHeight(16));
+    fileInfo.setBounds(currentFile.getBounds().translated(35, -25 - 10).withHeight(25));
+
+    addAndMakeVisible(trueStereoButton);
+    trueStereoButton.setButtonText("TS");
+    trueStereoButton.setComponentID("button");
+    trueStereoButton.setBounds(fileInfo.getBounds().withWidth(30).translated(-35, 0));
+    trueStereoButton.onClick = [this]
+        {
+            showTrueStereoMenu();
+        };
 
     //
 
@@ -707,6 +717,7 @@ REEVRAudioProcessorEditor::~REEVRAudioProcessorEditor()
     audioProcessor.saveSettings(); // save paint patterns to disk
     setLookAndFeel(nullptr);
     delete customLookAndFeel;
+    audioProcessor.params.removeParameterListener("tsenabled", this);
     audioProcessor.params.removeParameterListener("showviewport", this);
     audioProcessor.params.removeParameterListener("sync", this);
     audioProcessor.params.removeParameterListener("trigger", this);
@@ -846,18 +857,18 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
 
     auto formatNumber = [](double value)
         {
-            double rounded = std::round(value * 10.0) / 10.0;  // one-decimal rounding
+            double rounded = std::round(value * 100.0) / 100.0;  // two-decimal rounding
             bool isWhole = (std::fmod(rounded, 1.0) == 0.0);
 
             return isWhole ? String(rounded, 0)
-                : String(rounded, 1);
+                : String(rounded, 2);
         };
 
     String text = "";
     auto nfiles = audioProcessor.impulse->nfiles;
     if (nfiles > 1)
         text += String(nfiles) + " files";
-    auto duration = (double)audioProcessor.impulse->rawBufferLL.size() / audioProcessor.impulse->srate;
+    auto duration = (double)audioProcessor.impulse->bufferLL.size() / audioProcessor.impulse->srate;
     text += (nfiles > 1 ? String(", ") : "") + formatNumber(duration) + "s";
     auto irsrate = audioProcessor.impulse->irsrate;
     auto srate = audioProcessor.impulse->srate;
@@ -893,6 +904,9 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     irDisplay->setVisible(noeq);
     highcutSlope.setVisible(noeq);
     irgainSlider.setVisible(audioProcessor.eqtab != 2);
+
+    trueStereoButton.setVisible(audioProcessor.impulse->isQuad);
+    trueStereoButton.setToggleState((bool)audioProcessor.params.getRawParameterValue("tsenabled")->load(), dontSendNotification);
 
     MessageManager::callAsync([this] {
         repaint();
@@ -1047,11 +1061,13 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
     g.fillEllipse(bounds.getCentreX() - r*2, bounds.getBottom()-r*2, r*2, r*2);
     g.drawLine(bounds.getCentreX(), bounds.getBottom()-r, bounds.getCentreX(), bounds.getY()+r);
 
-    bounds = currentFile.getBounds().toFloat();
-    if (audioProcessor.showFileSelector) {
-        g.setColour(Colour(COLOR_ACTIVE));
+    bounds = currentFile.getBounds().toFloat().expanded(0, 3.f);
+    g.setColour(Colour(COLOR_ACTIVE));
+    if (audioProcessor.showFileSelector)
         g.fillRoundedRectangle(bounds, 3.f);
-    }
+    else
+        g.drawRoundedRectangle(bounds.reduced(0.5f), 3.f, 1.f);
+    bounds = bounds.reduced(2.f);
     g.setColour(Colour(audioProcessor.showFileSelector ? COLOR_BG : COLOR_ACTIVE));
     g.setFont(FontOptions(18.f));
     g.drawFittedText(audioProcessor.impulse->name, bounds.expanded(-3, 0).toNearestInt(), Justification::centred, 2, 1.f);
@@ -1214,4 +1230,23 @@ void REEVRAudioProcessorEditor::drawTriangle(Graphics& g, Rectangle<float> bound
     }
     p.closeSubPath();
     g.fillPath(p);
+}
+
+void REEVRAudioProcessorEditor::showTrueStereoMenu()
+{
+    bool tsenabled = (bool)audioProcessor.params.getRawParameterValue("tsenabled")->load();
+    PopupMenu menu;
+    menu.addSectionHeader("True Stereo");
+    menu.addItem(1, "On", true, tsenabled);
+    menu.addItem(2, "Off", true, !tsenabled);
+
+    auto menuPos = localPointToGlobal(trueStereoButton.getBounds().getBottomLeft());
+    menu.showMenuAsync(PopupMenu::Options()
+        .withTargetComponent(*this)
+        .withTargetScreenArea({ menuPos.getX(), menuPos.getY(), 1, 1 }),
+        [this](int result) {
+            if (result == 0) return;
+            auto param = audioProcessor.params.getParameter("tsenabled");
+            param->setValueNotifyingHost(result == 2 ? 0.f : 1.f);
+        });
 }

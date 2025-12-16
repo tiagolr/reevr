@@ -45,6 +45,7 @@ public:
     void drawUndoButton(Graphics& g, juce::Rectangle<float> area, bool invertx, Colour color);
     void drawPowerButton(Graphics& g, Rectangle<float> area, Colour color);
     void drawTriangle(Graphics& g, Rectangle<float> bounds, int direction, Colour c);
+    void showTrueStereoMenu();
 
     REEVRAudioProcessor& audioProcessor;
 private:
@@ -97,6 +98,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> irgainAttachment;
     TextButton eqButton;
     TextButton decayButton;
+    TextButton trueStereoButton;
 
     std::unique_ptr<AudioWidget> audioWidget;
     ComboBox algoMenu;

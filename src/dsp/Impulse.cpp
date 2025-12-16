@@ -378,7 +378,10 @@ void Impulse::resampleIRToProjectRate(std::vector<float>& bufL, std::vector<floa
 
 void Impulse::applyStretch(std::vector<float>& bufL, std::vector<float>& bufR)
 {
-    if (stretch == 0.f || !bufL.size()) return;
+    if (stretch == 0.f || !bufL.size()) {
+        stretchsrate = srate;
+        return;
+    }
     stretchsrate = std::pow(2, stretch) * srate;
 
     if (std::fabs(stretchsrate-srate) < 1e-6 || stretchsrate < 1.0 || srate < 1.0) 

@@ -72,11 +72,16 @@ void FileSelector::readDir()
 
 void FileSelector::selectionChanged()
 {
+    if (!isVisible()) return;
+    auto file = fileTree->getSelectedFile();
+    auto& path = file.getFullPathName();
+    if (path.isNotEmpty() && path != audioProcessor.irFile)
+        audioProcessor.loadImpulse(path);
 }
 void FileSelector::fileClicked(const juce::File &file, const juce::MouseEvent &e)
 {
+    (void)file;
     (void)e;
-    audioProcessor.loadImpulse(file.getFullPathName());
 }
 void FileSelector::fileDoubleClicked(const juce::File &file)
 {

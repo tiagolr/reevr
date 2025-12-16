@@ -9,6 +9,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     AudioProcessorValueTreeState::ParameterLayout layout;
 
     layout.add(std::make_unique<juce::AudioParameterBool>("showviewport", "Show Viewport", true));
+    layout.add(std::make_unique<juce::AudioParameterBool>("tsenabled", "TrueStereo Enabled", true));
     layout.add(std::make_unique<juce::AudioParameterInt>("pattern", "Pattern", 1, 12, 1));
     layout.add(std::make_unique<juce::AudioParameterChoice>("patsync", "Pattern Sync", StringArray{ "Off", "1/4 Beat", "1/2 Beat", "1 Beat", "2 Beats", "4 Beats" }, 0));
     layout.add(std::make_unique<juce::AudioParameterChoice>("trigger", "Trigger", StringArray{ "Sync", "MIDI", "Audio" }, 0));
@@ -1121,6 +1122,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         return;
 
     // load params
+    bool tsenabled = (bool)params.getRawParameterValue("tsenabled")->load();
     int trigger = (int)params.getRawParameterValue("trigger")->load();
     int sync = (int)params.getRawParameterValue("sync")->load();
     float min = params.getRawParameterValue("min")->load();
@@ -1780,7 +1782,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
             loadConvolver->bufferLL[i] *= alpha;
             loadConvolver->bufferRR[i] *= alpha;
 
-            if (convolver->isQuad) {
+            if (convolver->isQuad && tsenabled) {
                 convolver->bufferLR[i] *= 1.f - alpha;
                 convolver->bufferRL[i] *= 1.f - alpha;
             }
@@ -1800,7 +1802,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // apply the convolver to the wet buffer (after crossfade)
     wetBuffer.addFrom(0, 0, convolver->bufferLL.data(), numSamples, 1.f);
     wetBuffer.addFrom(1, 0, convolver->bufferRR.data(), numSamples, 1.f);
-    if (convolver->isQuad) {
+    if (convolver->isQuad && tsenabled) {
         wetBuffer.addFrom(0, 0, convolver->bufferRL.data(), numSamples, 1.f);
         wetBuffer.addFrom(1, 0, convolver->bufferLR.data(), numSamples, 1.f);
     }
