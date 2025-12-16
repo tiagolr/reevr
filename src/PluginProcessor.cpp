@@ -92,6 +92,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_freq", namePrefix + " Freq", NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), getEQBandFreq(i)));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_q", namePrefix + " Q", 0.707f, 8.f, 0.707f));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_gain", namePrefix + " Gain", -EQ_MAX_GAIN, EQ_MAX_GAIN, 0.f));
+        layout.add(std::make_unique<AudioParameterBool>(paramPrefix + "_bypass", namePrefix + " Bypass", false));
     }
 
     // Decay EQ params
@@ -104,6 +105,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_freq", namePrefix + " Freq", NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), getEQBandFreq(i)));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_q", namePrefix + " Q", 0.707f, 8.f, 0.707f));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_gain", namePrefix + " Gain", -EQ_MAX_GAIN, EQ_MAX_GAIN, 0.f));
+        layout.add(std::make_unique<AudioParameterBool>(paramPrefix + "_bypass", namePrefix + " Bypass", false));
     }
 
     return layout;
@@ -233,6 +235,8 @@ std::vector<SVF::EQBand> REEVRAudioProcessor::getEqualizer(SVF::EQType type) con
         band.gain = params.getRawParameterValue(pre + "band" + String(i + 1) + "_gain")->load();
         band.gain = std::exp(band.gain * DB2LOG);
         band.q = params.getRawParameterValue(pre + "band" + String(i + 1) + "_q")->load();
+        bool bypass = params.getRawParameterValue(pre + "band" + String(i + 1) + "_bypass")->load();
+        if (bypass) continue;
 
         if (band.mode == SVF::LP || band.mode == SVF::HP || std::fabs(band.gain - 1.f) > 1e-6f) {
             bands.push_back(band);

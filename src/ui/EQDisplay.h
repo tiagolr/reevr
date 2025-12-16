@@ -30,6 +30,7 @@ public:
 	void toggleUIComponents();
 
 	void updateEQCurve();
+	void showBandMenu(int band);
 
 	std::function<void(int band)> onMouseDownBand;
 	std::function<void()> onMouseUp;

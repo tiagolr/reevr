@@ -28,6 +28,17 @@ void EQDisplay::timerCallback()
 
 void EQDisplay::mouseDown(const MouseEvent& e)
 {
+	if (e.mods.isRightButtonDown()) {
+		for (int i = 0; i < EQ_BANDS; ++i) {
+			auto& bounds = bandBounds[i];
+			if (bounds.contains((float)e.x, (float)e.y)) {
+				showBandMenu(i);
+				break;
+			}
+		}
+		return;
+	}
+
 	dragband = -1;
 	for (int i = 0; i < EQ_BANDS; ++i) {
 		auto& bounds = bandBounds[i];
@@ -108,6 +119,9 @@ void EQDisplay::mouseDrag(const MouseEvent& e)
 
 void EQDisplay::mouseDoubleClick(const MouseEvent& e)
 {
+	if (e.mods.isRightButtonDown())
+		return;
+
 	for (int i = 0; i < EQ_BANDS; ++i) {
 		auto& bounds = bandBounds[i];
 		if (bounds.contains((float)e.x, (float)e.y)) {
@@ -173,7 +187,7 @@ void EQDisplay::paint(juce::Graphics& g)
 			g.drawText(type == SVF::ParamEQ ? "-18" : "-75", Rectangle<float>(viewBounds.getX() + 1, yy - 10 - 1, 20, 20), Justification::centred);
 
 		g.setColour(Colour(COLOR_NEUTRAL).withAlpha(0.25f));
-		g.drawHorizontalLine((int)yy, expBounds.getX(), expBounds.getRight());
+		g.drawHorizontalLine((int)yy, expBounds.getX() + 25, expBounds.getRight());
 	}
 
 	const float logMin = std::log(20.f);
@@ -203,6 +217,7 @@ void EQDisplay::paint(juce::Graphics& g)
 		auto freq = editor.audioProcessor.params.getRawParameterValue(pre + "_freq")->load();
 		auto gain = editor.audioProcessor.params.getRawParameterValue(pre + "_gain")->load();
 		auto q = editor.audioProcessor.params.getRawParameterValue(pre + "_q")->load();
+		auto bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
 
 		freqs[i] = freq;
 		gains[i] = gain;
@@ -217,7 +232,10 @@ void EQDisplay::paint(juce::Graphics& g)
 
 		bandBounds[i] = { x - r, y - r, r * 2, r * 2 };
 		g.setColour(Colours::white.withAlpha(selband == i ? 1.f : 0.5f));
-		g.fillEllipse(bandBounds[i]);
+		if (bypass)
+			g.drawEllipse(bandBounds[i], 2.f);
+		else 
+			g.fillEllipse(bandBounds[i]);
 	}
 
 	// draw eq
@@ -357,6 +375,8 @@ void EQDisplay::updateEQCurve()
 			auto gain = editor.audioProcessor.params.getRawParameterValue(pre + "_gain")->load();
 			gain = exp(gain * DB2LOG);
 			auto q = editor.audioProcessor.params.getRawParameterValue(pre + "_q")->load();
+			auto bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
+			if (bypass) continue;
 			SVF::Mode mode = b == 0 && firstBandMode == 0 ? SVF::HP
 				: b == 0 && firstBandMode == 1 ? SVF::LS
 				: b == EQ_BANDS - 1 && lastBandMode == 0 ? SVF::LP
@@ -374,4 +394,43 @@ void EQDisplay::updateEQCurve()
 
 		magPoints.push_back((mag));
 	}
+}
+
+void EQDisplay::showBandMenu(int band)
+{
+	PopupMenu menu;
+	auto pre = prel + "eq_band" + String(band + 1);
+	bool bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
+	menu.addItem(100, "Bypass", true, bypass);
+
+	if (band == 0 || band == EQ_BANDS - 1) {
+		auto mode = (int)editor.audioProcessor.params.getRawParameterValue(pre + "_mode")->load();
+		if (band == 0 && mode == 0)
+			menu.addItem(1, "Low Shelf");
+		else if (band == 0 && mode == 1)
+			menu.addItem(2, "Low Cut");
+		else if (band > 0 && mode == 0)
+			menu.addItem(3, "High Shelf");
+		else if (band > 0 && mode == 1)
+			menu.addItem(4, "High Cut");
+	}
+
+	auto mousePos = localPointToGlobal(bandBounds[band].getBottomLeft().toInt());
+	menu.showMenuAsync(
+		juce::PopupMenu::Options()
+		.withTargetComponent(*this)
+		.withTargetScreenArea({ mousePos.getX(), mousePos.getY(), 1,1 }), 
+		[this, pre, bypass](int result)
+		{
+			if (result == 0) return;
+			if (result <= 4) {
+				auto param = editor.audioProcessor.params.getParameter(pre + "_mode");
+				param->setValueNotifyingHost(param->getValue() > 0.f ? 0.f : 1.f);
+			}
+			if (result == 100) {
+				auto param = editor.audioProcessor.params.getParameter(pre + "_bypass");
+				param->setValueNotifyingHost(bypass ? 0.f : 1.f);
+			}
+		}
+	);
 }
