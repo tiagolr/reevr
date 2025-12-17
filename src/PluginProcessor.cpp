@@ -653,6 +653,7 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     std::fill(monSamples.begin(), monSamples.end(), 0.0f);
     clearLatencyBuffers();
     onSlider(); // sets latency
+    sendChangeMessage();
     init = true;
 }
 
