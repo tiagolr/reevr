@@ -314,16 +314,12 @@ void Impulse::recalcImpulse()
     size_t numSamples = rawBufferLL.size();
     float autoGain = calculateAutoGain(bufferLL, bufferRR);
 
-    peak = 0.f;
     for (int i = 0; i < numSamples; ++i) {
         bufferLL[i] *= autoGain;
         bufferRR[i] *= autoGain;
-        peak = std::max(std::max(peak, std::fabs(bufferLL[i])), std::fabs(bufferRR[i]));
-
         if (isQuad) {
             bufferLR[i] *= autoGain;
             bufferRL[i] *= autoGain;
-            peak = std::max(std::max(peak, std::fabs(bufferLR[i])), std::fabs(bufferRL[i]));
         }
     }
 
@@ -339,6 +335,14 @@ void Impulse::recalcImpulse()
 
     resampleIRToProjectRate(bufferLL, bufferRR);
     if (isQuad) resampleIRToProjectRate(bufferLR, bufferRL);
+
+    peak = 0.f;
+    for (int i = 0; i < numSamples; ++i) {
+        peak = std::max(std::max(peak, std::fabs(bufferLL[i])), std::fabs(bufferRR[i]));
+        if (isQuad) {
+            peak = std::max(std::max(peak, std::fabs(bufferLR[i])), std::fabs(bufferRL[i]));
+        }
+    }
     
     auto s = stretch;
     applyStretch(bufferLL, bufferRR, s);
@@ -377,6 +381,11 @@ void Impulse::resampleIRToProjectRate(std::vector<float>& bufL, std::vector<floa
 
     bufL.assign(out.getReadPointer(0), out.getReadPointer(0) + outputLength);
     bufR.assign(out.getReadPointer(1), out.getReadPointer(1) + outputLength);
+
+    for (int i = 0; i < bufL.size(); ++i) {
+        bufL[i] *= (float)ratio;
+        bufR[i] *= (float)ratio;
+    }
 }
 
 void Impulse::applyStretch(std::vector<float>& bufL, std::vector<float>& bufR, float _stretch)
