@@ -135,6 +135,8 @@ void EQDisplay::mouseDoubleClick(const MouseEvent& e)
 				param->setValueNotifyingHost(param->getDefaultValue());
 				param = editor.audioProcessor.params.getParameter(pre + "_gain");
 				param->setValueNotifyingHost(param->getDefaultValue());
+				param = editor.audioProcessor.params.getParameter(pre + "_mode");
+				param->setValueNotifyingHost(param->getDefaultValue());
 			}
 			repaint();
 			break;
