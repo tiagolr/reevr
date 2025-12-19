@@ -101,9 +101,6 @@ EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType _type)
 		if (i == 0 || i == EQ_BANDS - 1) {
 			editor.audioProcessor.params.addParameterListener(pre + "_mode", this);
 		}
-		editor.audioProcessor.params.addParameterListener(pre + "_freq", this);
-		editor.audioProcessor.params.addParameterListener(pre + "_q", this);
-		editor.audioProcessor.params.addParameterListener(pre + "_gain", this);
 		auto freq = std::make_unique<Rotary>(editor.audioProcessor, pre + "_freq", "Freq", RotaryLabel::hz);
 		auto q = std::make_unique<Rotary>(editor.audioProcessor, pre + "_q", "Q", RotaryLabel::float1);
 		auto gain = std::make_unique<Rotary>(editor.audioProcessor, pre + "_gain", "Gain", 
@@ -147,9 +144,6 @@ EQWidget::~EQWidget()
 		if (i == 0 || i == EQ_BANDS - 1) {
 			editor.audioProcessor.params.removeParameterListener(pre + "_mode", this);
 		}
-		editor.audioProcessor.params.removeParameterListener(pre + "_freq", this);
-		editor.audioProcessor.params.removeParameterListener(pre + "_q", this);
-		editor.audioProcessor.params.removeParameterListener(pre + "_gain", this);
 	}
 }
 
