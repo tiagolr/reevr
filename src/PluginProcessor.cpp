@@ -86,9 +86,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     for (int i = 0; i < EQ_BANDS; ++i) {
         auto paramPrefix = "posteq_band" + String(i + 1);
         auto namePrefix = "Post EQ Band" + String(i + 1);
-        if (i == 0 || i == EQ_BANDS - 1) {
-            layout.add(std::make_unique<AudioParameterChoice>(paramPrefix + "_mode", namePrefix + " Mode", StringArray{ "Filter", "Shelf" }, 1));
-        }
+        layout.add(std::make_unique<AudioParameterChoice>(paramPrefix + "_mode", namePrefix + " Mode", StringArray{ "Filter", "EQ" }, 1));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_freq", namePrefix + " Freq", NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), getEQBandFreq(i)));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_q", namePrefix + " Q", 0.707f, 8.f, 0.707f));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_gain", namePrefix + " Gain", -EQ_MAX_GAIN, EQ_MAX_GAIN, 0.f));
@@ -99,9 +97,7 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     for (int i = 0; i < EQ_BANDS; ++i) {
         auto paramPrefix = "decayeq_band" + String(i + 1);
         auto namePrefix = "Decay EQ Band" + String(i + 1);
-        if (i == 0 || i == EQ_BANDS - 1) {
-            layout.add(std::make_unique<AudioParameterChoice>(paramPrefix + "_mode", namePrefix + " Mode", StringArray{ "Filter", "Shelf" }, 1));
-        }
+        layout.add(std::make_unique<AudioParameterChoice>(paramPrefix + "_mode", namePrefix + " Mode", StringArray{ "Filter", "EQ" }, 1));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_freq", namePrefix + " Freq", NormalisableRange<float>(20.f, 20000.f, 1.f, 0.3f), getEQBandFreq(i)));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_q", namePrefix + " Q", 0.707f, 8.f, 0.707f));
         layout.add(std::make_unique<AudioParameterFloat>(paramPrefix + "_gain", namePrefix + " Gain", -EQ_MAX_GAIN, EQ_MAX_GAIN, 0.f));
@@ -224,13 +220,15 @@ std::vector<SVF::EQBand> REEVRAudioProcessor::getEqualizer(SVF::EQType type) con
     for (int i = 0; i < EQ_BANDS; i++) {
         SVF::EQBand band{};
         band.mode = SVF::PK;
-        if (i == 0 || i == EQ_BANDS - 1) {
-            auto filterOrShelf = (int)params.getRawParameterValue(pre + "band" + String(i + 1) + "_mode")->load();
-            if (i == 0 && filterOrShelf == 0) band.mode = SVF::HP;
-            else if (i == 0 && filterOrShelf == 1) band.mode = SVF::LS;
-            else if (filterOrShelf == 0) band.mode = SVF::LP;
-            else band.mode = SVF::HS;
-        }
+
+        auto filterOrShelf = (int)params.getRawParameterValue(pre + "band" + String(i + 1) + "_mode")->load();
+        if (i == 0 && filterOrShelf == 0) band.mode = SVF::HP;
+        else if (i == 0 && filterOrShelf == 1) band.mode = SVF::LS;
+        else if (i == EQ_BANDS - 1 && filterOrShelf == 0) band.mode = SVF::LP;
+        else if (i == EQ_BANDS - 1 && filterOrShelf == 1) band.mode = SVF::HS;
+        else if (filterOrShelf == 0) band.mode = SVF::BP;
+        else band.mode = SVF::PK;
+
         band.freq = params.getRawParameterValue(pre + "band" + String(i + 1) + "_freq")->load();
         band.gain = params.getRawParameterValue(pre + "band" + String(i + 1) + "_gain")->load();
         band.gain = std::exp(band.gain * DB2LOG);
@@ -238,7 +236,7 @@ std::vector<SVF::EQBand> REEVRAudioProcessor::getEqualizer(SVF::EQType type) con
         bool bypass = params.getRawParameterValue(pre + "band" + String(i + 1) + "_bypass")->load();
         if (bypass) continue;
 
-        if (band.mode == SVF::LP || band.mode == SVF::HP || std::fabs(band.gain - 1.f) > 1e-6f) {
+        if (band.mode == SVF::LP || band.mode == SVF::HP || band.mode == SVF::BP || std::fabs(band.gain - 1.f) > 1e-6f) {
             bands.push_back(band);
         }
     }

@@ -359,17 +359,15 @@ void EQDisplay::updateEQCurve()
 
 	magPoints.clear();
 
-	auto firstBandMode = (int)editor.audioProcessor.params.getRawParameterValue(prel + "eq_band1_mode")->load();
-	auto lastBandMode = (int)editor.audioProcessor.params.getRawParameterValue(prel + "eq_band" + String(EQ_BANDS) + "_mode")->load();
 
 	for (int i = 0; i < numPoints; ++i) {
 		float norm = (float)i / (numPoints - 1);
 		float freq = minFreq * std::pow(maxFreq / minFreq, norm);
-
 		float mag = 1.0f;
 
 		for (int b = 0; b < EQ_BANDS; ++b) {
 			auto pre = prel + "eq_band" + String(b + 1);
+			auto m = (int)editor.audioProcessor.params.getRawParameterValue(pre +  "_mode")->load();
 			auto srate = editor.audioProcessor.srate;
 			auto cutoff = editor.audioProcessor.params.getRawParameterValue(pre + "_freq")->load();
 			auto gain = editor.audioProcessor.params.getRawParameterValue(pre + "_gain")->load();
@@ -377,16 +375,17 @@ void EQDisplay::updateEQCurve()
 			auto q = editor.audioProcessor.params.getRawParameterValue(pre + "_q")->load();
 			auto bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
 			if (bypass) continue;
-			SVF::Mode mode = b == 0 && firstBandMode == 0 ? SVF::HP
-				: b == 0 && firstBandMode == 1 ? SVF::LS
-				: b == EQ_BANDS - 1 && lastBandMode == 0 ? SVF::LP
-				: b == EQ_BANDS - 1 && lastBandMode == 1 ? SVF::HS
-				: SVF::PK;
+			SVF::Mode mode = b == 0 && m == 0 ? SVF::HP
+				: b == 0 && m == 1 ? SVF::LS
+				: b == EQ_BANDS - 1 && m == 0 ? SVF::LP
+				: b == EQ_BANDS - 1 && m == 1 ? SVF::HS
+				: m == 0 ? SVF::BP : SVF::PK;
 
 			if (mode == SVF::LP) bandFilters[b].lp((float)srate, cutoff, q);
 			else if (mode == SVF::LS) bandFilters[b].ls((float)srate, cutoff, q, gain);
 			else if (mode == SVF::HP) bandFilters[b].hp((float)srate, cutoff, q);
 			else if (mode == SVF::HS) bandFilters[b].hs((float)srate, cutoff, q, gain);
+			else if (mode == SVF::BP) bandFilters[b].bp((float)srate, cutoff, q);
 			else bandFilters[b].pk((float)srate, cutoff, q, gain);
 
 			mag *= bandFilters[b].getMagnitude(freq);
@@ -403,17 +402,20 @@ void EQDisplay::showBandMenu(int band)
 	bool bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
 	menu.addItem(100, "Bypass", true, bypass);
 
-	if (band == 0 || band == EQ_BANDS - 1) {
-		auto mode = (int)editor.audioProcessor.params.getRawParameterValue(pre + "_mode")->load();
-		if (band == 0 && mode == 0)
-			menu.addItem(1, "Low Shelf");
-		else if (band == 0 && mode == 1)
-			menu.addItem(2, "Low Cut");
-		else if (band > 0 && mode == 0)
-			menu.addItem(3, "High Shelf");
-		else if (band > 0 && mode == 1)
-			menu.addItem(4, "High Cut");
-	}
+	auto mode = (int)editor.audioProcessor.params.getRawParameterValue(pre + "_mode")->load();
+	if (band == 0 && mode == 0)
+		menu.addItem(1, "Low Shelf");
+	else if (band == 0 && mode == 1)
+		menu.addItem(2, "Low Cut");
+	else if (band == EQ_BANDS - 1 && mode == 0)
+		menu.addItem(3, "High Shelf");
+	else if (band == EQ_BANDS - 1 && mode == 1)
+		menu.addItem(4, "High Cut");
+	else if (mode == 0)
+		menu.addItem(5, "Peak");
+	else
+		menu.addItem(6, "Band Pass");
+
 
 	auto mousePos = localPointToGlobal(bandBounds[band].getBottomLeft().toInt());
 	menu.showMenuAsync(
@@ -423,7 +425,7 @@ void EQDisplay::showBandMenu(int band)
 		[this, pre, bypass](int result)
 		{
 			if (result == 0) return;
-			if (result <= 4) {
+			if (result <= 6) {
 				auto param = editor.audioProcessor.params.getParameter(pre + "_mode");
 				param->setValueNotifyingHost(param->getValue() > 0.f ? 0.f : 1.f);
 			}
