@@ -37,15 +37,26 @@ void SVF::hp(float _srate, float _freq, float _q)
 	ch = 1.0f;
 }
 
-void SVF::bp(float _srate, float _freq, float _q) //
+void SVF::bp(float _srate, float _freq, float _q)
 {
 	mode = BP;
 	gain = 1.f;
 	setup(_srate, _freq, _q);
 
     cl = 0.0f;
-    cb = 1.0f;
+    cb = 1.f/q;
     ch = 0.0f;
+}
+
+void SVF::bs(float _srate, float _freq, float _q)
+{
+	mode = BS;
+	gain = 1.f;
+	setup(_srate, _freq, _q);
+
+	cl = 1.0f;
+	cb = 0.0f;
+	ch = 1.0f;
 }
 
 void SVF::ls(float _srate, float _freq, float _q, float _gain)

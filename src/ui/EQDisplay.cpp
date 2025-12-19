@@ -376,16 +376,18 @@ void EQDisplay::updateEQCurve()
 			auto bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
 			if (bypass) continue;
 			SVF::Mode mode = b == 0 && m == 0 ? SVF::HP
-				: b == 0 && m == 1 ? SVF::LS
+				: b == 0 && m > 0 ? SVF::LS
 				: b == EQ_BANDS - 1 && m == 0 ? SVF::LP
-				: b == EQ_BANDS - 1 && m == 1 ? SVF::HS
-				: m == 0 ? SVF::BP : SVF::PK;
+				: b == EQ_BANDS - 1 && m > 0 ? SVF::HS
+				: m == 0 ? SVF::BP : m == 1 ? SVF::PK 
+				: SVF::BS;
 
 			if (mode == SVF::LP) bandFilters[b].lp((float)srate, cutoff, q);
 			else if (mode == SVF::LS) bandFilters[b].ls((float)srate, cutoff, q, gain);
 			else if (mode == SVF::HP) bandFilters[b].hp((float)srate, cutoff, q);
 			else if (mode == SVF::HS) bandFilters[b].hs((float)srate, cutoff, q, gain);
 			else if (mode == SVF::BP) bandFilters[b].bp((float)srate, cutoff, q);
+			else if (mode == SVF::BS) bandFilters[b].bs((float)srate, cutoff, q);
 			else bandFilters[b].pk((float)srate, cutoff, q, gain);
 
 			mag *= bandFilters[b].getMagnitude(freq);
@@ -405,16 +407,24 @@ void EQDisplay::showBandMenu(int band)
 	auto mode = (int)editor.audioProcessor.params.getRawParameterValue(pre + "_mode")->load();
 	if (band == 0 && mode == 0)
 		menu.addItem(1, "Low Shelf");
-	else if (band == 0 && mode == 1)
+	else if (band == 0 && mode > 0)
 		menu.addItem(2, "Low Cut");
 	else if (band == EQ_BANDS - 1 && mode == 0)
 		menu.addItem(3, "High Shelf");
-	else if (band == EQ_BANDS - 1 && mode == 1)
+	else if (band == EQ_BANDS - 1 && mode > 0)
 		menu.addItem(4, "High Cut");
-	else if (mode == 0)
+	else if (mode == 0) {
 		menu.addItem(5, "Peak");
-	else
+		menu.addItem(7, "Notch");
+	}
+	else if (mode == 1) {
 		menu.addItem(6, "Band Pass");
+		menu.addItem(7, "Notch");
+	}
+	else if (mode == 2) {
+		menu.addItem(5, "Peak");
+		menu.addItem(6, "Band Pass");
+	}
 
 
 	auto mousePos = localPointToGlobal(bandBounds[band].getBottomLeft().toInt());
@@ -425,13 +435,19 @@ void EQDisplay::showBandMenu(int band)
 		[this, pre, bypass](int result)
 		{
 			if (result == 0) return;
-			if (result <= 6) {
-				auto param = editor.audioProcessor.params.getParameter(pre + "_mode");
-				param->setValueNotifyingHost(param->getValue() > 0.f ? 0.f : 1.f);
+			auto param = editor.audioProcessor.params.getParameter(pre + "_mode");
+			if (result == 2 || result == 4 || result == 6) {
+				param->setValueNotifyingHost(0.f);
+			}
+			if (result == 1 || result == 3 || result == 5) {
+				param->setValueNotifyingHost(param->convertTo0to1(1.f));
+			}
+			if (result == 7) {
+				param->setValueNotifyingHost(param->convertTo0to1(2.f));
 			}
 			if (result == 100) {
-				auto param = editor.audioProcessor.params.getParameter(pre + "_bypass");
-				param->setValueNotifyingHost(bypass ? 0.f : 1.f);
+				auto p = editor.audioProcessor.params.getParameter(pre + "_bypass");
+				p->setValueNotifyingHost(bypass ? 0.f : 1.f);
 			}
 		}
 	);

@@ -14,6 +14,7 @@ public:
 		LS,
 		HS,
 		PK,
+		BS,
 		Off,
 	};
 
@@ -34,6 +35,7 @@ public:
 
 	void lp(float srate, float freq, float q);
 	void bp(float srate, float freq, float q);
+	void bs(float srate, float freq, float q);
 	void hp(float srate, float freq, float q);
 	void ls(float srate, float freq, float q, float gain);
 	void hs(float srate, float freq, float q, float gain);
