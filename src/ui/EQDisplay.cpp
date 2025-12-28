@@ -111,7 +111,7 @@ void EQDisplay::mouseDrag(const MouseEvent& e)
 		editor.audioProcessor.params.getParameter(pre + "_gain")->setValueNotifyingHost(cur_gain_normed_value);
 	}
 
-	if (onMouseDrag) 
+	if (onMouseDrag)
 		onMouseDrag();
 
 	repaint();
@@ -236,7 +236,7 @@ void EQDisplay::paint(juce::Graphics& g)
 		g.setColour(Colours::white.withAlpha(selband == i ? 1.f : 0.5f));
 		if (bypass)
 			g.drawEllipse(bandBounds[i], 2.f);
-		else 
+		else
 			g.fillEllipse(bandBounds[i]);
 	}
 
@@ -291,6 +291,8 @@ void EQDisplay::drawWaveform(juce::Graphics& g)
 	const float maxFreq = 20000.f;
 	const float srate = static_cast<float>(editor.audioProcessor.srate);
 
+	waveformPath.startNewSubPath(bounds.getX(), bounds.getBottom());
+
 	for (size_t i = 0; i < size; ++i) {
 		float freq = (i * srate) / (2.0f * (size - 1));
 		freq = std::max(freq, minFreq);
@@ -300,14 +302,13 @@ void EQDisplay::drawWaveform(juce::Graphics& g)
 		float magnitudeDB = juce::Decibels::gainToDecibels(fftMagnitudes[i], minDB);
 		float y = juce::jmap(magnitudeDB, minDB, maxDB, bounds.getBottom(), bounds.getY());
 
-		if (i == 0)
-			waveformPath.startNewSubPath(x, y);
-		else
-			waveformPath.lineTo(x, y);
+		waveformPath.lineTo(x, y);
 	}
 
-	g.setColour(Colour(COLOR_ACTIVE));
-	g.strokePath(waveformPath, juce::PathStrokeType(1.0f));
+	waveformPath.lineTo(bounds.getX() + bounds.getWidth(), bounds.getBottom());
+
+	g.setColour(Colour(COLOR_ACTIVE).withAlpha(0.5f));
+	g.fillPath(waveformPath);
 
 	// hide zero values
 	g.setColour(Colour(COLOR_BG));
@@ -381,7 +382,7 @@ void EQDisplay::updateEQCurve()
 				: b == 0 && m > 0 ? SVF::LS
 				: b == EQ_BANDS - 1 && m == 0 ? SVF::LP
 				: b == EQ_BANDS - 1 && m > 0 ? SVF::HS
-				: m == 0 ? SVF::BP : m == 1 ? SVF::PK 
+				: m == 0 ? SVF::BP : m == 1 ? SVF::PK
 				: SVF::BS;
 
 			if (mode == SVF::LP) bandFilters[b].lp((float)srate, cutoff, q);
@@ -403,49 +404,38 @@ void EQDisplay::showBandMenu(int band)
 {
 	PopupMenu menu;
 	auto pre = prel + "eq_band" + String(band + 1);
-	bool bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
-	menu.addItem(100, "Bypass", true, bypass);
 
 	auto mode = (int)editor.audioProcessor.params.getRawParameterValue(pre + "_mode")->load();
-	if (band == 0 && mode == 0)
-		menu.addItem(1, "Low Shelf");
-	else if (band == 0 && mode > 0)
-		menu.addItem(2, "Low Cut");
-	else if (band == EQ_BANDS - 1 && mode == 0)
-		menu.addItem(3, "High Shelf");
-	else if (band == EQ_BANDS - 1 && mode > 0)
-		menu.addItem(4, "High Cut");
-	else if (mode == 0) {
-		menu.addItem(5, "Peak");
-		menu.addItem(7, "Notch");
+	if (band == 0) {
+		menu.addItem(1, "Low Cut", true, mode == 0);
+		menu.addItem(2, "Low Shelf", true, mode == 1);
 	}
-	else if (mode == 1) {
-		menu.addItem(6, "Band Pass");
-		menu.addItem(7, "Notch");
+	else if (band == EQ_BANDS - 1) {
+		menu.addItem(3, "High Cut", true, mode == 0);
+		menu.addItem(4, "High Shelf", true, mode == 1);
+	} else {
+		menu.addItem(5, "Band Pass", true, mode == 0);
+		menu.addItem(6, "Peak", true, mode == 1);
 	}
-	else if (mode == 2) {
-		menu.addItem(5, "Peak");
-		menu.addItem(6, "Band Pass");
-	}
+
+	bool bypass = (bool)editor.audioProcessor.params.getRawParameterValue(pre + "_bypass")->load();
+	menu.addItem(100, "Bypass", true, bypass);
 
 
 	auto mousePos = localPointToGlobal(bandBounds[band].getBottomLeft().toInt());
 	menu.showMenuAsync(
 		juce::PopupMenu::Options()
 		.withTargetComponent(*this)
-		.withTargetScreenArea({ mousePos.getX(), mousePos.getY(), 1,1 }), 
+		.withTargetScreenArea({ mousePos.getX(), mousePos.getY(), 1,1 }),
 		[this, pre, bypass](int result)
 		{
 			if (result == 0) return;
 			auto param = editor.audioProcessor.params.getParameter(pre + "_mode");
-			if (result == 2 || result == 4 || result == 6) {
+			if (result == 1 || result == 3 || result == 5) {
 				param->setValueNotifyingHost(0.f);
 			}
-			if (result == 1 || result == 3 || result == 5) {
-				param->setValueNotifyingHost(param->convertTo0to1(1.f));
-			}
-			if (result == 7) {
-				param->setValueNotifyingHost(param->convertTo0to1(2.f));
+			if (result == 2 || result == 4 || result == 6) {
+				param->setValueNotifyingHost(1.f);
 			}
 			if (result == 100) {
 				auto p = editor.audioProcessor.params.getParameter(pre + "_bypass");

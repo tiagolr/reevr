@@ -28,24 +28,16 @@ static void drawBandPass(Graphics& g, Rectangle<float> bounds, Colour c, float s
 static void drawLowShelf(Graphics& g, Rectangle<float> bounds, Colour c, float scale = 1.f)
 {
 	Path p;
-	p.startNewSubPath(0.0f, 13.0f);
-	p.cubicTo(1.0f, 13.0f, 5.0f, 13.0f, 5.0f, 13.0f);
-	p.cubicTo(9.0f, 13.0f, 9.0f, 0.f, 13.0f, 0.f);
-	p.cubicTo(17.0f, 0.f, 18.0f, 0.f, 18.0f, 0.f);
+	p.startNewSubPath(0.0f, 6.5f);
+    p.cubicTo(1.0f, 6.5f, 5.0f, 6.5f, 5.0f, 6.5f);
+    p.cubicTo(9.0f, 6.5f, 9.0f, 0.5f, 13.0f, 0.5f);
+    p.cubicTo(17.0f, 0.5f, 18.0f, 0.5f, 18.0f, 0.5f);
+    p.startNewSubPath(0.0f, 6.5f);
+    p.cubicTo(1.0f, 6.5f, 5.0f, 6.5f, 5.0f, 6.5f);
+    p.cubicTo(9.0f, 6.5f, 9.0f, 12.5f, 13.0f, 12.5f);
+    p.cubicTo(17.0f, 12.5f, 18.0f, 12.5f, 18.0f, 12.5f);
 	p.applyTransform(AffineTransform::scale(scale));
-	p.applyTransform(AffineTransform::translation(bounds.getX(), bounds.getY()));
-	g.setColour(c);
-	g.strokePath(p, PathStrokeType(1.0f, PathStrokeType::curved));
-}
-
-static void drawNotch(Graphics& g, Rectangle<float> bounds, Colour c, float scale = 1.f)
-{
-	Path p;
-	p.startNewSubPath(0.0f, .5f);
-	p.cubicTo(9.0f, 0.5f,6.5f, 11.5f,9.0f, 11.5f);
-	p.cubicTo(11.5f, 11.5f,9.0f, 0.5f,18.0f, 0.5f);
-	p.applyTransform(AffineTransform::scale(scale));
-	p.applyTransform(AffineTransform::translation(bounds.getX(), bounds.getY()));
+	p.applyTransform(AffineTransform::translation(bounds.getX(), bounds.getY() + 1));
 	g.setColour(c);
 	g.strokePath(p, PathStrokeType(1.0f, PathStrokeType::curved));
 }
@@ -53,12 +45,16 @@ static void drawNotch(Graphics& g, Rectangle<float> bounds, Colour c, float scal
 static void drawHighShelf(Graphics& g, Rectangle<float> bounds, Colour c, float scale = 1.f)
 {
 	Path p;
-	p.startNewSubPath(18.0f, 13.0f);
-	p.cubicTo(17.0f, 13.0f, 13.0f, 13.0f, 13.0f, 13.0f);
-	p.cubicTo(9.0f, 13.0f, 9.0f, 0.f, 5.0f, 0.f);
-	p.cubicTo(1.0f, 0.f, 0.0f, 0.f, 0.0f, 0.f);
+	p.startNewSubPath(18.0f, 6.5f);
+    p.cubicTo(17.0f, 6.5f, 13.0f, 6.5f, 13.0f, 6.5f);
+    p.cubicTo(9.0f, 6.5f, 9.0f, 0.5f, 5.0f, 0.5f);
+    p.cubicTo(1.0f, 0.5f, 0.0f, 0.5f, 0.0f, 0.5f);
+    p.startNewSubPath(18.0f, 6.5f);
+    p.cubicTo(17.0f, 6.5f, 13.0f, 6.5f, 13.0f, 6.5f);
+    p.cubicTo(9.0f, 6.5f, 9.0f, 12.5f, 5.0f, 12.5f);
+    p.cubicTo(1.0f, 12.5f, 0.0f, 12.5f, 0.0f, 12.5f);
 	p.applyTransform(AffineTransform::scale(scale));
-	p.applyTransform(AffineTransform::translation(bounds.getX(), bounds.getY()));
+	p.applyTransform(AffineTransform::translation(bounds.getX(), bounds.getY() + 1));
 	g.setColour(c);
 	g.strokePath(p, PathStrokeType(1.0f, PathStrokeType::curved));
 }
@@ -127,7 +123,7 @@ EQWidget::EQWidget(REEVRAudioProcessorEditor& e, SVF::EQType _type)
 		}
 		auto freq = std::make_unique<Rotary>(editor.audioProcessor, pre + "_freq", "Freq", RotaryLabel::hz);
 		auto q = std::make_unique<Rotary>(editor.audioProcessor, pre + "_q", "Q", RotaryLabel::float1);
-		auto gain = std::make_unique<Rotary>(editor.audioProcessor, pre + "_gain", "Gain", 
+		auto gain = std::make_unique<Rotary>(editor.audioProcessor, pre + "_gain", "Gain",
 			type == SVF::DecayEQ ? RotaryLabel::eqDecayGain : RotaryLabel::dBfloat1, true
 		);
 		addChildComponent(freq.get());
@@ -228,9 +224,6 @@ void EQWidget::paint(Graphics& g)
 	else if (mode == SVF::HS) {
 		drawHighShelf(g, bandBtn.getBounds().toFloat().translated(4.5f, 6.5f), Colours::white, 1.2f);
 	}
-	else if (mode == SVF::BS) {
-		drawNotch(g, bandBtn.getBounds().toFloat().translated(4.5f, 11.5f), Colours::white, 1.2f);
-	}
 
 	g.setFont(FontOptions(16.f));
 	g.setColour(Colours::white);
@@ -257,7 +250,6 @@ void EQWidget::showBandModeMenu()
 	else if (selband == EQ_BANDS - 1 && m == 0) mode = SVF::LP;
 	else if (selband == EQ_BANDS - 1 && m > 0) mode = SVF::HS;
 	else if (m == 0) mode = SVF::BP;
-	else if (m == 2) mode = SVF::BS;
 	else mode = SVF::PK;
 
 	PopupMenu menu;
@@ -272,7 +264,6 @@ void EQWidget::showBandModeMenu()
 	else {
 		menu.addItem(5, "Band pass", true, mode == SVF::BP);
 		menu.addItem(6, "Peak", true, mode == SVF::PK);
-		menu.addItem(7, "Notch", true, mode == SVF::BS);
 	}
 
 	auto menuPos = localPointToGlobal(bandBtn.getBounds().getBottomLeft());
@@ -293,7 +284,7 @@ void EQWidget::showBandModeMenu()
 				eq->updateEQCurve();
 				toggleUIComponents();
 			}
-			else if (result == 5 || result == 6 || result == 7) {
+			else if (result == 5 || result == 6) {
 				auto param = editor.audioProcessor.params.getParameter(prel + "eq_band" + String(selband+1) + "_mode");
 				param->setValueNotifyingHost(param->convertTo0to1((float)result - 5));
 				eq->updateEQCurve();
