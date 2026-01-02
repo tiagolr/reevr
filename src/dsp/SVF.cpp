@@ -26,6 +26,15 @@ void SVF::lp(float _srate, float _freq, float _q)
 	ch = 0.0f;
 }
 
+void SVF::lp6(float _srate, float _freq)
+{
+	mode = LP6;
+	srate = _srate;
+	freq = _freq;
+	g = std::tan(MathConstants<float>::pi * std::fmin(freq / srate, 0.49f));
+	g = g / (1.0f + g);
+}
+
 void SVF::hp(float _srate, float _freq, float _q)
 {
 	mode = HP;
@@ -35,6 +44,15 @@ void SVF::hp(float _srate, float _freq, float _q)
 	cl = 0.0f;
 	cb = 0.0f;
 	ch = 1.0f;
+}
+
+void SVF::hp6(float _srate, float _freq)
+{
+	mode = HP6;
+	srate = _srate;
+	freq = _freq;
+	g = std::tan(MathConstants<float>::pi * std::fmin(freq / srate, 0.49f));
+	g = g / (1.0f + g);
 }
 
 void SVF::bp(float _srate, float _freq, float _q)
@@ -94,6 +112,20 @@ void SVF::pk(float _srate, float _freq, float _q, float _gain)
 
 float SVF::process(float sample)
 {
+	if (mode == Off) {
+		return sample;
+	}
+	else if (mode == HP6) {
+		float delta = g * (sample - s1);
+		s1 += delta;
+		return sample - s1;
+	}
+	else if (mode == LP6) {
+		float delta = g * (sample - s1);
+		s1 += delta;
+		return s1;
+	}
+
     float v3 = sample - s2;
     float v1 = a1 * s1 + a2 * v3; // band
     float v2 = s2 + a2 * s1 + a3 * v3; // low
@@ -107,8 +139,13 @@ float SVF::process(float sample)
 void SVF::processBlock(float* buf, int nsamples, int blockoffset, int blocksize, float tfreq, float tq, float tgain)
 {
 	(void)blocksize;
-	if (mode == SVF::Off)
+	if (mode == Off) {
 		return;
+	}
+	else if (mode == LP6 || mode == HP6) {
+		processBlock6dB(buf, nsamples, tfreq);
+		return;
+	}
 
 	// current values
 	float curr_a1 = a1;
@@ -171,6 +208,42 @@ void SVF::processBlock(float* buf, int nsamples, int blockoffset, int blocksize,
 	cl = curr_cl; cb = curr_cb; ch = curr_ch;
 }
 
+void SVF::processBlock6dB(float* buf, int nsamples, float tfreq)
+{
+	float cur_g = g;
+	float g_step = 0.f;
+
+	if (tfreq != freq) {
+		if (mode == LP6) lp6(srate, tfreq);
+		else if (mode == HP6) hp6(srate, tfreq);
+
+		auto size = 1.f / nsamples;
+		g_step = (g - cur_g) * size;
+	}
+
+	if (mode == LP6) {
+		for (int n = 0; n < nsamples; ++n)
+		{
+			float sample = buf[n];
+			float delta = cur_g * (sample - s1);
+			s1 += delta;
+			buf[n] = s1;
+			cur_g += g_step;
+		}
+	}
+	else if (mode == HP6) {
+		for (int n = 0; n < nsamples; ++n)
+		{
+			float sample = buf[n];
+			float delta = cur_g * (sample - s1);
+			s1 += delta;
+			buf[n] = sample - s1;
+			cur_g += g_step;
+		}
+	}
+	g = cur_g;
+}
+
 void SVF::clear(float input)
 {
 	s1 = 0.f;
@@ -179,6 +252,24 @@ void SVF::clear(float input)
 
 float SVF::getMagnitude(float _freq)
 {
+	_freq = std::min(_freq, 0.49f * srate);
+
+	if (mode == LP6 || mode == HP6) {
+		float omega = 2.0f * MathConstants<float>::pi * _freq / srate;
+		float a = g;
+		float b = 1.0f - a;
+		float c = std::cos(omega);
+
+		float denom = 1.0f + b * b - 2.0f * b * c;
+		denom = std::max(denom, 1e-12f);
+
+		float num = (mode == LP6)
+			? (a * a)
+			: (2.0f - 2.0f * c);
+
+		return std::sqrt(num / denom);
+	}
+
 	std::complex<float> j(0.0f, 1.0f);
 	float g_eval = std::tan(MathConstants<float>::pi * std::fmin(_freq / srate, 0.49f));
 	float g_norm = g_eval / g;

@@ -514,6 +514,8 @@ void Impulse::applyParamEQ()
         else if (band.mode == SVF::HP) svf.hp((float)srate, band.freq, band.q);
         else if (band.mode == SVF::HS) svf.hs((float)srate, band.freq, band.q, band.gain);
         else if (band.mode == SVF::BS) svf.bs((float)srate, band.freq, band.q);
+        else if (band.mode == SVF::HP6) svf.hp6((float)srate, band.freq);
+        else if (band.mode == SVF::LP6) svf.lp6((float)srate, band.freq);
         else svf.pk((float)srate, band.freq, band.q, band.gain);
         eq.push_back(svf);
     }
@@ -548,6 +550,8 @@ void Impulse::applyDecayEQ()
         else if (band.mode == SVF::HP) svf.hp((float)srate, band.freq, band.q);
         else if (band.mode == SVF::HS) svf.hs((float)srate, band.freq, band.q, band.gain);
         else if (band.mode == SVF::BS) svf.bs((float)srate, band.freq, band.q);
+        else if (band.mode == SVF::HP6) svf.hp6((float)srate, band.freq);
+        else if (band.mode == SVF::LP6) svf.lp6((float)srate, band.freq);
         else svf.pk((float)srate, band.freq, band.q, band.gain);
         eq.push_back(svf);
     }

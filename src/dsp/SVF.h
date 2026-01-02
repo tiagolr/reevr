@@ -15,6 +15,8 @@ public:
 		HS,
 		PK,
 		BS,
+		HP6,
+		LP6,
 		Off,
 	};
 
@@ -34,9 +36,11 @@ public:
 	~SVF() {}
 
 	void lp(float srate, float freq, float q);
+	void lp6(float srate, float freq);
 	void bp(float srate, float freq, float q);
 	void bs(float srate, float freq, float q);
 	void hp(float srate, float freq, float q);
+	void hp6(float srate, float freq);
 	void ls(float srate, float freq, float q, float gain);
 	void hs(float srate, float freq, float q, float gain);
 	void pk(float srate, float freq, float q, float gain);
@@ -53,6 +57,7 @@ public:
 
 private:
 	void setup(float srate, float freq, float q, float resfactor = 1.f);
+	void processBlock6dB(float* buf, int nsamples, float tfreq);
 
 	// states
     float s1 = 0.0f;
