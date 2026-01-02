@@ -8,7 +8,7 @@ option(BUILD_STANDALONE "Build Standalone plugin format" ON)
 option(BUILD_VST3 "Build VST3 plugin format" ON)
 option(BUILD_LV2 "Build LV2 plugin format" ON)
 
-project(REEVR VERSION 1.3.1)
+project(REEVR VERSION 1.3.2)
 
 add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
