@@ -24,6 +24,9 @@ AudioProcessorValueTreeState::ParameterLayout REEVRAudioProcessor::createParamet
     layout.add(std::make_unique<juce::AudioParameterFloat>("tension", "Tension", -1.0f, 1.0f, 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("tensionatk", "Attack Tension", -1.0f, 1.0f, 0.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>("tensionrel", "Release Tension", -1.0f, 1.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("split_low", "Split Low", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.35f), 20.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("split_high", "Split High", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.35f), 20000.f));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("split_slope", "Split Slope", StringArray{"6dB", "12dB", "24dB"}, 0));
     layout.add(std::make_unique<juce::AudioParameterBool>("snap", "Snap", false));
     layout.add(std::make_unique<juce::AudioParameterInt>("grid", "Grid", 0, (int)std::size(GRID_SIZES) - 1, 2));
     layout.add(std::make_unique<juce::AudioParameterInt>("seqstep", "Sequencer Step", 0, (int)std::size(GRID_SIZES) - 1, 2));
@@ -610,6 +613,9 @@ void REEVRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     warmer.setSize(2, (int)std::ceil(sampleRate) / 4); // 0.25 seconds of warmup samples
     warmwritepos = 0;
     warmer.clear();
+    rawBuffer.setSize(2, samplesPerBlock);
+    lowBuffer.setSize(2, samplesPerBlock);
+    highBuffer.setSize(2, samplesPerBlock);
     convolver->prepare(samplesPerBlock);
     loadConvolver->prepare(samplesPerBlock);
     yrevBuffer.resize(samplesPerBlock, 0.0f);
@@ -846,6 +852,12 @@ void REEVRAudioProcessor::onSlider()
     irLowcutR.init((float)srate, irlowcut, irLowcutR.slope == k24dB ? 0.0765f : 0.2929f);
     irHighcutL.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
     irHighcutR.init((float)srate, irhighcut, irHighcutL.slope == k24dB ? 0.0765f : 0.2929f);
+
+    // band splitting
+    float splitLow = params.getRawParameterValue("split_low")->load();
+    float splitHigh = params.getRawParameterValue("split_high")->load();
+    int splitSlope = (int)params.getRawParameterValue("split_slope")->load();
+    splitter.setFreqs((float)srate, splitLow, splitHigh, splitSlope);
 }
 
 void REEVRAudioProcessor::updateImpulse()
@@ -945,6 +957,7 @@ void REEVRAudioProcessor::onTensionChange()
 
 void REEVRAudioProcessor::onPlay()
 {
+    splitter.clear();
     std::fill(revenvBuffer.begin(), revenvBuffer.end(), 0.f);
     std::fill(sendenvBuffer.begin(), sendenvBuffer.end(), 0.f);
     clearWaveBuffers();
@@ -1173,6 +1186,7 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     int predelay = (bool)params.getRawParameterValue("predelayusesync")->load()
         ? getPredelaySync()
         : (int)(params.getRawParameterValue("predelay")->load() / 1000.f * srate);
+    int splitSlope = (int)params.getRawParameterValue("split_slope")->load();
 
     if (ldrywet != drywet) {
         ldrywet = drywet;
@@ -1288,13 +1302,34 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         ratePos = beatPos * secondsPerBeat * ratehz;
     }
 
+    // frequency splitting
+    // rawBuffer is used for audioTrigger
+    // buffer will contain the mid frequency (splitted)
+    // lowBuffer and highBuffer will contain the excluded frequencies to be summed at the end
+    rawBuffer.copyFrom(0, 0, buffer, 0, 0, numSamples);
+    rawBuffer.copyFrom(1, 0, buffer, audioInputs > 1 ? 1 : 0, 0, numSamples);
+    if (splitter.active && !revenvMonitor && !sendenvMonitor && !useMonitor) {
+        splitter.processBlock(
+            splitSlope,
+            buffer.getReadPointer(0),
+            buffer.getReadPointer(audioInputs > 1 ? 1 : 0),
+            lowBuffer.getWritePointer(0),
+            lowBuffer.getWritePointer(1),
+            buffer.getWritePointer(0),
+            buffer.getWritePointer(audioInputs > 1 ? 1 : 0),
+            highBuffer.getWritePointer(0),
+            highBuffer.getWritePointer(1),
+            numSamples
+        );
+    }
+
     // audio trigger transient detection and monitoring
     // direct audio buffer processing, not oversampled
     if (trigger == Audio) {
         for (int sample = 0; sample < numSamples; ++sample) {
             // read audio samples
-            float lsample = buffer.getSample(0, sample);
-            float rsample = buffer.getSample(audioInputs > 1 ? 1 : 0, sample);
+            float lsample = rawBuffer.getSample(0, sample);
+            float rsample = rawBuffer.getSample(audioInputs > 1 ? 1 : 0, sample);
 
             // read sidechain samples
             float lsidesample = 0.0;
@@ -1358,8 +1393,8 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // envelope follower processing
     for (int sample = 0; sample < numSamples; ++sample) {
         if (revenvon || sendenvon) {
-            float lsample = buffer.getSample(0, sample);
-            float rsample = buffer.getSample(audioInputs > 1 ? 1 : 0, sample);
+            float lsample = rawBuffer.getSample(0, sample);
+            float rsample = rawBuffer.getSample(audioInputs > 1 ? 1 : 0, sample);
             float lsidesample = sideInputs ? buffer.getSample(audioInputs, sample) : 0.0f;
             float rsidesample = sideInputs ? buffer.getSample(sideInputs > 1 ? audioInputs + 1 : audioInputs, sample) : 0.0f;
 
@@ -1873,6 +1908,16 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         if (audioOutputs > 1) {
             buffer.addFrom(1, 0, wetBuffer.getReadPointer(1), numSamples);
         }
+
+        // if frequency splitting, add back the excluded frequencies
+        if (splitter.active) {
+            buffer.addFrom(0, 0, lowBuffer, 0, 0, numSamples);
+            buffer.addFrom(0, 0, highBuffer, 0, 0, numSamples);
+            if (audioInputs > 1) {
+                buffer.addFrom(1, 0, lowBuffer, 1, 0, numSamples);
+                buffer.addFrom(1, 0, highBuffer, 1, 0, numSamples);
+            }
+        }
     }
     else {
         // process display samples
@@ -1883,29 +1928,33 @@ void REEVRAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
-    auto ch0 = buffer.getReadPointer(0);
-    auto ch1 = buffer.getReadPointer(audioOutputs > 1 ? 1 : 0);
-    for (int i = 0; i < numSamples; ++i) {
-        eqBuffer[eqWriteIndex++] = 0.5f * (ch0[i] + ch1[i]);
-        eqWriteIndex %= eqBuffer.size();
+    // prepare FFT buffer for eq display
+    if (eqtab > 0) {
+        auto ch0 = buffer.getReadPointer(0);
+        auto ch1 = buffer.getReadPointer(audioOutputs > 1 ? 1 : 0);
+        for (int i = 0; i < numSamples; ++i) {
+            eqBuffer[eqWriteIndex++] = 0.5f * (ch0[i] + ch1[i]);
+            eqWriteIndex %= eqBuffer.size();
+        }
+        eqFFTReady.store(true, std::memory_order_release);
     }
-    eqFFTReady.store(true, std::memory_order_release);
+    else {
+        std::fill(eqBuffer.begin(), eqBuffer.end(), 0.f);
+    }
 
-    //for (int i = 0; i < numSamples; ++i) {
-    //    fftData[fftWriteIndex++] = (ch0[i] + ch1[i]) * 0.5f;
-    //    if (fftWriteIndex >= sz) {
-    //        window.multiplyWithWindowingTable(fftData.data(), fftData.size());
-    //        fft.performFrequencyOnlyForwardTransform(fftData.data(), true);
-    //        float norm = 1.f / (fftData.size() * 0.5f);
-    //        for (size_t j = 0; j < 2048 / 2; ++j) {
-    //            float mag = fftData[j] * norm;
-    //            fftMagnitudes[j] = mag * 0.8 + fftMagnitudes[j] * 0.2f;
-    //        }
-    //
-    //        fftWriteIndex = 0; // next write position
-    //        fftReady.store(true, std::memory_order_release);
-    //    }
-    //}
+    // prepare FFT buffer for band splitter display
+    if (showBandsEditor) {
+        auto ch0 = buffer.getReadPointer(0);
+        auto ch1 = buffer.getReadPointer(audioInputs > 1 ? 1 : 0);
+        for (int i = 0; i < numSamples; ++i) {
+            bandsFFTBuffer[bandsFFTWriteIndex++] = 0.5f * (ch0[i] + ch1[i]);
+            bandsFFTWriteIndex %= bandsFFTBuffer.size();
+        }
+        bandsFFTReady.store(true, std::memory_order_release);
+    }
+    else {
+        std::fill(bandsFFTBuffer.begin(), bandsFFTBuffer.end(), 0.f);
+    }
 }
 
 //==============================================================================

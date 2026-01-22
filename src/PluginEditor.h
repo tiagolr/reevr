@@ -26,6 +26,7 @@
 #include "ui/EQDisplay.h"
 #include "ui/IRDisplay.h"
 #include "ui/FileSelector.h"
+#include "ui/BandsWidget.h"
 
 using namespace globals;
 
@@ -69,6 +70,8 @@ private:
     Label patSyncLabel;
     ComboBox patSyncMenu;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> patSyncAttachment;
+    TextButton bandsBtn;
+    std::unique_ptr<BandsWidget> bandsWidget;
     std::unique_ptr<SettingsButton> settingsButton;
     std::unique_ptr<TextDial> rateDial;
     std::unique_ptr<EnvelopeWidget> revenv;

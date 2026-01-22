@@ -12,7 +12,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     setResizable(true, false);
     setResizeLimits(PLUG_WIDTH, PLUG_HEIGHT, MAX_PLUG_WIDTH, MAX_PLUG_HEIGHT);
     setSize (audioProcessor.plugWidth, audioProcessor.plugHeight);
-    setScaleFactor(audioProcessor.scale);
+    Desktop::getInstance().setGlobalScaleFactor(audioProcessor.scale);
 
     audioProcessor.addChangeListener(this);
     audioProcessor.params.addParameterListener("showviewport", this);
@@ -152,7 +152,10 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     col = getWidth() - PLUG_PADDING;
     settingsButton = std::make_unique<SettingsButton>(p);
     addAndMakeVisible(*settingsButton);
-    settingsButton->onScaleChange = [this]() { setScaleFactor(audioProcessor.scale); };
+    settingsButton->onScaleChange = [this]()
+        {
+            Desktop::getInstance().setGlobalScaleFactor(audioProcessor.scale);
+        };
     settingsButton->toggleUIComponents = [this]() { toggleUIComponents(); };
     settingsButton->toggleAbout = [this]() { about.get()->setVisible(true); };
     settingsButton->setBounds(col-20,row,25,25);
@@ -211,6 +214,16 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     patSyncMenu.setBounds(col, row, 75, 25);
     patSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.params, "patsync", patSyncMenu);
 
+    addAndMakeVisible(bandsBtn);
+    bandsBtn.setComponentID("button");
+    bandsBtn.setBounds(patSyncMenu.getBounds().translated(patSyncMenu.getWidth() + 10, 0));
+    bandsBtn.setButtonText("Bands");
+    bandsBtn.onClick = [this]
+        {
+            audioProcessor.showBandsEditor = !audioProcessor.showBandsEditor;
+            toggleUIComponents();
+        };
+
     // KNOBS ROW
 
     row += 35;
@@ -259,7 +272,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     addAndMakeVisible(currentFile);
     currentFile.setBounds(col, row + 200 - 10, 75 * 2 + 20+20-10-3, 25);
     currentFile.setAlpha(0.f);
-    currentFile.onClick = [this] 
+    currentFile.onClick = [this]
         {
             audioProcessor.showFileSelector = !audioProcessor.showFileSelector;
             toggleUIComponents();
@@ -348,6 +361,10 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
             toggleUIComponents();
         });
     };
+
+    bandsWidget = std::make_unique<BandsWidget>(*this);
+    addChildComponent(bandsWidget.get());
+    bandsWidget->setBounds(PLUG_PADDING + 75 * 6, row, 75 * 2, 65);
 
     // KNOBS 2ND ROW
     row += 75;
@@ -690,7 +707,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     about->setBounds(getBounds());
     about->setVisible(false);
 
-    // EQ widgets 
+    // EQ widgets
     eqWidget = std::make_unique<EQWidget>(*this, SVF::ParamEQ);
     addChildComponent(eqWidget.get());
     eqWidget->setBounds(PLUG_PADDING, lowcut->getY(), highcut->getRight() - PLUG_PADDING, reverb->getBottom() - highcut->getY());
@@ -704,6 +721,7 @@ REEVRAudioProcessorEditor::REEVRAudioProcessorEditor (REEVRAudioProcessor& p)
     revenv->toFront(false);
     sendenv->toFront(false);
     irgainSlider.toFront(false);
+    bandsWidget->toFront(false);
 
     customLookAndFeel = new CustomLookAndFeel();
     setLookAndFeel(customLookAndFeel);
@@ -906,6 +924,8 @@ void REEVRAudioProcessorEditor::toggleUIComponents()
     highcutSlope.setVisible(noeq);
     irgainSlider.setVisible(audioProcessor.eqtab != 2);
 
+    bandsWidget->setVisible(audioProcessor.showBandsEditor);
+
     trueStereoButton.setVisible(audioProcessor.impulse->isQuad);
     trueStereoButton.setToggleState((bool)audioProcessor.params.getRawParameterValue("tsenabled")->load(), dontSendNotification);
 
@@ -1075,6 +1095,25 @@ void REEVRAudioProcessorEditor::paint (Graphics& g)
 
     bool showview = (bool)audioProcessor.params.getRawParameterValue("showviewport")->load();
     drawTriangle(g, toggleViewportButton.getBounds().reduced(7).toFloat(), showview ? 2 : 0, Colour(COLOR_ACTIVE));
+
+    // band button
+    if (audioProcessor.showBandsEditor) {
+        g.setColour(Colour(COLOR_ACTIVE));
+        g.fillRoundedRectangle(bandsBtn.getBounds().expanded(2).toFloat(), 3.f);
+    }
+    g.setColour(Colour(COLOR_BG));
+    g.fillRoundedRectangle(bandsBtn.getBounds().toFloat(), 3.f);
+    bounds = bandsBtn.getBounds().toFloat().reduced(3.f);
+    float splitLeft = audioProcessor.params.getRawParameterValue("split_low")->load();
+    float splitRight = audioProcessor.params.getRawParameterValue("split_high")->load();
+    const float logMin = std::log(20.f);
+    const float logScale = 1.f / (std::log(20000.f) - logMin);
+    auto lnorm = (std::log(splitLeft) - logMin) * logScale;
+    auto rnorm = (std::log(splitRight) - logMin) * logScale;
+    auto bw = bounds.getWidth();
+    g.setColour(Colour(COLOR_ACTIVE).darker(0.8f));
+    g.fillRect(bounds.getX(), bounds.getY(), bw * lnorm, bounds.getHeight());
+    g.fillRect(bounds.getRight() - bw * (1.f - rnorm), bounds.getY(), bw * (1.f - rnorm), bounds.getHeight());
 }
 
 void REEVRAudioProcessorEditor::drawPowerButton(Graphics& g, Rectangle<float> bounds, Colour color)
@@ -1169,6 +1208,10 @@ void REEVRAudioProcessorEditor::resized()
 
     sendenv->setBounds(sendenv->getBounds().withRightX(getWidth() + 10));
     revenv->setBounds(sendenv->getBounds().withRightX(getWidth() + 10));
+    bandsBtn.setBounds(bandsBtn.getBounds().withRightX(getRight() - PLUG_PADDING));
+
+    // knobs row
+    bandsWidget->setBounds(bandsWidget->getBounds().withRightX(getRight() - PLUG_PADDING));
 
     // 3rd row
     sendEnvButton.setBounds(sendEnvButton.getBounds().withRightX(col));

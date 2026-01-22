@@ -13,6 +13,7 @@
 #include "dsp/Pattern.h"
 #include "dsp/Transient.h"
 #include "dsp/RBJ.h"
+#include "dsp/Splitter.h"
 #include "Presets.h"
 #include <atomic>
 #include <deque>
@@ -159,6 +160,10 @@ public:
     Pattern* viewPattern; // pattern being edited on the view, usually the audio pattern but can also be a paint mode pattern
     Pattern* viewSubPattern; // secondary pattern drawn on view, usually the resonance pattern
     Sequencer* sequencer;
+    Splitter splitter;
+    AudioBuffer<float> rawBuffer; // used for freq splitting
+    AudioBuffer<float> lowBuffer; // used for freq splitting
+    AudioBuffer<float> highBuffer; // used for freq splitting
     int queuedPattern = 0; // queued pat index, 0 = off
     int64_t queuedPatternCountdown = 0; // samples counter until queued pattern is applied
     int queuedResPattern = 0; // queued pat index, 0 = off
@@ -195,7 +200,7 @@ public:
     float ldrywet = -1.f;
     float drygain = 1.f;
     float wetgain = 1.f;
-    
+
 
     // Convolver state
     Impulse* impulse;
@@ -283,6 +288,7 @@ public:
     bool showAudioKnobs = false; // used by UI to toggle audio knobs
     bool showPaintWidget = false;
     bool showSequencer = false;
+    bool showBandsEditor = false;
     bool sendEditMode = false;
     bool showEnvelopeKnobs = false;
     bool showFileSelector = false;
@@ -290,6 +296,9 @@ public:
     size_t eqWriteIndex = 0;
     std::array<float, (1 << EQ_FFT_ORDER) * 2> eqBuffer;
     std::atomic<bool> eqFFTReady = false;
+    size_t bandsFFTWriteIndex = 0;
+    std::array<float, (1 << BANDS_FFT_ORDER) * 2> bandsFFTBuffer{};
+    std::atomic<bool> bandsFFTReady = false;
 
 
     static AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
