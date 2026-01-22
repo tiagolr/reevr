@@ -317,7 +317,9 @@ void Pattern::transform(double midy)
         midy = 1.0 - midy; // y coordinates are inverted
         clearY = midy;
 
-        rawpoints = points;
+        if (rawpoints.empty() || rawpoints.size() != points.size()) 
+            rawpoints = points;
+
         if (!rawpoints.empty()) {
             double avg = 0.0;
             for (auto& p : rawpoints) {
